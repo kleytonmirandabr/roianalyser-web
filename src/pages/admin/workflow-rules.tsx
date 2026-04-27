@@ -10,7 +10,7 @@
  * chaves de systemRules (fiscalYearStart, branding, etc).
  */
 
-import { Pencil, Plus, ShieldAlert, Trash2 } from 'lucide-react'
+import { Pencil, Plus, ShieldAlert, Sparkles, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router-dom'
@@ -110,6 +110,29 @@ export function AdminWorkflowRulesPage() {
     await persistRules(next)
   }
 
+  /**
+   * Aplica regras sugeridas — starter pack de 4 regras comuns que cobrem
+   * o fluxo Avaliação → Contrato → Win e tratamento de Loss. TODAS são
+   * criadas com `enabled: false` (modo frouxo) — admin liga uma de cada
+   * vez quando se sentir confortável. Skipa duplicatas (mesmo id).
+   */
+  async function applySuggestedRules() {
+    const ok = await confirm({
+      title: 'Aplicar regras sugeridas',
+      description:
+        'Vai adicionar 4 regras pré-prontas (Avaliação, Contrato, Win, Loss) com status DESATIVADO. Você ativa cada uma manualmente quando quiser. Continuar?',
+      confirmLabel: 'Aplicar sugeridas',
+    })
+    if (!ok) return
+    const existingIds = new Set(rules.map((r) => r.id))
+    const toAdd = SUGGESTED_RULES.filter((r) => !existingIds.has(r.id))
+    if (toAdd.length === 0) {
+      toastSaved('Regras sugeridas já estão na lista.')
+      return
+    }
+    await persistRules([...rules, ...toAdd])
+  }
+
   async function deleteRule(rule: WorkflowRule) {
     const ok = await confirm({
       title: t('admin.workflow.deleteTitle'),
@@ -150,10 +173,16 @@ export function AdminWorkflowRulesPage() {
             {t('admin.workflow.subtitle', { count: rules.length })}
           </p>
         </div>
-        <Button onClick={() => setEditing(makeEmptyRule())}>
-          <Plus className="h-4 w-4" />
-          <span>{t('admin.workflow.new')}</span>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={applySuggestedRules}>
+            <Sparkles className="h-4 w-4" />
+            <span>Aplicar sugeridas</span>
+          </Button>
+          <Button onClick={() => setEditing(makeEmptyRule())}>
+            <Plus className="h-4 w-4" />
+            <span>{t('admin.workflow.new')}</span>
+          </Button>
+        </div>
       </div>
 
       <Card className="overflow-hidden">
@@ -266,6 +295,59 @@ function makeEmptyRule(): WorkflowRule {
     enabled: true,
   }
 }
+
+/**
+ * Starter pack de regras pré-prontas. IDs estáveis pra evitar duplicação
+ * em re-aplicações. Tudo desativado — admin liga manualmente quando
+ * decidir começar a usar.
+ */
+const SUGGESTED_RULES: WorkflowRule[] = [
+  {
+    id: 'suggested_evaluation_v1',
+    name: 'Avaliação exige cliente identificado',
+    description:
+      'Pra entrar em Avaliação (ROI), precisa ter cliente identificado e qualificação registrada.',
+    toCategory: 'evaluation',
+    requiresFields: ['clientName'],
+    requiresChecklist: ['Lead qualificado e cliente identificado'],
+    enabled: false,
+  },
+  {
+    id: 'suggested_contract_v1',
+    name: 'Contrato exige ROI aprovado',
+    description:
+      'Pra entrar em Contrato, ROI precisa estar aprovado pelo cliente e negociação fechada.',
+    toCategory: 'contract',
+    requiresChecklist: [
+      'ROI aprovado pelo cliente',
+      'Termos comerciais negociados e fechados',
+    ],
+    enabled: false,
+  },
+  {
+    id: 'suggested_won_v1',
+    name: 'Ganho exige contrato assinado',
+    description:
+      'Pra marcar como Ganho (Win), precisa ter contrato assinado anexado e valor confirmado.',
+    toCategory: 'won',
+    requiresChecklist: [
+      'Contrato assinado pelas duas partes',
+      'Anexo do contrato adicionado',
+    ],
+    requiresFields: ['totalRevenue'],
+    enabled: false,
+  },
+  {
+    id: 'suggested_lost_v1',
+    name: 'Perda exige motivo registrado',
+    description:
+      'Pra marcar como Perda (Loss), o motivo da perda deve estar documentado.',
+    toCategory: 'lost',
+    requiresChecklist: ['Motivo da perda documentado'],
+    requiresFields: ['lossReason'],
+    enabled: false,
+  },
+]
 
 function RequirementSummary({
   rule,
