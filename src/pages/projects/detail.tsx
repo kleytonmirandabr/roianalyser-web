@@ -10,6 +10,7 @@ import {
   isTabVisible,
 } from '@/features/projects/lib/project-phase'
 import {
+  PROJECT_CATEGORIES,
   STATUS_CATEGORY_LABELS,
   type ProjectStatus,
 } from '@/features/projects/lib/status-categories'
@@ -68,15 +69,29 @@ export function ProjectDetailPage() {
     [category],
   )
 
+  /**
+   * Volta pra Oportunidades ou Projetos conforme a categoria atual do
+   * projeto. Se sem categoria detectável (status não migrado), default
+   * pra Oportunidades — onde a maioria dos projetos não-migrados aparece.
+   */
+  const backHref =
+    category && PROJECT_CATEGORIES.includes(category)
+      ? '/projects'
+      : '/opportunities'
+  const backLabel =
+    backHref === '/projects'
+      ? t('nav.projects', { defaultValue: 'Projetos' })
+      : t('nav.opportunities', { defaultValue: 'Oportunidades' })
+
   return (
     <div className="space-y-6">
       <div>
         <Link
-          to="/opportunities"
+          to={backHref}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ChevronLeft className="h-4 w-4" />
-          {t('projects.detail.back')}
+          {backLabel}
         </Link>
       </div>
 
