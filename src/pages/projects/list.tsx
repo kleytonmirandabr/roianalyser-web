@@ -368,32 +368,72 @@ export function ProjectsListPage({ scope = 'projects' }: { scope?: FunnelScope }
             {projects.isSuccess && dt.rows.length === 0 && (
               <TableRow>
                 <TableCell colSpan={colCount} className="py-12">
-                  <div className="flex flex-col items-center gap-3 text-center">
-                    <div className="rounded-full bg-muted p-3">
-                      <Briefcase className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">
-                        {dt.hasActiveFilters || advancedFilters.filters.length > 0
-                          ? t('projects.emptyFiltered')
-                          : t('projects.empty')}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {dt.hasActiveFilters || advancedFilters.filters.length > 0
-                          ? t('projects.emptyFilteredHint')
-                          : t('projects.emptyHint')}
-                      </p>
-                    </div>
-                    {!dt.hasActiveFilters &&
-                      advancedFilters.filters.length === 0 && (
-                        <Button asChild size="sm">
-                          <Link to="/projects/new">
-                            <Plus className="h-4 w-4" />
-                            <span>{t('projects.new')}</span>
-                          </Link>
-                        </Button>
-                      )}
-                  </div>
+                  {(() => {
+                    const hasFilters =
+                      dt.hasActiveFilters || advancedFilters.filters.length > 0
+                    /**
+                     * Heurística: estamos no scope=projects mas o tenant
+                     * tem projetos (apenas nenhum está em pós-Win) E
+                     * nenhum status do catálogo tem categoria pós-Win.
+                     * Sugere categorizar — esse é o caso mais comum
+                     * pós-migração.
+                     */
+                    const tenantHasProjects =
+                      (projects.data ?? []).length > 0
+                    const anyProjectScopedStatus = (
+                      (statuses.data ?? []) as unknown as ProjectStatus[]
+                    ).some(
+                      (s) =>
+                        s.category &&
+                        ['won', 'execution', 'invoicing', 'done', 'warranty'].includes(
+                          s.category,
+                        ),
+                    )
+                    const showCategorizeHint =
+                      scope === 'projects' &&
+                      !hasFilters &&
+                      tenantHasProjects &&
+                      !anyProjectScopedStatus
+                    return (
+                      <div className="flex flex-col items-center gap-3 text-center">
+                        <div className="rounded-full bg-muted p-3">
+                          <Briefcase className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <div className="max-w-md">
+                          <p className="font-medium text-foreground">
+                            {hasFilters
+                              ? t('projects.emptyFiltered')
+                              : showCategorizeHint
+                                ? 'Nenhum projeto pós-ganho ainda'
+                                : t('projects.empty')}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {hasFilters
+                              ? t('projects.emptyFilteredHint')
+                              : showCategorizeHint
+                                ? `Você tem ${projects.data?.length ?? 0} oportunidade${(projects.data?.length ?? 0) === 1 ? '' : 's'}, mas nenhum status está marcado como "Ganho (Win)". Categorize seu status de fechamento pra ver os projetos aqui.`
+                                : t('projects.emptyHint')}
+                          </p>
+                        </div>
+                        {showCategorizeHint ? (
+                          <Button asChild size="sm">
+                            <Link to="/catalogs/project-statuses">
+                              Configurar status
+                            </Link>
+                          </Button>
+                        ) : (
+                          !hasFilters && (
+                            <Button asChild size="sm">
+                              <Link to="/projects/new">
+                                <Plus className="h-4 w-4" />
+                                <span>{t('projects.new')}</span>
+                              </Link>
+                            </Button>
+                          )
+                        )}
+                      </div>
+                    )
+                  })()}
                 </TableCell>
               </TableRow>
             )}

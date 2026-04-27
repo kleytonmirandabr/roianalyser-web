@@ -7,12 +7,19 @@ import { z } from 'zod'
 
 import { MultiUserSelect } from '@/features/admin/components/user-select'
 import { useAppState } from '@/features/admin/hooks/use-app-state'
+import {
+  STANDARD_FIELDS_BY_ID,
+  mergeFields,
+  type CustomFieldItem,
+  type ManifestItem,
+  type UnifiedField,
+} from '@/features/admin/lib/contract-form-fields'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { useCatalog } from '@/features/catalogs/hooks/use-catalog'
 import { CatalogSelect } from '@/features/catalogs/components/catalog-select'
 import {
   CustomFieldRenderer,
-  useVisibleCustomFields,
+  type CustomFieldDef,
 } from '@/features/catalogs/components/custom-field-renderer'
 import {
   TransitionGuardDialog,
@@ -385,7 +392,7 @@ export function ProjectInfoView() {
     </Card>
 
     {/* Campos customizados do tenant */}
-    <CustomFieldsCard projectId={params.id} />
+    <OpportunityFieldsCard projectId={params.id} />
 
     {/* Time alocado no projeto */}
     <TeamCard
@@ -433,18 +440,67 @@ export function ProjectInfoView() {
   )
 }
 
-function CustomFieldsCard({ projectId }: { projectId: string }) {
+/**
+ * Card "Campos da Oportunidade" — substitui o antigo "Custom Fields".
+ *
+ * Renderiza dinamicamente todos os campos VISÍVEIS configurados em
+ * `/catalogs/contract-form` (padrão + customizados), exceto os que já
+ * estão no form principal acima (name, status, currency, responsible,
+ * clientName) pra evitar duplicação.
+ *
+ * Storage:
+ *   - Standard fields: payload[payloadKey ?? id]
+ *   - Custom fields: payload[fieldKey]
+ *
+ * Save: faz merge no payload preservando outras chaves não tocadas
+ * (entryGroups, milestones, pendingApprovals, etc).
+ */
+function OpportunityFieldsCard({ projectId }: { projectId: string }) {
   const { t } = useTranslation()
   const project = useProject(projectId)
   const update = useUpdateProject(projectId)
-  const fields = useVisibleCustomFields()
+  const manifest = useCatalog('contractFormFields')
+  const customs = useCatalog('customFields')
+  const projectStatuses = useCatalog('projectStatuses')
+  const leadSources = useCatalog('leadSources')
+  const contractTypes = useCatalog('contractTypes')
+  const companies = useCatalog('companies')
+
+  /**
+   * Lista mesclada de todos os campos visíveis. Os 5 que conflitam com
+   * o form principal acima (projectName/Status/Currency/Owner/Client)
+   * são removidos pra evitar duplicação.
+   */
+  const fields = useMemo(() => {
+    const merged = mergeFields(
+      (manifest.data ?? []) as unknown as ManifestItem[],
+      (customs.data ?? []) as unknown as CustomFieldItem[],
+    ).filter((f) => f.visible)
+    return merged.filter((f) => {
+      if (f.kind === 'custom') return true
+      // Conflitos com main form acima
+      const mainFormIds = new Set([
+        'projectName',
+        'projectStatus',
+        'projectCurrency',
+        'projectOwner',
+        'projectClient',
+      ])
+      return !mainFormIds.has(f.id)
+    })
+  }, [manifest.data, customs.data])
+
   const [values, setValues] = useState<Record<string, unknown>>({})
   const [dirty, setDirty] = useState(false)
 
   useEffect(() => {
-    const payload = (project.data?.payload ?? {}) as Record<string, unknown>
+    if (!project.data) return
+    const payload = (project.data.payload ?? {}) as Record<string, unknown>
     const next: Record<string, unknown> = {}
-    for (const f of fields) next[f.fieldKey] = payload[f.fieldKey] ?? null
+    for (const f of fields) {
+      const key = payloadKeyFor(f)
+      next[f.id] = payload[key] ?? null
+    }
     setValues(next)
     setDirty(false)
   }, [project.data, fields])
@@ -455,7 +511,11 @@ function CustomFieldsCard({ projectId }: { projectId: string }) {
     if (!project.data) return
     const base = (project.data.payload ?? {}) as Record<string, unknown>
     const merged: Record<string, unknown> = { ...base }
-    for (const f of fields) merged[f.fieldKey] = values[f.fieldKey] ?? null
+    for (const f of fields) {
+      const key = payloadKeyFor(f)
+      const v = values[f.id]
+      merged[key] = v == null || v === '' ? null : v
+    }
     try {
       await update.mutateAsync({ payload: merged })
       toastSaved(t('projects.detail.info.savedCustom'))
@@ -468,28 +528,30 @@ function CustomFieldsCard({ projectId }: { projectId: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('projects.detail.info.customFieldsTitle')}</CardTitle>
+        <CardTitle>Campos da Oportunidade</CardTitle>
         <CardDescription>
-          {t('projects.detail.info.customFieldsDescription')}
+          Configurados em Catálogos → Formulário da Oportunidade. Edite e
+          clique em Salvar.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 md:grid-cols-2">
           {fields.map((f) => (
-            <div key={f.id} className="space-y-1.5">
-              <label className="text-sm font-medium">
-                {f.name}
-                {f.required && <span className="text-destructive"> *</span>}
-              </label>
-              <CustomFieldRenderer
-                field={f}
-                value={values[f.fieldKey]}
-                onChange={(v) => {
-                  setValues((prev) => ({ ...prev, [f.fieldKey]: v }))
-                  setDirty(true)
-                }}
-              />
-            </div>
+            <DynamicFieldEditor
+              key={f.id}
+              field={f}
+              value={values[f.id]}
+              onChange={(v) => {
+                setValues((prev) => ({ ...prev, [f.id]: v }))
+                setDirty(true)
+              }}
+              catalogs={{
+                projectStatuses: projectStatuses.data ?? [],
+                leadSources: leadSources.data ?? [],
+                contractTypes: contractTypes.data ?? [],
+                companies: companies.data ?? [],
+              }}
+            />
           ))}
         </div>
         <div className="mt-4 flex justify-end">
@@ -501,6 +563,147 @@ function CustomFieldsCard({ projectId }: { projectId: string }) {
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+/**
+ * Resolve qual chave do payload usar ao gravar/ler um campo unificado.
+ * Padrão: pra standard usa o `payloadKey` do registry (default = id);
+ * pra custom usa o `fieldKey`.
+ */
+function payloadKeyFor(f: UnifiedField): string {
+  if (f.kind === 'custom') return f.fieldKey
+  const def = STANDARD_FIELDS_BY_ID[f.id]
+  if (!def) return f.id
+  return def.payloadKey ?? def.id
+}
+
+/**
+ * Renderiza um único campo (padrão ou custom) com input apropriado.
+ * Usado em info.tsx no Card "Campos da Oportunidade". É um clone
+ * funcional do `<FieldEditor>` do new.tsx — quando estabilizar, vale
+ * extrair pra um componente compartilhado.
+ */
+function DynamicFieldEditor({
+  field,
+  value,
+  onChange,
+  catalogs,
+}: {
+  field: UnifiedField
+  value: unknown
+  onChange: (value: unknown) => void
+  catalogs: {
+    projectStatuses: { id: string; name?: unknown }[]
+    leadSources: { id: string; name?: unknown }[]
+    contractTypes: { id: string; name?: unknown }[]
+    companies: { id: string; name?: unknown }[]
+  }
+}) {
+  const id = `field-${field.id}`
+  if (field.kind === 'custom') {
+    const cfDef: CustomFieldDef = {
+      id: field.id,
+      name: field.label,
+      fieldKey: field.fieldKey,
+      fieldType: field.fieldType,
+      required: field.required,
+      visible: field.visible,
+      options: field.options,
+    }
+    return (
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium" htmlFor={id}>
+          {field.label}
+          {field.required && <span className="text-destructive"> *</span>}
+        </label>
+        <CustomFieldRenderer field={cfDef} value={value} onChange={onChange} />
+      </div>
+    )
+  }
+  const def = STANDARD_FIELDS_BY_ID[field.id]
+  if (!def) return null
+  const stringVal =
+    value == null
+      ? ''
+      : typeof value === 'object'
+        ? JSON.stringify(value)
+        : String(value)
+
+  if (def.renderType === 'catalogRef' && def.refCatalog) {
+    const list = catalogs[def.refCatalog] ?? []
+    const opts = list
+      .filter((it) => typeof it.name === 'string' && it.name)
+      .map((it) => ({ value: it.id, label: String(it.name) }))
+    return (
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium" htmlFor={id}>
+          {field.label}
+          {field.required && <span className="text-destructive"> *</span>}
+        </label>
+        <Combobox
+          id={id}
+          options={opts}
+          value={stringVal}
+          onChange={onChange}
+          placeholder="—"
+          noneLabel="—"
+        />
+      </div>
+    )
+  }
+
+  const inputType =
+    def.renderType === 'date'
+      ? 'date'
+      : def.renderType === 'email'
+        ? 'email'
+        : def.renderType === 'phone'
+          ? 'tel'
+          : def.renderType === 'number' ||
+              def.renderType === 'percent' ||
+              def.renderType === 'currency'
+            ? 'number'
+            : 'text'
+  const inputStep =
+    def.renderType === 'currency' || def.renderType === 'percent'
+      ? '0.01'
+      : undefined
+
+  if (def.renderType === 'textarea') {
+    return (
+      <div className="space-y-1.5 md:col-span-2">
+        <label className="text-sm font-medium" htmlFor={id}>
+          {field.label}
+          {field.required && <span className="text-destructive"> *</span>}
+        </label>
+        <textarea
+          id={id}
+          value={stringVal}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={def.placeholder}
+          rows={3}
+          className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium" htmlFor={id}>
+        {field.label}
+        {field.required && <span className="text-destructive"> *</span>}
+      </label>
+      <Input
+        id={id}
+        type={inputType}
+        step={inputStep}
+        value={stringVal}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={def.placeholder}
+      />
+    </div>
   )
 }
 

@@ -18,6 +18,10 @@ import {
   useDeleteCatalogItem,
   useUpdateCatalogItem,
 } from '@/features/catalogs/hooks/use-catalog'
+import {
+  STATUS_CATEGORY_DEFAULT_COLORS,
+  type StatusCategory,
+} from '@/features/projects/lib/status-categories'
 import { CatalogSelect } from '@/features/catalogs/components/catalog-select'
 import {
   findCatalogBySlug,
@@ -561,7 +565,31 @@ export function CatalogDetailPage() {
                     key={field.key}
                     field={field}
                     value={draft[field.key]}
-                    onChange={(v) => setDraft((d) => ({ ...d, [field.key]: v }))}
+                    onChange={(v) => {
+                      setDraft((d) => {
+                        const next = { ...d, [field.key]: v }
+                        // Auto-preenche a cor sugerida quando o admin
+                        // escolhe a categoria do status — só se a cor
+                        // ainda estiver vazia ou no valor default cinza
+                        // pra não sobrescrever escolhas manuais.
+                        if (
+                          catalog.type === 'projectStatuses' &&
+                          field.key === 'category' &&
+                          typeof v === 'string' &&
+                          v in STATUS_CATEGORY_DEFAULT_COLORS
+                        ) {
+                          const currentColor =
+                            typeof d.color === 'string' ? d.color : ''
+                          if (!currentColor || currentColor === '#6b7280') {
+                            next.color =
+                              STATUS_CATEGORY_DEFAULT_COLORS[
+                                v as StatusCategory
+                              ]
+                          }
+                        }
+                        return next
+                      })
+                    }}
                     onCepLookup={async (cep) => {
                       const data = await fetchViaCep(cep)
                       if (!data) return
