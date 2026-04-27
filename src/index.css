@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Tokens de cor + tipografia baseados no design-system-v3 do roi-analyzer
+ * vanilla. shadcn/ui consome essas variáveis CSS via `bg-background`,
+ * `text-foreground`, `bg-primary`, etc.
+ */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 270 10% 5%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 270 10% 5%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 270 10% 5%;
+
+    --primary: 243 76% 59%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 270 10% 15%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 243 100% 96%;
+    --accent-foreground: 243 76% 35%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 243 76% 59%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 230 13% 10%;
+    --foreground: 220 13% 96%;
+
+    --card: 230 13% 12%;
+    --card-foreground: 220 13% 96%;
+
+    --popover: 230 13% 12%;
+    --popover-foreground: 220 13% 96%;
+
+    --primary: 243 80% 70%;
+    --primary-foreground: 270 10% 10%;
+
+    --secondary: 230 13% 18%;
+    --secondary-foreground: 220 13% 96%;
+
+    --muted: 230 13% 18%;
+    --muted-foreground: 220 9% 65%;
+
+    --accent: 243 50% 25%;
+    --accent-foreground: 243 80% 90%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 230 13% 20%;
+    --input: 230 13% 20%;
+    --ring: 243 80% 70%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  #root {
+    min-height: 100vh;
+    width: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+}
+
+/* Impressão / Salvar como PDF — esconde sidebar, header, botões; deixa
+ * o conteúdo principal limpo. Dispara via window.print() (Cmd/Ctrl+P). */
+@media print {
+  aside,
+  header,
+  button,
+  .no-print {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  /* Cards e tabelas com cores neutras para imprimir limpo. */
+  [class*='border-border'] {
+    border-color: #ddd !important;
+  }
+}
