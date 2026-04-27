@@ -15,6 +15,7 @@ import { confirm } from '@/shared/ui/confirm-dialog'
 import {
   DataTableActiveFilters,
   DataTableHeaderCell,
+  DataTablePagination,
   useDataTable,
   type DataTableColumn,
 } from '@/shared/ui/data-table'
@@ -138,7 +139,7 @@ export function AdminUsersPage() {
   }
 
   return (
-    <div className="mx-auto max-w-screen-2xl space-y-4">
+    <div className="w-full space-y-4">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           {t('admin.title')}
@@ -197,7 +198,7 @@ export function AdminUsersPage() {
                 </TableCell>
               </TableRow>
             )}
-            {dt.rows.map((u) => (
+            {dt.paginatedRows.map((u) => (
               <TableRow key={u.id}>
                 <TableCell className="font-medium">
                   {u.name}
@@ -238,6 +239,8 @@ export function AdminUsersPage() {
           </TableBody>
         </Table>
       </Card>
+
+      <DataTablePagination state={dt} />
 
       {/* Sheet lateral pra editar/criar — substitui o Card inline antigo
           que aparecia embaixo da lista. Usuário continua vendo a tabela

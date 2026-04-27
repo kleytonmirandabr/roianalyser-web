@@ -2,6 +2,7 @@ import {
   Boxes,
   Briefcase,
   ChevronRight,
+  ClipboardList,
   Search,
   UsersRound,
   Wrench,
@@ -10,6 +11,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
+import { useAuth } from '@/features/auth/hooks/use-auth'
 import {
   CATALOG_REGISTRY,
   type CatalogDef,
@@ -33,6 +35,8 @@ const GROUPS: ReadonlyArray<{
 
 export function CatalogsIndexPage() {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const isMaster = !!user?.isMaster
   const [filter, setFilter] = useState('')
 
   // Agrupa catálogos por contexto. Um catálogo sem `group` cai em 'project'
@@ -46,6 +50,10 @@ export function CatalogsIndexPage() {
       people: [],
     }
     for (const cat of CATALOG_REGISTRY) {
+      // Catálogos consolidados em outras telas (ex: contractFormFields +
+      // customFields agora vivem em /admin/contract-form) não aparecem
+      // na index, mas a rota /catalogs/:slug ainda funciona.
+      if (cat.hidden) continue
       const g = cat.group ?? 'project'
       if (q) {
         const haystack = `${cat.label} ${cat.description}`.toLowerCase()
@@ -77,6 +85,44 @@ export function CatalogsIndexPage() {
           />
         </div>
       </div>
+
+      {/* Card especial — Form. da Oportunidade. Master-only. Vai pra
+          tela dedicada `/catalogs/contract-form` (não usa o detail
+          genérico). Mantém visualmente alinhado com os demais cards. */}
+      {isMaster && !filter.trim() && (
+        <section className="space-y-2">
+          <div className="flex items-center gap-2">
+            <ClipboardList className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Configuração de formulários
+            </h2>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <Link to="/catalogs/contract-form">
+              <Card className="h-full transition-colors hover:border-primary hover:bg-accent/50">
+                <CardContent className="flex h-full items-start justify-between gap-4 p-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-foreground">
+                        Formulário da Oportunidade
+                      </span>
+                      <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                        master
+                      </span>
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                      Configure quais campos aparecem no cadastro de novos
+                      projetos — campos padrão e customizados, visibilidade e
+                      obrigatoriedade.
+                    </p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </section>
+      )}
 
       {GROUPS.map((g) => {
         const list = grouped[g.id]

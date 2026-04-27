@@ -7,6 +7,7 @@ import {
   ScrollText,
   Shield,
   Tags,
+  Target,
   Upload,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
@@ -53,19 +54,31 @@ export const NAV_ITEMS: NavItem[] = [
     icon: LayoutDashboard,
   },
   {
+    /**
+     * Oportunidades — funil pre-Win (negotiation/evaluation/contract +
+     * lost/cancelled). Engloba Lista, Kanban, Funil e Perdidas.
+     */
+    i18nKey: 'opportunities',
+    to: '/opportunities',
+    icon: Target,
+    children: [
+      { i18nKey: 'opportunitiesList', to: '/opportunities' },
+      { i18nKey: 'opportunitiesBoard', to: '/opportunities/board' },
+      { i18nKey: 'opportunitiesFunnel', to: '/opportunities/funnel' },
+      { i18nKey: 'opportunitiesLost', to: '/opportunities/lost' },
+    ],
+  },
+  {
+    /**
+     * Projetos — pós-Win (won/execution/invoicing/done/warranty). Por
+     * enquanto só Lista. Kanban de execução + Dashboard ficam pra fases
+     * futuras (precisam de volume de projetos pra fazer sentido).
+     */
     i18nKey: 'projects',
     to: '/projects',
     icon: BarChart3,
-    /**
-     * Projetos têm 4 visualizações distintas — todas merecem aparecer
-     * direto na navegação pra reduzir cliques. O usuário ainda pode
-     * clicar em "Projetos" pra cair na default (lista).
-     */
     children: [
       { i18nKey: 'projectsList', to: '/projects' },
-      { i18nKey: 'projectsBoard', to: '/projects/board' },
-      { i18nKey: 'projectsFunnel', to: '/projects/funnel' },
-      { i18nKey: 'projectsLost', to: '/projects/lost' },
     ],
   },
   {

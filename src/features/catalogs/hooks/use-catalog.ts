@@ -10,8 +10,11 @@ function catalogQueryKey(clientId: string | undefined, type: CatalogType) {
 }
 
 export function useCatalog(type: CatalogType) {
-  const { user } = useAuth()
-  const clientId = user?.clientId
+  const { user, activeClientId } = useAuth()
+  // Master pode ter `user.clientId` vazio — nesse caso usa o tenant
+  // selecionado no switcher (`activeClientId`). User comum sempre tem
+  // `user.clientId` setado, então o fallback é redundante mas inofensivo.
+  const clientId = (activeClientId || user?.clientId) ?? undefined
 
   return useQuery({
     queryKey: catalogQueryKey(clientId, type),
@@ -21,9 +24,9 @@ export function useCatalog(type: CatalogType) {
 }
 
 export function useCreateCatalogItem(type: CatalogType) {
-  const { user } = useAuth()
+  const { user, activeClientId } = useAuth()
   const queryClient = useQueryClient()
-  const clientId = user?.clientId
+  const clientId = (activeClientId || user?.clientId) ?? ''
 
   return useMutation({
     mutationFn: (input: Partial<CatalogItem>) => {
@@ -39,9 +42,9 @@ export function useCreateCatalogItem(type: CatalogType) {
 }
 
 export function useUpdateCatalogItem(type: CatalogType) {
-  const { user } = useAuth()
+  const { user, activeClientId } = useAuth()
   const queryClient = useQueryClient()
-  const clientId = user?.clientId
+  const clientId = (activeClientId || user?.clientId) ?? ''
 
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: Partial<CatalogItem> }) => {
@@ -57,9 +60,9 @@ export function useUpdateCatalogItem(type: CatalogType) {
 }
 
 export function useDeleteCatalogItem(type: CatalogType) {
-  const { user } = useAuth()
+  const { user, activeClientId } = useAuth()
   const queryClient = useQueryClient()
-  const clientId = user?.clientId
+  const clientId = (activeClientId || user?.clientId) ?? ''
 
   return useMutation({
     mutationFn: (id: string) => {

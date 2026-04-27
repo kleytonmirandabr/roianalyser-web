@@ -6,9 +6,20 @@ import { Link } from 'react-router-dom'
 import { UserAvatar } from '@/features/admin/components/user-select'
 import { useCatalog } from '@/features/catalogs/hooks/use-catalog'
 import { financialSummaries } from '@/features/dashboard/lib/aggregations'
+import {
+  AdvancedFilters,
+  useAdvancedFilters,
+} from '@/features/projects/components/advanced-filters'
 import { useMoveProject } from '@/features/projects/hooks/use-move-project'
 import { useProjects } from '@/features/projects/hooks/use-projects'
 import { formatCurrency } from '@/features/projects/lib/money'
+import { applyFilters } from '@/features/projects/lib/project-fields'
+import {
+  isInScope,
+  statusInCategory,
+  type FunnelScope,
+  type ProjectStatus,
+} from '@/features/projects/lib/status-categories'
 import type { Project } from '@/features/projects/types'
 import { toastError, toastSaved } from '@/shared/lib/toasts'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
@@ -47,7 +58,11 @@ type EnrichedProject = Project & {
  * Tudo client-side — projects.data já vem com todos os projetos do tenant
  * e re-renderizar é barato.
  */
-export function ProjectsBoardPage() {
+export function ProjectsBoardPage({
+  scope = 'opportunities',
+}: {
+  scope?: FunnelScope
+}) {
   const { t, i18n } = useTranslation()
   const projects = useProjects()
   const statuses = useCatalog('projectStatuses')
@@ -56,7 +71,23 @@ export function ProjectsBoardPage() {
   const [search, setSearch] = useState('')
   const [responsibleFilter, setResponsibleFilter] = useState('')
   const [minValueText, setMinValueText] = useState('')
+  const [includeLost, setIncludeLost] = useState(false)
   const minValue = Number(minValueText.replace(/[^\d.,]/g, '').replace(',', '.')) || 0
+  // Filtros avançados (chips empilháveis — mesmo componente da Lista).
+  const advancedFilters = useAdvancedFilters()
+
+  // Set de nomes de status considerados 'lost' (catálogo + fallback por
+  // keyword no nome). Usado pra: (a) filtrar projetos perdidos do board
+  // por padrão e (b) esconder a coluna do status correspondente.
+  const lostStatusNames = useMemo<Set<string>>(() => {
+    const set = new Set<string>()
+    const list = (statuses.data ?? []) as unknown as ProjectStatus[]
+    for (const s of list) {
+      if (typeof s.name !== 'string') continue
+      if (statusInCategory(s, 'lost')) set.add(s.name)
+    }
+    return set
+  }, [statuses.data])
 
   // Enriquece projetos uma vez — evita recalcular dentro do render do board.
   const enrichedAll = useMemo<EnrichedProject[]>(() => {
@@ -92,11 +123,14 @@ export function ProjectsBoardPage() {
     return [...set].sort().map((name) => ({ value: name, label: name }))
   }, [enrichedAll])
 
-  // Aplica filtros (texto, responsável, valor mínimo). Mantém referencia
-  // estável quando filtros não mudam (mesmo array).
+  // Aplica filtros (escopo, texto, responsável, valor mínimo, perdidas,
+  // avançados). Mantém referência estável quando filtros não mudam.
   const filtered = useMemo<EnrichedProject[]>(() => {
     const q = search.trim().toLowerCase()
-    return enrichedAll.filter((p) => {
+    const allStatusList = (statuses.data ?? []) as unknown as ProjectStatus[]
+    let pre = enrichedAll.filter((p) => {
+      if (!isInScope(p.status, scope, allStatusList)) return false
+      if (!includeLost && p.status && lostStatusNames.has(p.status)) return false
       if (responsibleFilter && p.__responsibleName !== responsibleFilter) return false
       if (minValue > 0 && p.__revenue < minValue) return false
       if (q) {
@@ -105,12 +139,29 @@ export function ProjectsBoardPage() {
       }
       return true
     })
-  }, [enrichedAll, search, responsibleFilter, minValue])
+    if (advancedFilters.filters.length > 0) {
+      // applyFilters trabalha sobre Project[]; tipo enriquecido herda Project.
+      pre = applyFilters(pre, advancedFilters.filters) as EnrichedProject[]
+    }
+    return pre
+  }, [
+    enrichedAll,
+    search,
+    responsibleFilter,
+    minValue,
+    includeLost,
+    lostStatusNames,
+    advancedFilters.filters,
+    scope,
+    statuses.data,
+  ])
 
   const columns = useMemo<StatusColumn[]>(() => {
     const cats = statuses.data ?? []
     const cols: StatusColumn[] = cats
       .filter((c) => c.active !== false && typeof c.name === 'string')
+      // Esconde colunas de status 'lost' quando o toggle está desligado.
+      .filter((c) => includeLost || !lostStatusNames.has(c.name as string))
       .map((c) => ({
         name: c.name as string,
         label: c.name as string,
@@ -132,7 +183,7 @@ export function ProjectsBoardPage() {
       })
     }
     return cols
-  }, [filtered, statuses.data, t])
+  }, [filtered, statuses.data, t, includeLost, lostStatusNames])
 
   // Resumo geral em cima — total filtrado e valor consolidado.
   const tenantCurrency = enrichedAll[0]?.currency ?? 'BRL'
@@ -142,11 +193,11 @@ export function ProjectsBoardPage() {
   const filtersActive = !!search || !!responsibleFilter || minValue > 0
 
   return (
-    <div className="mx-auto max-w-screen-2xl space-y-4">
+    <div className="w-full space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            {t('nav.projects')}
+            {scope === 'opportunities' ? t('nav.opportunities') : t('nav.projects')}
           </h1>
           <p className="text-sm text-muted-foreground">
             {t('projects.board.subtitle')}
@@ -167,6 +218,9 @@ export function ProjectsBoardPage() {
           <AlertDescription>{t('projects.loadError')}</AlertDescription>
         </Alert>
       )}
+
+      {/* Filtros avançados (chips empilháveis). */}
+      <AdvancedFilters state={advancedFilters} />
 
       {/* Filtros + resumo geral */}
       <Card className="p-3">
@@ -196,6 +250,22 @@ export function ProjectsBoardPage() {
               placeholder={t('projects.board.filterMinValue')}
             />
           </div>
+          <button
+            type="button"
+            onClick={() => setIncludeLost((v) => !v)}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+              includeLost
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-input bg-background hover:bg-accent'
+            }`}
+            title={t('projects.includeLost', {
+              defaultValue: 'Incluir oportunidades perdidas no Kanban',
+            })}
+          >
+            {includeLost
+              ? t('projects.includeLostOn', { defaultValue: 'Incluindo perdidas' })
+              : t('projects.includeLostOff', { defaultValue: 'Incluir perdidas' })}
+          </button>
           {filtersActive && (
             <Button
               variant="ghost"
@@ -250,7 +320,7 @@ function BoardSkeleton() {
   return (
     <div className="flex gap-3 overflow-x-auto pb-2">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="flex w-72 shrink-0 flex-col gap-2">
+        <div key={i} className="flex w-80 shrink-0 flex-col gap-2">
           <Skeleton className="h-7 w-full" />
           <Skeleton className="h-24 w-full" />
           <Skeleton className="h-24 w-full" />
@@ -302,7 +372,11 @@ function Board({
           <div
             key={col.name || '__none__'}
             className={cn(
-              'flex w-72 shrink-0 flex-col gap-2 rounded-md border border-border bg-card p-2 transition-colors',
+              // Coluna tem altura fixa relativa à viewport pra não crescer
+              // indefinidamente — o conteúdo (lista de cards) rola DENTRO.
+              // O ajuste ~280px subtrai header da app + topo da página
+              // (título, tabs, filtros) deixando o restante pra coluna.
+              'flex h-[calc(100vh-280px)] w-80 shrink-0 flex-col rounded-md border border-border bg-card transition-colors',
               hoverCol === col.name && 'border-primary bg-accent/30',
             )}
             onDragOver={(e) => {
@@ -312,39 +386,45 @@ function Board({
             onDragLeave={() => setHoverCol((h) => (h === col.name ? null : h))}
             onDrop={() => handleDrop(col.name)}
           >
-            {/* Header da coluna com resumo (count + valor total) */}
+            {/* Header da coluna fixo no topo (não rola junto). */}
             <div
-              className="flex items-baseline justify-between border-b-2 px-2 pb-2"
+              className="shrink-0 border-b-2 px-3 pb-2 pt-3"
               style={{ borderColor: col.color ?? 'transparent' }}
             >
-              <span className="text-sm font-semibold">{col.label}</span>
-              <span className="rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground">
-                {col.projects.length}
-              </span>
-            </div>
-            {colTotal > 0 && (
-              <div className="px-2 text-[11px] tabular-nums text-muted-foreground">
-                {formatCurrency(colTotal, currency)}
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm font-semibold">{col.label}</span>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground">
+                  {col.projects.length}
+                </span>
               </div>
-            )}
+              {colTotal > 0 && (
+                <div className="mt-1 text-[11px] tabular-nums text-muted-foreground">
+                  {formatCurrency(colTotal, currency)}
+                </div>
+              )}
+            </div>
 
-            {col.projects.length === 0 && (
-              <p className="px-2 py-6 text-center text-xs text-muted-foreground">
-                —
-              </p>
-            )}
+            {/* Área rolável dos cards. `min-h-0` é essencial pra
+                overflow-y-auto funcionar dentro de flex-col. */}
+            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-2">
+              {col.projects.length === 0 && (
+                <p className="py-6 text-center text-xs text-muted-foreground">
+                  —
+                </p>
+              )}
 
-            {(col.projects as EnrichedProject[]).map((p) => (
-              <BoardCard
-                key={p.id}
-                project={p}
-                currency={currency}
-                locale={locale}
-                isDragging={draggingId === p.id}
-                onDragStart={() => setDraggingId(p.id)}
-                onDragEnd={() => setDraggingId(null)}
-              />
-            ))}
+              {(col.projects as EnrichedProject[]).map((p) => (
+                <BoardCard
+                  key={p.id}
+                  project={p}
+                  currency={currency}
+                  locale={locale}
+                  isDragging={draggingId === p.id}
+                  onDragStart={() => setDraggingId(p.id)}
+                  onDragEnd={() => setDraggingId(null)}
+                />
+              ))}
+            </div>
           </div>
         )
       })}

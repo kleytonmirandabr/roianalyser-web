@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
 
 import { CashFlowChart } from '@/features/projects/components/cash-flow-chart'
+import { RoiSoftBlockBanner } from '@/features/projects/components/roi-soft-block-banner'
 import { useProject } from '@/features/projects/hooks/use-project'
 import {
   buildCashFlow,
@@ -112,6 +113,7 @@ export function ProjectResumoView() {
 
   return (
     <div className="space-y-4">
+      {params.id && <RoiSoftBlockBanner projectId={params.id} />}
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between gap-4">

@@ -1,3 +1,8 @@
+import {
+  STATUS_CATEGORIES,
+  STATUS_CATEGORY_LABELS,
+} from '@/features/projects/lib/status-categories'
+
 import type { CatalogType } from './types'
 
 /**
@@ -13,6 +18,8 @@ export type CatalogFieldKind =
   | 'cep'
   /** Combobox que puxa itens de outro catálogo (foreign-key amigável). */
   | 'catalogRef'
+  /** Combobox com lista FECHADA de opções definidas no registry. */
+  | 'enum'
 
 export type CatalogFieldDef = {
   key: string
@@ -37,6 +44,11 @@ export type CatalogFieldDef = {
    * o campo `name` (útil pra catálogos de strings curtas).
    */
   refStoreField?: 'id' | 'name'
+  /**
+   * Opções fixas pra kind === 'enum'. O Combobox grava `value` (string)
+   * e exibe `label`. `value === ''` é tratado como "não definido".
+   */
+  enumOptions?: ReadonlyArray<{ value: string; label: string }>
 }
 
 /**
@@ -59,6 +71,13 @@ export type CatalogDef = {
   ready: boolean
   /** Campos editáveis (no form e na tabela). */
   fields: CatalogFieldDef[]
+  /**
+   * Esconder da listagem em /catalogs. Usado para catálogos que foram
+   * "consolidados" em outra UI (ex: contractFormFields + customFields agora
+   * vivem em /admin/contract-form). A rota /catalogs/:slug ainda funciona,
+   * pra não quebrar bookmarks, mas o card não aparece no index.
+   */
+  hidden?: boolean
 }
 
 const NAME_DESC_FIELDS: CatalogFieldDef[] = [
@@ -152,10 +171,19 @@ export const CATALOG_REGISTRY: CatalogDef[] = [
       {
         key: 'category',
         label: 'Categoria',
-        kind: 'text',
+        kind: 'enum',
         showInTable: true,
-        width: '8rem',
-        placeholder: 'negotiation, won, lost, execution, invoicing, done, warranty, cancelled',
+        width: '10rem',
+        // Lista FECHADA — admin escolhe uma das 10 categorias canônicas
+        // ('' = não categorizado). Cada categoria controla automações
+        // do sistema (ROI, contrato, cronograma, etc).
+        enumOptions: [
+          { value: '', label: '— Não categorizado' },
+          ...STATUS_CATEGORIES.map((c) => ({
+            value: c,
+            label: STATUS_CATEGORY_LABELS[c],
+          })),
+        ],
       },
     ],
   },
@@ -352,6 +380,8 @@ export const CATALOG_REGISTRY: CatalogDef[] = [
       'Quais campos aparecem no formulário de novo contrato/projeto. Toggle de visibilidade e obrigatoriedade.',
     group: 'project',
     ready: true,
+    // Consolidado em /admin/contract-form (Form. da Oportunidade).
+    hidden: true,
     fields: [
       { key: 'id', label: 'ID do campo', kind: 'text', required: true, showInTable: true },
       { key: 'labelKey', label: 'Chave i18n', kind: 'text', showInTable: true },
@@ -367,6 +397,8 @@ export const CATALOG_REGISTRY: CatalogDef[] = [
       'Campos extras criados pelo tenant para aparecerem nos formulários (projeto, empresa, contato). Nome, chave técnica, tipo e flags de obrigatório/visível.',
     group: 'project',
     ready: true,
+    // Consolidado em /admin/contract-form (Form. da Oportunidade).
+    hidden: true,
     fields: [
       { key: 'name', label: 'Nome', kind: 'text', required: true, showInTable: true },
       {

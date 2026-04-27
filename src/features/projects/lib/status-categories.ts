@@ -1,24 +1,29 @@
 /**
- * Categorias canônicas dos status de projeto.
+ * Categorias canônicas dos status do funil (Oportunidade → Projeto).
  *
  * O cliente pode dar o nome que quiser pra cada status (Closed Won,
  * Em Negociação, Cancelado pelo cliente…). Mas o sistema precisa saber
  * o que cada status SIGNIFICA pra disparar automações:
- *   - won: cria forecast/cronograma vazios; libera execução
- *   - lost: bloqueia projeto no rolling forecast; pede motivo
- *   - execution: aciona time de delivery
+ *   - negotiation: prospecção/qualificação inicial — só dados básicos
+ *   - evaluation: faz ROI (Entradas, Financeiro, Resumo & Gráfico). Precisa aprovação
+ *   - contract: contrato anexado e parametrizado. ROI fica em soft-block (alteração reabre aprovação)
+ *   - won: vira Projeto: abre Cronograma + Forecast + atribuição de time
+ *   - lost: bloqueia no rolling forecast; pede motivo de perda
+ *   - execution: time de delivery em ação
  *   - invoicing: libera campos de faturamento
- *   - done: encerra projeto
+ *   - done: projeto encerrado
  *   - warranty: pós-conclusão (suporte/garantia)
  *   - cancelled: descontinuado, mantém pra auditoria
- *   - negotiation: status genéricos do funil de vendas
  *
- * REGRA: só pode existir UM status por categoria (exceto negotiation,
- * que aceita múltiplos status do funil — "Lead", "Proposta", etc).
+ * REGRA: status SINGLE-instance por tenant (won, lost, invoicing, done,
+ * warranty, cancelled). Status MULTI-instance (negotiation, evaluation,
+ * contract, execution) aceitam vários (ex: "Aval. Técnica" + "Aval. Comercial").
  */
 
 export type StatusCategory =
   | 'negotiation'
+  | 'evaluation'
+  | 'contract'
   | 'won'
   | 'lost'
   | 'execution'
@@ -29,6 +34,8 @@ export type StatusCategory =
 
 export const STATUS_CATEGORIES: StatusCategory[] = [
   'negotiation',
+  'evaluation',
+  'contract',
   'won',
   'lost',
   'execution',
@@ -38,11 +45,116 @@ export const STATUS_CATEGORIES: StatusCategory[] = [
   'cancelled',
 ]
 
+/** Rótulo PT-BR pra exibir no Combobox do admin de status. */
+export const STATUS_CATEGORY_LABELS: Record<StatusCategory, string> = {
+  negotiation: 'Negociação',
+  evaluation: 'Avaliação (ROI)',
+  contract: 'Contrato',
+  won: 'Ganho (Win)',
+  lost: 'Perda (Loss)',
+  execution: 'Execução',
+  invoicing: 'Faturamento',
+  done: 'Concluído',
+  warranty: 'Garantia',
+  cancelled: 'Cancelado',
+}
+
 /**
- * Categorias que aceitam VÁRIOS status (funil de vendas).
- * As outras só aceitam 1 status do tenant cada.
+ * Cor padrão sugerida quando o admin escolhe a categoria. Pré-preenche
+ * o campo `color` do status — admin pode customizar livremente.
  */
-const MULTI_STATUS_CATEGORIES = new Set<StatusCategory>(['negotiation'])
+export const STATUS_CATEGORY_DEFAULT_COLORS: Record<StatusCategory, string> = {
+  negotiation: '#6b7280', // cinza
+  evaluation: '#f59e0b', // amarelo/laranja
+  contract: '#8b5cf6', // roxo
+  won: '#10b981', // verde
+  lost: '#ef4444', // vermelho
+  execution: '#3b82f6', // azul
+  invoicing: '#0ea5e9', // azul claro
+  done: '#22c55e', // verde claro
+  warranty: '#84cc16', // verde lima
+  cancelled: '#9ca3af', // cinza médio
+}
+
+/**
+ * Categorias que aceitam VÁRIOS status (etapas múltiplas dentro da
+ * categoria). As outras só aceitam 1 status do tenant cada.
+ */
+const MULTI_STATUS_CATEGORIES = new Set<StatusCategory>([
+  'negotiation',
+  'evaluation',
+  'contract',
+  'execution',
+])
+
+/**
+ * Escopo do funil — usado pra dividir a navegação em "Oportunidades"
+ * (pré-Win) e "Projetos" (pós-Win).
+ *
+ * - Oportunidades: leads em movimento + perdidos/cancelados (encerrados sem virar projeto)
+ * - Projetos: pós-ganho (Win) — execução, faturamento, garantia, conclusão
+ *
+ * Status SEM categoria definida (legacy ou tenant ainda não migrado)
+ * caem em **Oportunidades** por default — são leads pré-Win até alguém
+ * categorizar.
+ */
+export const OPPORTUNITY_CATEGORIES: StatusCategory[] = [
+  'negotiation',
+  'evaluation',
+  'contract',
+  'lost',
+  'cancelled',
+]
+
+export const PROJECT_CATEGORIES: StatusCategory[] = [
+  'won',
+  'execution',
+  'invoicing',
+  'done',
+  'warranty',
+]
+
+export type FunnelScope = 'opportunities' | 'projects'
+
+/**
+ * Checa se um projeto pertence ao escopo dado, dado o catálogo de status.
+ * Considera também a keyword legacy quando o status não tem categoria.
+ *
+ * @param projectStatus nome do status no projeto (string livre, vindo do payload)
+ * @param scope qual escopo: 'opportunities' ou 'projects'
+ * @param allStatuses lista do catálogo /catalogs/project-statuses
+ */
+export function isInScope(
+  projectStatus: string | null | undefined,
+  scope: FunnelScope,
+  allStatuses: ProjectStatus[],
+): boolean {
+  // Status vazio = sem definir = oportunidade (ainda em movimento).
+  if (!projectStatus) return scope === 'opportunities'
+
+  // Resolve categoria via catálogo, fallback pra keyword.
+  const cataloged = allStatuses.find(
+    (s) => s.name?.toLowerCase() === projectStatus.toLowerCase(),
+  )
+  let category: StatusCategory | null = cataloged?.category ?? null
+
+  if (!category) {
+    // Tenta inferir via keyword.
+    for (const cat of STATUS_CATEGORIES) {
+      if (statusInCategory({ id: '', name: projectStatus }, cat)) {
+        category = cat
+        break
+      }
+    }
+  }
+
+  // Sem categoria detectada → cai em Oportunidades (leads em qualificação).
+  if (!category) return scope === 'opportunities'
+
+  return scope === 'opportunities'
+    ? OPPORTUNITY_CATEGORIES.includes(category)
+    : PROJECT_CATEGORIES.includes(category)
+}
 
 export function categoryAcceptsMultiple(category: StatusCategory): boolean {
   return MULTI_STATUS_CATEGORIES.has(category)
@@ -93,14 +205,21 @@ export function findStatusByCategory(
  * categorizaram seus status).
  */
 const LEGACY_KEYWORDS: Record<StatusCategory, string[]> = {
-  won: ['ganho', 'won', 'fechado', 'closed won'],
-  lost: ['perda', 'perdida', 'lost', 'cancelad'],
+  // 'gain' coberto pra tenants que usam status "GAIN" (ex: SODEP).
+  won: ['ganho', 'gain', 'won', 'win', 'fechado', 'closed won'],
+  // 'loss' (singular/plural) e 'lose' cobrem "LOSS"/"LOST" — keyword 'lost'
+  // sozinha NÃO bate com "LOSS" porque includes('lost') falha em "loss".
+  lost: ['perda', 'perdida', 'loss', 'lost', 'lose', 'cancelad'],
   execution: ['execu', 'implementa', 'andamento', 'in progress'],
   invoicing: ['fatur', 'invoic', 'cobran'],
   done: ['conclu', 'done', 'finaliz', 'encerr'],
   warranty: ['garant', 'warranty'],
   cancelled: ['cancelad', 'abort'],
-  negotiation: ['negoc', 'lead', 'proposta', 'qualif'],
+  negotiation: ['negoc', 'lead', 'prospec', 'qualif', 'discover', 'definition'],
+  // Avaliação cobre statuses tipo "EVALUATING", "Aval. Técnica", "Análise"
+  evaluation: ['aval', 'evaluat', 'evaluation', 'analise', 'análise', 'roi review'],
+  // Contrato cobre "Em elaboração", "Aguardando assinatura", "Proposta"
+  contract: ['contrato', 'contract', 'proposta', 'proposal', 'assinatur', 'signing', 'sign'],
 }
 
 export function statusInCategory(

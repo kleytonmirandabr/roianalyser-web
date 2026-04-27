@@ -114,7 +114,7 @@ export function ScheduledReportsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-screen-2xl space-y-6">
+    <div className="w-full space-y-6">
       <Link
         to="/reports"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"

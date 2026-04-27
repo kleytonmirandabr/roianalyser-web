@@ -5,8 +5,13 @@ import { Link } from 'react-router-dom'
 
 import { useCatalog } from '@/features/catalogs/hooks/use-catalog'
 import { financialSummaries } from '@/features/dashboard/lib/aggregations'
+import {
+  AdvancedFilters,
+  useAdvancedFilters,
+} from '@/features/projects/components/advanced-filters'
 import { useProjects } from '@/features/projects/hooks/use-projects'
 import { formatCurrency } from '@/features/projects/lib/money'
+import { applyFilters } from '@/features/projects/lib/project-fields'
 import { statusInCategory } from '@/features/projects/lib/status-categories'
 import type { ProjectStatus } from '@/features/projects/lib/status-categories'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
@@ -53,6 +58,7 @@ export function ProjectsFunnelPage() {
 
   const [search, setSearch] = useState('')
   const [responsibleFilter, setResponsibleFilter] = useState('')
+  const advancedFilters = useAdvancedFilters()
 
   // Enriquece projetos com dados financeiros + responsável (idêntico ao board).
   const enriched = useMemo(() => {
@@ -83,10 +89,10 @@ export function ProjectsFunnelPage() {
     return [...set].sort().map((name) => ({ value: name, label: name }))
   }, [enriched])
 
-  // Aplica filtros antes de agrupar por estágio.
+  // Aplica filtros (texto, responsável, avançados) antes de agrupar por estágio.
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return enriched.filter((e) => {
+    let pre = enriched.filter((e) => {
       if (responsibleFilter && e.responsible !== responsibleFilter) return false
       if (q) {
         const hay = `${e.project.name} ${e.clientLabel} ${e.responsible}`.toLowerCase()
@@ -94,7 +100,19 @@ export function ProjectsFunnelPage() {
       }
       return true
     })
-  }, [enriched, search, responsibleFilter])
+    if (advancedFilters.filters.length > 0) {
+      // applyFilters trabalha em Project[]; reduzimos pra um Set de ids
+      // pra preservar os campos enriched (revenue, responsible, etc).
+      const allowedIds = new Set(
+        applyFilters(
+          pre.map((e) => e.project),
+          advancedFilters.filters,
+        ).map((p) => p.id),
+      )
+      pre = pre.filter((e) => allowedIds.has(e.project.id))
+    }
+    return pre
+  }, [enriched, search, responsibleFilter, advancedFilters.filters])
 
   const stages = useMemo<FunnelStage[]>(() => {
     const cats = (statuses.data ?? []) as unknown as ProjectStatus[]
@@ -149,7 +167,7 @@ export function ProjectsFunnelPage() {
   const filtersActive = !!search || !!responsibleFilter
 
   return (
-    <div className="mx-auto max-w-screen-2xl space-y-4">
+    <div className="w-full space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
@@ -168,6 +186,8 @@ export function ProjectsFunnelPage() {
       </div>
 
       <ProjectsTabs />
+
+      <AdvancedFilters state={advancedFilters} />
 
       {projects.isError && (
         <Alert variant="destructive">

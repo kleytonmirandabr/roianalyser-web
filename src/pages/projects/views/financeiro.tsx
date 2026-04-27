@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
 
+import { RoiSoftBlockBanner } from '@/features/projects/components/roi-soft-block-banner'
 import { useProject } from '@/features/projects/hooks/use-project'
 import { useUpdateProject } from '@/features/projects/hooks/use-update-project'
 import {
@@ -99,6 +100,7 @@ export function ProjectFinanceiroView() {
 
   return (
     <div className="space-y-4">
+      {params.id && <RoiSoftBlockBanner projectId={params.id} />}
       <Card>
         <CardHeader>
           <CardTitle>{t('projects.detail.financeiro.paramsTitle')}</CardTitle>

@@ -75,6 +75,11 @@ const ProjectScheduleView = lazy(() =>
     default: m.ProjectScheduleView,
   })),
 )
+const ProjectContractView = lazy(() =>
+  import('@/pages/projects/views/contract').then((m) => ({
+    default: m.ProjectContractView,
+  })),
+)
 const ProjectAttachmentsView = lazy(() =>
   import('@/pages/projects/views/attachments').then((m) => ({
     default: m.ProjectAttachmentsView,
@@ -153,6 +158,11 @@ const AdminBrandingPage = lazy(() =>
     default: m.AdminBrandingPage,
   })),
 )
+const AdminContractFormPage = lazy(() =>
+  import('@/pages/admin/contract-form').then((m) => ({
+    default: m.AdminContractFormPage,
+  })),
+)
 const ImportsIndexPage = lazy(() =>
   import('@/pages/imports').then((m) => ({ default: m.ImportsIndexPage })),
 )
@@ -210,18 +220,21 @@ export function AppRouter() {
           }
         />
 
-        {/* Projetos */}
-        <Route path="/projects" element={<ProjectsListPage />} />
+        {/* Oportunidades — pré-Win (negotiation/evaluation/contract/lost/cancelled) */}
         <Route
-          path="/projects/board"
+          path="/opportunities"
+          element={<ProjectsListPage scope="opportunities" />}
+        />
+        <Route
+          path="/opportunities/board"
           element={
             <Lazy>
-              <ProjectsBoardPage />
+              <ProjectsBoardPage scope="opportunities" />
             </Lazy>
           }
         />
         <Route
-          path="/projects/funnel"
+          path="/opportunities/funnel"
           element={
             <Lazy>
               <ProjectsFunnelPage />
@@ -229,13 +242,38 @@ export function AppRouter() {
           }
         />
         <Route
-          path="/projects/lost"
+          path="/opportunities/lost"
           element={
             <Lazy>
               <ProjectsLostPage />
             </Lazy>
           }
         />
+        <Route
+          path="/opportunities/new"
+          element={
+            <Lazy>
+              <NewProjectPage />
+            </Lazy>
+          }
+        />
+
+        {/* Redirects de bookmarks antigos → /opportunities/* */}
+        <Route
+          path="/projects/board"
+          element={<Navigate to="/opportunities/board" replace />}
+        />
+        <Route
+          path="/projects/funnel"
+          element={<Navigate to="/opportunities/funnel" replace />}
+        />
+        <Route
+          path="/projects/lost"
+          element={<Navigate to="/opportunities/lost" replace />}
+        />
+
+        {/* Projetos — pós-Win (won/execution/invoicing/done/warranty) */}
+        <Route path="/projects" element={<ProjectsListPage scope="projects" />} />
         <Route
           path="/projects/new"
           element={
@@ -310,6 +348,14 @@ export function AppRouter() {
             }
           />
           <Route
+            path="contract"
+            element={
+              <Lazy>
+                <ProjectContractView />
+              </Lazy>
+            }
+          />
+          <Route
             path="attachments"
             element={
               <Lazy>
@@ -337,6 +383,18 @@ export function AppRouter() {
 
         {/* Catálogos */}
         <Route path="/catalogs" element={<CatalogsIndexPage />} />
+        {/* Tela especial — IMPORTANTE: precisa vir ANTES da rota dinâmica
+            `/catalogs/:slug` pra ter prioridade no React Router. */}
+        <Route
+          path="/catalogs/contract-form"
+          element={
+            <RequireRole level="master">
+              <Lazy>
+                <AdminContractFormPage />
+              </Lazy>
+            </RequireRole>
+          }
+        />
         <Route
           path="/catalogs/:slug"
           element={

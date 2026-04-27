@@ -150,7 +150,7 @@ export function ProjectsLostPage() {
   }, [lostProjects])
 
   return (
-    <div className="mx-auto max-w-screen-2xl space-y-4">
+    <div className="w-full space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">

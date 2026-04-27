@@ -30,6 +30,12 @@ import { cn } from '@/shared/lib/cn'
 
 import { Button } from './button'
 import { Input } from './input'
+import {
+  Pagination,
+  usePagination,
+  type PaginationState,
+  DEFAULT_PAGE_SIZE,
+} from './pagination'
 import { TableHead } from './table'
 
 export type SortDirection = 'asc' | 'desc' | null
@@ -69,7 +75,13 @@ type ColumnState = {
 }
 
 export type DataTableState<T> = {
+  /**
+   * Linhas APÓS filtro+sort (sem paginação). Use isto pra exportar CSV
+   * ou contar todos os itens visíveis.
+   */
   rows: T[]
+  /** Linhas paginadas (use no `<TableBody>`). */
+  paginatedRows: T[]
   /** Total antes de filtros (útil pra mostrar "X de Y"). */
   totalRows: number
   columnState: ColumnState
@@ -82,6 +94,8 @@ export type DataTableState<T> = {
   hasActiveFilters: boolean
   /** Valores únicos disponíveis pra cada coluna (com formatação aplicada). */
   uniqueValues: Record<string, { raw: string; label: string }[]>
+  /** Estado de paginação (passar pro `<DataTablePagination state={dt} />`). */
+  pagination: PaginationState<T>
 }
 
 function rawValue<T>(row: T, col: DataTableColumn<T>): unknown {
@@ -99,6 +113,7 @@ function toCompareKey(v: unknown): string | number {
 export function useDataTable<T>(
   data: T[],
   columns: DataTableColumn<T>[],
+  options?: { defaultPageSize?: number },
 ): DataTableState<T> {
   const [columnState, setColumnState] = useState<ColumnState>({
     sortBy: null,
@@ -217,8 +232,13 @@ export function useDataTable<T>(
     [columnState.filters],
   )
 
+  // Paginação fica POR CIMA das linhas filtradas+ordenadas. Quando
+  // filtros mudam e a contagem encolhe, o hook clampa a página atual.
+  const pagination = usePagination<T>(rows, options?.defaultPageSize ?? DEFAULT_PAGE_SIZE)
+
   return {
     rows,
+    paginatedRows: pagination.paginated,
     totalRows: data.length,
     columnState,
     setSort,
@@ -228,7 +248,22 @@ export function useDataTable<T>(
     clearAll,
     hasActiveFilters,
     uniqueValues,
+    pagination,
   }
+}
+
+/**
+ * Footer pré-pronto pra usar com qualquer DataTable.
+ * `<DataTablePagination state={dt} />` — esconde-se se cabe tudo numa página.
+ */
+export function DataTablePagination<T>({
+  state,
+  className,
+}: {
+  state: DataTableState<T>
+  className?: string
+}) {
+  return <Pagination state={state.pagination} className={className} />
 }
 
 /**

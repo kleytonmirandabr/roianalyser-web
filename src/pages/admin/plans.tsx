@@ -12,6 +12,7 @@ import { confirm } from '@/shared/ui/confirm-dialog'
 import {
   DataTableActiveFilters,
   DataTableHeaderCell,
+  DataTablePagination,
   useDataTable,
   type DataTableColumn,
 } from '@/shared/ui/data-table'
@@ -94,7 +95,7 @@ export function AdminPlansPage() {
   }
 
   return (
-    <div className="mx-auto max-w-screen-2xl space-y-4">
+    <div className="w-full space-y-4">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           {t('admin.title')}
@@ -140,7 +141,7 @@ export function AdminPlansPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {dt.rows.map((p) => (
+            {dt.paginatedRows.map((p) => (
               <TableRow key={p.id}>
                 <TableCell className="font-medium">{p.name}</TableCell>
                 <TableCell className="text-muted-foreground">{p.code ?? '—'}</TableCell>
@@ -166,6 +167,8 @@ export function AdminPlansPage() {
           </TableBody>
         </Table>
       </Card>
+
+      <DataTablePagination state={dt} />
 
       <Sheet
         open={!!editing}

@@ -5,11 +5,29 @@ import { Link, useSearchParams } from 'react-router-dom'
 
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { useCatalog } from '@/features/catalogs/hooks/use-catalog'
+import {
+  AdvancedFilters,
+  useAdvancedFilters,
+} from '@/features/projects/components/advanced-filters'
+import {
+  ColumnSelector,
+  useColumnSelector,
+} from '@/features/projects/components/column-selector'
 import { useProjects } from '@/features/projects/hooks/use-projects'
+import {
+  applyFilters,
+  PROJECT_FIELDS_BY_KEY,
+  type ProjectField,
+} from '@/features/projects/lib/project-fields'
 import { isUserInProject } from '@/features/projects/lib/scope-filter'
+import {
+  isInScope,
+  statusInCategory,
+  type FunnelScope,
+  type ProjectStatus,
+} from '@/features/projects/lib/status-categories'
 import type { Project } from '@/features/projects/types'
 import { cn } from '@/shared/lib/cn'
-import { ProjectsTabs } from './components/projects-tabs'
 import { exportToCsv } from '@/shared/lib/export'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
@@ -17,6 +35,7 @@ import { Card } from '@/shared/ui/card'
 import {
   DataTableActiveFilters,
   DataTableHeaderCell,
+  DataTablePagination,
   useDataTable,
   type DataTableColumn,
 } from '@/shared/ui/data-table'
@@ -30,6 +49,8 @@ import {
   TableRow,
 } from '@/shared/ui/table'
 
+import { ProjectsTabs } from './components/projects-tabs'
+
 function formatDate(value?: string) {
   if (!value) return '—'
   try {
@@ -39,23 +60,71 @@ function formatDate(value?: string) {
   }
 }
 
-export function ProjectsListPage() {
+/**
+ * Renderiza o valor de um campo numa célula, aplicando formatador
+ * apropriado pelo tipo (data → toLocaleDateString, boolean → Sim/Não).
+ */
+function renderCell(field: ProjectField, project: Project): string {
+  if (field.render) return field.render(project)
+  const v = field.getValue(project)
+  if (v == null || v === '') return '—'
+  if (field.type === 'date') return formatDate(String(v))
+  if (field.type === 'boolean') return v ? 'Sim' : 'Não'
+  return String(v)
+}
+
+export function ProjectsListPage({ scope = 'projects' }: { scope?: FunnelScope }) {
   const { t } = useTranslation()
   const projects = useProjects()
+  const statuses = useCatalog('projectStatuses')
   const { user } = useAuth()
   const [onlyMine, setOnlyMine] = useState(false)
+  const [includeLost, setIncludeLost] = useState(false)
+
+  // #4 Colunas configuráveis (persiste em localStorage).
+  const columnSelector = useColumnSelector()
+  // #5 Filtros avançados (state local, não persiste — sessão a sessão).
+  const advancedFilters = useAdvancedFilters()
 
   // Sprint H.5 — drill-down do mapa: query string ?state=UF aplica
-  // filtro por estado da empresa cliente. Resolve via catálogo
-  // companies (mesma lógica do GeoDistribution) — preferência pra
-  // campo `clientState` no payload do projeto, fallback pro state da
-  // empresa pelo nome.
+  // filtro por estado da empresa cliente.
   const [searchParams, setSearchParams] = useSearchParams()
   const stateFilter = (searchParams.get('state') ?? '').toUpperCase()
   const companies = useCatalog('companies')
 
+  // Set de nomes de status que pertencem à categoria 'lost'.
+  const lostStatusNames = useMemo<Set<string>>(() => {
+    const set = new Set<string>()
+    const list = (statuses.data ?? []) as unknown as ProjectStatus[]
+    for (const s of list) {
+      if (typeof s.name !== 'string') continue
+      if (statusInCategory(s, 'lost')) set.add(s.name)
+    }
+    const seen = new Set<string>()
+    for (const p of projects.data ?? []) {
+      if (!p.status || seen.has(p.status)) continue
+      seen.add(p.status)
+      if (statusInCategory({ id: '', name: p.status }, 'lost')) set.add(p.status)
+    }
+    return set
+  }, [statuses.data, projects.data])
+
+  /**
+   * Pipeline de filtros aplicado na ordem:
+   *   1. Esconde perdidas (toggle "Incluir perdidas")
+   *   2. Apenas meus (toggle)
+   *   3. Drill-down de UF (?state=)
+   *   4. Filtros avançados (chips empilháveis)
+   */
   const filteredProjects = useMemo(() => {
     let all = projects.data ?? []
+    // Filtro de escopo: oportunidades vs projetos. Aplicado primeiro
+    // pra reduzir o universo antes dos demais filtros.
+    const allStatusList = (statuses.data ?? []) as unknown as ProjectStatus[]
+    all = all.filter((p) => isInScope(p.status, scope, allStatusList))
+    if (!includeLost) {
+      all = all.filter((p) => !p.status || !lostStatusNames.has(p.status))
+    }
     if (onlyMine) {
       all = all.filter((p) => isUserInProject(p, user?.id))
     }
@@ -84,8 +153,20 @@ export function ProjectsListPage() {
         return st === stateFilter
       })
     }
+    all = applyFilters(all, advancedFilters.filters)
     return all
-  }, [projects.data, onlyMine, user?.id, stateFilter, companies.data])
+  }, [
+    projects.data,
+    onlyMine,
+    includeLost,
+    lostStatusNames,
+    user?.id,
+    stateFilter,
+    companies.data,
+    advancedFilters.filters,
+    scope,
+    statuses.data,
+  ])
 
   function clearStateFilter() {
     const next = new URLSearchParams(searchParams)
@@ -93,36 +174,27 @@ export function ProjectsListPage() {
     setSearchParams(next, { replace: true })
   }
 
-  // Colunas do DataTable — sort + filtro por valor único Excel-style.
-  // `getValue` define o que serve pra ordenar/filtrar (não é o que aparece
-  // na célula). Isso permite filtrar por status e ordenar por updatedAt
-  // mesmo que o display seja formatado.
+  /**
+   * Colunas do DataTable derivadas das colunas visíveis escolhidas pelo
+   * user. `getValue` vem do registry do projeto. `formatValue` no filtro
+   * dropdown reusa o mesmo render de célula pra consistência.
+   */
   const columns = useMemo<DataTableColumn<Project>[]>(
-    () => [
-      {
-        key: 'name',
-        label: t('projects.th.name'),
-      },
-      {
-        key: 'status',
-        label: t('projects.th.status'),
-        getValue: (p) => p.status ?? '',
-        formatValue: (v) => (v == null || v === '' ? '—' : String(v)),
-      },
-      {
-        key: 'currency',
-        label: t('projects.th.currency'),
-        getValue: (p) => p.currency ?? '',
-      },
-      {
-        key: 'updatedAt',
-        label: t('projects.th.updatedAt'),
-        getValue: (p) => p.updatedAt ?? '',
-        // Filtrar por data não é tão útil — desabilita só esse caso.
-        filterable: false,
-      },
-    ],
-    [t],
+    () =>
+      columnSelector.visibleFields.map((field) => ({
+        key: field.key,
+        label: field.label,
+        getValue: (p) => {
+          const v = field.getValue(p)
+          // DataTable type aceita string|number|boolean|null|undefined
+          return v as string | number | boolean | null | undefined
+        },
+        formatValue: (v) =>
+          v == null || v === '' ? '—' : String(v),
+        // Filtro dropdown de data não é útil — desabilita.
+        filterable: field.type !== 'date',
+      })),
+    [columnSelector.visibleFields],
   )
 
   const dt = useDataTable(filteredProjects, columns)
@@ -148,18 +220,29 @@ export function ProjectsListPage() {
     ])
   }
 
+  const colCount = columns.length + 1 // +1 = coluna de ações
+
   return (
-    <div className="mx-auto max-w-screen-2xl space-y-6">
+    <div className="w-full space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            {t('nav.projects')}
+            {scope === 'opportunities' ? t('nav.opportunities') : t('nav.projects')}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {t('projects.subtitle')}
+            {scope === 'opportunities'
+              ? t('projects.opportunitiesSubtitle', {
+                  defaultValue:
+                    'Funil pré-Win: leads, avaliações de ROI e contratos em formação.',
+                })
+              : t('projects.projectsSubtitle', {
+                  defaultValue:
+                    'Projetos pós-ganho: execução, faturamento e garantia.',
+                })}
           </p>
         </div>
         <div className="flex gap-2">
+          <ColumnSelector state={columnSelector} />
           <Button
             variant="outline"
             onClick={handleExport}
@@ -179,8 +262,7 @@ export function ProjectsListPage() {
 
       <ProjectsTabs />
 
-      {/* Sprint H.5 — chip do filtro por estado vindo do drill-down do
-          mapa. Click no X limpa e remove `?state=` da URL. */}
+      {/* Sprint H.5 — chip do filtro por estado vindo do drill-down. */}
       {stateFilter && (
         <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
           <span className="text-foreground">
@@ -207,7 +289,27 @@ export function ProjectsListPage() {
         </div>
       )}
 
-      <div className="flex items-center justify-end">
+      {/* Filtros avançados — chips empilháveis. */}
+      <AdvancedFilters state={advancedFilters} />
+
+      <div className="flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={() => setIncludeLost((v) => !v)}
+          className={cn(
+            'inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors',
+            includeLost
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-input bg-background hover:bg-accent',
+          )}
+          title={t('projects.includeLost', {
+            defaultValue: 'Incluir oportunidades perdidas na lista',
+          })}
+        >
+          {includeLost
+            ? t('projects.includeLostOn', { defaultValue: 'Incluindo perdidas' })
+            : t('projects.includeLostOff', { defaultValue: 'Incluir perdidas' })}
+        </button>
         <button
           type="button"
           onClick={() => setOnlyMine((v) => !v)}
@@ -253,18 +355,11 @@ export function ProjectsListPage() {
             {projects.isLoading &&
               Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={`sk-${i}`}>
-                  <TableCell>
-                    <Skeleton className="h-4 w-48" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-20" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-12" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-24" />
-                  </TableCell>
+                  {columns.map((c) => (
+                    <TableCell key={c.key}>
+                      <Skeleton className="h-4 w-full max-w-32" />
+                    </TableCell>
+                  ))}
                   <TableCell>
                     <Skeleton className="h-8 w-16" />
                   </TableCell>
@@ -272,59 +367,76 @@ export function ProjectsListPage() {
               ))}
             {projects.isSuccess && dt.rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="py-12">
+                <TableCell colSpan={colCount} className="py-12">
                   <div className="flex flex-col items-center gap-3 text-center">
                     <div className="rounded-full bg-muted p-3">
                       <Briefcase className="h-6 w-6 text-muted-foreground" />
                     </div>
                     <div>
                       <p className="font-medium text-foreground">
-                        {dt.hasActiveFilters
+                        {dt.hasActiveFilters || advancedFilters.filters.length > 0
                           ? t('projects.emptyFiltered')
                           : t('projects.empty')}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {dt.hasActiveFilters
+                        {dt.hasActiveFilters || advancedFilters.filters.length > 0
                           ? t('projects.emptyFilteredHint')
                           : t('projects.emptyHint')}
                       </p>
                     </div>
-                    {!dt.hasActiveFilters && (
-                      <Button asChild size="sm">
-                        <Link to="/projects/new">
-                          <Plus className="h-4 w-4" />
-                          <span>{t('projects.new')}</span>
-                        </Link>
-                      </Button>
-                    )}
+                    {!dt.hasActiveFilters &&
+                      advancedFilters.filters.length === 0 && (
+                        <Button asChild size="sm">
+                          <Link to="/projects/new">
+                            <Plus className="h-4 w-4" />
+                            <span>{t('projects.new')}</span>
+                          </Link>
+                        </Button>
+                      )}
                   </div>
                 </TableCell>
               </TableRow>
             )}
-            {dt.rows.map((project) => (
+            {dt.paginatedRows.map((project) => (
               <TableRow key={project.id}>
-                <TableCell className="font-medium">
-                  <Link
-                    to={`/projects/${project.id}`}
-                    className="text-primary underline-offset-4 hover:underline"
-                  >
-                    {project.name}
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
-                    {project.status || '—'}
-                  </span>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {project.currency || '—'}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatDate(project.updatedAt)}
-                </TableCell>
+                {columnSelector.visibleFields.map((field) => {
+                  const cellText = renderCell(field, project)
+                  // Coluna do nome é a única clicável (link pro detalhe).
+                  if (field.key === 'name') {
+                    return (
+                      <TableCell key={field.key} className="font-medium">
+                        <Link
+                          to={`/projects/${project.id}`}
+                          className="text-primary underline-offset-4 hover:underline"
+                        >
+                          {cellText}
+                        </Link>
+                      </TableCell>
+                    )
+                  }
+                  if (field.key === 'status') {
+                    return (
+                      <TableCell key={field.key}>
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+                          {cellText}
+                        </span>
+                      </TableCell>
+                    )
+                  }
+                  return (
+                    <TableCell
+                      key={field.key}
+                      className="text-muted-foreground"
+                    >
+                      {cellText}
+                    </TableCell>
+                  )
+                })}
                 <TableCell className="text-right">
                   <Button asChild variant="ghost" size="sm">
-                    <Link to={`/projects/${project.id}`}>{t('projects.open')}</Link>
+                    <Link to={`/projects/${project.id}`}>
+                      {t('projects.open')}
+                    </Link>
                   </Button>
                 </TableCell>
               </TableRow>
@@ -332,6 +444,12 @@ export function ProjectsListPage() {
           </TableBody>
         </Table>
       </Card>
+
+      <DataTablePagination state={dt} />
     </div>
   )
 }
+
+// Re-uso de PROJECT_FIELDS_BY_KEY pra silenciar warning de import não-usado
+// quando a tabela renderiza só via `columnSelector.visibleFields`.
+void PROJECT_FIELDS_BY_KEY

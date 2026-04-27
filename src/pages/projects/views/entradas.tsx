@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
 
 import { useCatalog } from '@/features/catalogs/hooks/use-catalog'
+import { RoiSoftBlockBanner } from '@/features/projects/components/roi-soft-block-banner'
 import { useProject } from '@/features/projects/hooks/use-project'
 import { useUpdateProject } from '@/features/projects/hooks/use-update-project'
 import {
@@ -250,6 +251,7 @@ export function ProjectEntradasView() {
   /* ─── Render ─── */
   return (
     <div className="space-y-4">
+      {params.id && <RoiSoftBlockBanner projectId={params.id} />}
       {project.isError && (
         <Alert variant="destructive">
           <AlertDescription>{t('projects.detail.loadError')}</AlertDescription>

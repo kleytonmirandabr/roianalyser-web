@@ -34,6 +34,7 @@ import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
+import { Combobox } from '@/shared/ui/combobox'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import {
@@ -47,6 +48,7 @@ import {
 import {
   DataTableActiveFilters,
   DataTableHeaderCell,
+  DataTablePagination,
   useDataTable,
   type DataTableColumn,
 } from '@/shared/ui/data-table'
@@ -199,7 +201,9 @@ export function CatalogDetailPage() {
     hasOrderField &&
     dt.columnState.sortBy === null &&
     Object.keys(dt.columnState.filters).length === 0
-  const visibleItems = dt.rows
+  // Quando dnd está ativo, mostra TUDO sem paginar (drag entre páginas
+  // seria confuso). Caso contrário pagina normalmente.
+  const visibleItems = dndActive ? dt.rows : dt.paginatedRows
 
   /**
    * Reordena: pega o item arrastado, retira da lista, insere no índice
@@ -529,6 +533,8 @@ export function CatalogDetailPage() {
         </Table>
       </Card>
 
+      {!dndActive && <DataTablePagination state={dt} />}
+
       <Sheet
         open={form.mode !== 'closed'}
         onOpenChange={(open) => {
@@ -628,6 +634,18 @@ function CellRenderer({
   if (field.kind === 'catalogRef' && field.refCatalog) {
     return (
       <CatalogRefLabel refCatalog={field.refCatalog} value={String(value)} />
+    )
+  }
+
+  if (field.kind === 'enum') {
+    const opt = field.enumOptions?.find((o) => o.value === String(value ?? ''))
+    if (opt) return <span>{opt.label}</span>
+    if (!value) return <span className="text-muted-foreground">—</span>
+    // Valor antigo que não está mais nas opções (ex: status migrado).
+    return (
+      <span className="text-muted-foreground" title="Valor não reconhecido">
+        {String(value)}
+      </span>
     )
   }
 
@@ -732,6 +750,28 @@ function FieldEditor({
           storeField={field.refStoreField}
           onChange={(v) => onChange(v)}
         />
+      </div>
+    )
+  }
+
+  if (field.kind === 'enum') {
+    const options = field.enumOptions ?? []
+    return (
+      <div className="space-y-1.5">
+        <Label htmlFor={id}>
+          {field.label}
+          {field.required && <span className="text-destructive"> *</span>}
+        </Label>
+        <Combobox
+          id={id}
+          options={options.map((o) => ({ value: o.value, label: o.label }))}
+          value={stringValue}
+          onChange={(v) => onChange(v)}
+          noneLabel="—"
+        />
+        {field.placeholder && (
+          <p className="text-[11px] text-muted-foreground">{field.placeholder}</p>
+        )}
       </div>
     )
   }
