@@ -199,7 +199,10 @@ export function ProjectInfoView() {
     // Detecta mudança de status. Se mudou, valida regras de workflow.
     const currentStatus = project.data?.status ?? ''
     const targetStatus = values.status ?? ''
-    if (targetStatus && targetStatus !== currentStatus) {
+    const statusChanged = !!(
+      targetStatus && targetStatus !== currentStatus
+    )
+    if (statusChanged) {
       const statuses = (projectStatuses.data ?? []) as unknown as ProjectStatus[]
       const fromCat = categoryFor(currentStatus, statuses)
       const toCat = categoryFor(targetStatus, statuses)
@@ -229,7 +232,21 @@ export function ProjectInfoView() {
         }
       }
     }
-    await persist(values)
+    /**
+     * Auditoria: toda mudança de status entra no Histórico, mesmo
+     * quando passou direto sem regra de workflow. Caso passe pelo
+     * guard, o `commitTransition` injeta seu próprio activityEvent
+     * (com info de aprovação solicitada).
+     */
+    const auditEvent = statusChanged
+      ? {
+          type: 'status_change' as const,
+          message: `Status alterado de "${currentStatus || '—'}" para "${targetStatus}"`,
+          actorId: user?.id,
+          actorName: user?.name ?? user?.email,
+        }
+      : undefined
+    await persist(values, { activityEvent: auditEvent })
   }
 
   /**
