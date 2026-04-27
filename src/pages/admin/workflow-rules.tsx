@@ -18,7 +18,7 @@ import { Navigate } from 'react-router-dom'
 import { useAppState, usePatchAppState } from '@/features/admin/hooks/use-app-state'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import {
-  readWorkflowRules,
+  readAllWorkflowRules,
   type WorkflowRule,
 } from '@/features/projects/lib/workflow'
 import { STATUS_CATEGORIES, type StatusCategory } from '@/features/projects/lib/status-categories'
@@ -63,9 +63,14 @@ export function AdminWorkflowRulesPage() {
     return <Navigate to="/admin" replace />
   }
 
+  /**
+   * Admin precisa ver TODAS as regras (incluindo desativadas) — não dá
+   * pra editar/ativar uma regra que tá invisível. O motor (`canTransitionTo`)
+   * usa `readWorkflowRules` que filtra só ativas.
+   */
   const rules = useMemo(
     () =>
-      readWorkflowRules(
+      readAllWorkflowRules(
         (appState.data?.systemRules ?? {}) as Record<string, unknown>,
       ),
     [appState.data?.systemRules],
@@ -213,9 +218,16 @@ export function AdminWorkflowRulesPage() {
               </TableRow>
             ) : (
               rules.map((rule) => (
-                <TableRow key={rule.id}>
+                <TableRow key={rule.id} className={rule.enabled === false ? 'opacity-60' : undefined}>
                   <TableCell className="font-medium">
-                    {rule.name}
+                    <div className="flex items-center gap-2">
+                      <span>{rule.name}</span>
+                      {rule.enabled === false && (
+                        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Desativada
+                        </span>
+                      )}
+                    </div>
                     {rule.description && (
                       <p className="line-clamp-1 text-xs text-muted-foreground">
                         {rule.description}

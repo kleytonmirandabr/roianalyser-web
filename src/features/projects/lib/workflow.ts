@@ -94,10 +94,10 @@ export type TransitionReason =
   | { kind: 'requires_approval'; rule: WorkflowRule; thresholdMet: boolean }
 
 /**
- * Lê a lista de regras configurada no appState (systemRules.workflowRules).
- * Retorna sempre array — vazio se ainda não configurou.
+ * Lê TODAS as regras do appState, incluindo as desativadas. Usado pela
+ * tela de admin onde o user precisa ver/editar/ativar regras manualmente.
  */
-export function readWorkflowRules(
+export function readAllWorkflowRules(
   systemRules: Record<string, unknown> | null | undefined,
 ): WorkflowRule[] {
   if (!systemRules) return []
@@ -127,7 +127,18 @@ export function readWorkflowRules(
         enabled: o.enabled !== false,
       } as WorkflowRule
     })
-    .filter((r): r is WorkflowRule => !!r && r.enabled !== false)
+    .filter((r): r is WorkflowRule => !!r)
+}
+
+/**
+ * Lê apenas as regras ATIVAS — usado pelo motor (`canTransitionTo`)
+ * pra avaliar bloqueios. Regras desativadas existem no storage mas não
+ * disparam.
+ */
+export function readWorkflowRules(
+  systemRules: Record<string, unknown> | null | undefined,
+): WorkflowRule[] {
+  return readAllWorkflowRules(systemRules).filter((r) => r.enabled !== false)
 }
 
 /**
