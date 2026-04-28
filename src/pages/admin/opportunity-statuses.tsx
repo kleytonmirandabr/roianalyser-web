@@ -73,10 +73,8 @@ export function AdminOpportunityStatusesPage() {
   const items = (data ?? []) as OpportunityStatus[]
   const columns = useMemo<DataTableColumn<OpportunityStatus>[]>(() => [
     { key: 'name', label: 'Nome', getValue: (r: any) => r.name },
-    { key: 'key', label: 'Chave', getValue: (r: any) => r.key },
     { key: 'category', label: 'Categoria', getValue: (r: any) => r.category ?? '' },
     { key: 'color', label: 'Cor', getValue: (r: any) => r.color ?? '' },
-    { key: 'displayOrder', label: 'Ordem', getValue: (r: any) => r.displayOrder ?? 0 },
   ], [])
   const dt = useDataTable(items, columns)
 
@@ -161,7 +159,6 @@ export function AdminOpportunityStatusesPage() {
                   return (
                     <TableRow key={r.id}>
                       <TableCell className="font-medium">{r.name}</TableCell>
-                      <TableCell><code className="text-xs bg-muted/50 px-1 rounded">{r.key}</code></TableCell>
                       <TableCell className="text-xs">
                         {r.category ? CATEGORY_LABELS[r.category] : <span className="text-muted-foreground">—</span>}
                       </TableCell>
@@ -173,7 +170,6 @@ export function AdminOpportunityStatusesPage() {
                           </span>
                         ) : <span className="text-muted-foreground">—</span>}
                       </TableCell>
-                      <TableCell className="tabular-nums text-xs">{r.displayOrder}</TableCell>
                       <TableCell className="text-right space-x-1">
                         <Button size="icon" variant="ghost" onClick={() => openEdit(r)}><Pencil className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => handleDelete(r)}><Trash2 className="h-4 w-4 text-red-600" /></Button>

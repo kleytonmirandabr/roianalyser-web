@@ -45,9 +45,7 @@ export function AdminOpportunityTypesPage() {
   const items = (data ?? []) as OpportunityType[]
   const columns = useMemo<DataTableColumn<OpportunityType>[]>(() => [
     { key: 'name', label: 'Nome', getValue: (r: any) => r.name },
-    { key: 'key', label: 'Chave', getValue: (r: any) => r.key },
     { key: 'description', label: 'Descrição', getValue: (r: any) => r.description ?? '' },
-    { key: 'displayOrder', label: 'Ordem', getValue: (r: any) => r.displayOrder ?? 0 },
   ], [])
   const dt = useDataTable(items, columns)
 
@@ -121,9 +119,7 @@ export function AdminOpportunityTypesPage() {
                   return (
                     <TableRow key={t.id}>
                       <TableCell className="font-medium">{t.name}</TableCell>
-                      <TableCell><code className="text-xs bg-muted/50 px-1 rounded">{t.key}</code></TableCell>
                       <TableCell className="text-xs">{t.description || <span className="text-muted-foreground">—</span>}</TableCell>
-                      <TableCell className="tabular-nums text-xs">{t.displayOrder}</TableCell>
                       <TableCell className="text-right space-x-1">
                         <Button size="icon" variant="ghost" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => handleDelete(t)}><Trash2 className="h-4 w-4 text-red-600" /></Button>

@@ -45,8 +45,6 @@ export function AdminBillingUnitsPage() {
   const items = (data ?? []) as BillingUnit[]
   const columns = useMemo<DataTableColumn<BillingUnit>[]>(() => [
     { key: 'name', label: 'Nome', getValue: (r: any) => r.name },
-    { key: 'key', label: 'Chave', getValue: (r: any) => r.key },
-    { key: 'displayOrder', label: 'Ordem', getValue: (r: any) => r.displayOrder ?? 0 },
   ], [])
   const dt = useDataTable(items, columns)
 
@@ -112,8 +110,6 @@ export function AdminBillingUnitsPage() {
                   return (
                     <TableRow key={String(it.id)}>
                       <TableCell className="font-medium">{String(it.name)}</TableCell>
-                      <TableCell><code className="text-xs bg-muted/50 px-1 rounded">{String(it.key)}</code></TableCell>
-                      <TableCell className="tabular-nums text-xs">{String(it.displayOrder ?? 0)}</TableCell>
                       <TableCell className="text-right space-x-1">
                         <Button size="icon" variant="ghost" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => handleDelete(t)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
