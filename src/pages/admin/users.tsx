@@ -68,7 +68,14 @@ export function AdminUsersPage() {
             : [],
       )
   const users = allowedClientIds
-    ? allUsers.filter((u) => !u.clientId || allowedClientIds.has(u.clientId))
+    ? allUsers.filter((u) => {
+        // Admin/user comum NUNCA vê master users — eles são cross-tenant
+        // e tipicamente sem clientId, o que antes os deixava passar pelo
+        // ramo `!u.clientId` por engano. Bug visual: SODEP admin via o
+        // "Administrador Master" na lista. Corrigido bloqueando explicitamente.
+        if (u.isMaster) return false
+        return !u.clientId || allowedClientIds.has(u.clientId)
+      })
     : allUsers
 
   function profileLabel(id?: string) {
