@@ -34,6 +34,8 @@ import {
   DataTableActiveFilters, DataTableHeaderCell, DataTablePagination,
   useDataTable, type DataTableColumn,
 } from '@/shared/ui/data-table'
+import { slugify } from '@/shared/lib/slugify'
+import { AuditInfoFooter } from '@/shared/ui/audit-info-footer'
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
@@ -106,7 +108,7 @@ export function AdminOpportunityStatusesPage() {
         })
       } else {
         await create.mutateAsync({
-          key: draft.key.trim(),
+          key: (draft.key.trim() || slugify(draft.name)),
           name: draft.name.trim(),
           color: draft.color.trim() || null,
           category: (draft.category || null) as OpportunityStatusCategory | null,
@@ -211,17 +213,32 @@ export function AdminOpportunityStatusesPage() {
               <p className="text-xs text-muted-foreground">Drives automação. <code>gain</code> = ganho, <code>loss</code> = perda.</p>
             </div>
             <div className="space-y-1">
-              <Label>Cor (hex)</Label>
-              <Input value={draft.color} onChange={(e) => setDraft({ ...draft, color: e.target.value })} placeholder="#059669" />
-            </div>
-            <div className="space-y-1">
-              <Label>Ordem</Label>
-              <Input type="number" value={draft.displayOrder} onChange={(e) => setDraft({ ...draft, displayOrder: Number(e.target.value) || 0 })} />
+              <Label>Cor</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={draft.color || '#94a3b8'}
+                  onChange={(e) => setDraft({ ...draft, color: e.target.value })}
+                  className="h-10 w-16 rounded border cursor-pointer"
+                />
+                <Input
+                  value={draft.color}
+                  onChange={(e) => setDraft({ ...draft, color: e.target.value })}
+                  placeholder="#059669"
+                  className="flex-1 font-mono text-xs"
+                />
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Checkbox checked={draft.active} onCheckedChange={(c) => setDraft({ ...draft, active: c === true })} />
               <Label>Ativo</Label>
             </div>
+            {draft.id && (
+              <AuditInfoFooter
+                createdAt={(draft as any).createdAt}
+                updatedAt={(draft as any).updatedAt}
+              />
+            )}
           </SheetBody>
           <SheetFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>

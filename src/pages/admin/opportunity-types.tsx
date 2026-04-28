@@ -21,6 +21,8 @@ import {
   DataTableActiveFilters, DataTableHeaderCell, DataTablePagination,
   useDataTable, type DataTableColumn,
 } from '@/shared/ui/data-table'
+import { slugify } from '@/shared/lib/slugify'
+import { AuditInfoFooter } from '@/shared/ui/audit-info-footer'
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
@@ -51,8 +53,10 @@ export function AdminOpportunityTypesPage() {
 
   function openCreate() { setDraft(EMPTY); setOpen(true) }
   function openEdit(t: OpportunityType) {
-    setDraft({ id: t.id, key: t.key, name: t.name, description: t.description ?? '',
-               displayOrder: t.displayOrder, active: t.active })
+    setDraft({
+      createdAt: (arguments[0] as any).createdAt,
+      updatedAt: (arguments[0] as any).updatedAt, id: t.id, key: t.key, name: t.name, description: t.description ?? '',
+               displayOrder: t.displayOrder, active: t.active } as any)
     setOpen(true)
   }
 
@@ -73,7 +77,7 @@ export function AdminOpportunityTypesPage() {
         })
       } else {
         await create.mutateAsync({
-          key: draft.key.trim(), name: draft.name.trim(),
+          key: (draft.key.trim() || slugify(draft.name)), name: draft.name.trim(),
           description: draft.description.trim() || null,
           displayOrder: draft.displayOrder, active: draft.active,
         })
@@ -141,22 +145,19 @@ export function AdminOpportunityTypesPage() {
             <div className="space-y-1"><Label>Nome</Label>
               <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Ex: Renovação" />
             </div>
-            {!draft.id && (
-              <div className="space-y-1"><Label>Chave (snake_case)</Label>
-                <Input value={draft.key} onChange={(e) => setDraft({ ...draft, key: e.target.value })} placeholder="renovacao" />
-              </div>
-            )}
             <div className="space-y-1"><Label>Descrição</Label>
               <Input value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
-            </div>
-            <div className="space-y-1"><Label>Ordem</Label>
-              <Input type="number" value={draft.displayOrder}
-                onChange={(e) => setDraft({ ...draft, displayOrder: Number(e.target.value) || 0 })} />
             </div>
             <div className="flex items-center gap-2">
               <Checkbox checked={draft.active} onCheckedChange={(c) => setDraft({ ...draft, active: c === true })} />
               <Label>Ativo</Label>
             </div>
+            {draft.id && (
+              <AuditInfoFooter
+                createdAt={(draft as any).createdAt}
+                updatedAt={(draft as any).updatedAt}
+              />
+            )}
           </SheetBody>
           <SheetFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>

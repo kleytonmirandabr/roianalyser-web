@@ -22,6 +22,8 @@ import {
   DataTableActiveFilters, DataTableHeaderCell, DataTablePagination,
   useDataTable, type DataTableColumn,
 } from '@/shared/ui/data-table'
+import { slugify } from '@/shared/lib/slugify'
+import { AuditInfoFooter } from '@/shared/ui/audit-info-footer'
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
@@ -79,8 +81,7 @@ export function AdminContactsPage() {
   }
   async function handleSave() {
     if (!draft.name.trim()) return toastError(new Error('Informe o nome'))
-    if (!draft.id && !draft.key.trim()) return toastError(new Error('Informe a chave'))
-    const payload = {
+        const payload = {
       role: draft.role.trim() || null,
       email: draft.email.trim() || null,
       phone: draft.phone.trim() || null,
@@ -91,7 +92,7 @@ export function AdminContactsPage() {
     }
     try {
       if (draft.id) await update.mutateAsync({ name: draft.name.trim(), ...payload })
-      else await create.mutateAsync({ key: draft.key.trim(), name: draft.name.trim(), ...payload })
+      else await create.mutateAsync({ key: (draft.key.trim() || slugify(draft.name)), name: draft.name.trim(), ...payload })
       toastSaved('Contato salvo'); setOpen(false)
     } catch (e) { toastError(e) }
   }
@@ -160,11 +161,6 @@ export function AdminContactsPage() {
               <div className="space-y-1 col-span-2"><Label>Nome *</Label>
                 <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
               </div>
-              {!draft.id && (
-                <div className="space-y-1 col-span-2"><Label>Chave (snake_case) *</Label>
-                  <Input value={draft.key} onChange={(e) => setDraft({ ...draft, key: e.target.value })} />
-                </div>
-              )}
               <div className="space-y-1"><Label>Cargo</Label>
                 <Input value={draft.role} onChange={(e) => setDraft({ ...draft, role: e.target.value })} placeholder="Diretor Comercial" />
               </div>
@@ -186,14 +182,17 @@ export function AdminContactsPage() {
                   value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
                 />
               </div>
-              <div className="space-y-1"><Label>Ordem</Label>
-                <Input type="number" value={draft.displayOrder} onChange={(e) => setDraft({ ...draft, displayOrder: Number(e.target.value) || 0 })} />
-              </div>
               <div className="flex items-center gap-2 mt-6">
                 <Checkbox checked={draft.active} onCheckedChange={(c) => setDraft({ ...draft, active: c === true })} />
                 <Label>Ativo</Label>
               </div>
             </div>
+            {draft.id && (
+              <AuditInfoFooter
+                createdAt={(draft as any).createdAt}
+                updatedAt={(draft as any).updatedAt}
+              />
+            )}
           </SheetBody>
           <SheetFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>

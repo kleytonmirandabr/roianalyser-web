@@ -22,6 +22,8 @@ import {
   DataTableActiveFilters, DataTableHeaderCell, DataTablePagination,
   useDataTable, type DataTableColumn,
 } from '@/shared/ui/data-table'
+import { slugify } from '@/shared/lib/slugify'
+import { AuditInfoFooter } from '@/shared/ui/audit-info-footer'
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
@@ -88,8 +90,7 @@ export function AdminCompaniesPage() {
   }
   async function handleSave() {
     if (!draft.name.trim()) return toastError(new Error('Informe o nome'))
-    if (!draft.id && !draft.key.trim()) return toastError(new Error('Informe a chave'))
-    const payload = {
+        const payload = {
       cnpj: draft.cnpj.trim() || null,
       sectorId: draft.sectorId || null,
       employeeCount: draft.employeeCount ? Number(draft.employeeCount) : null,
@@ -109,7 +110,7 @@ export function AdminCompaniesPage() {
       if (draft.id) {
         await update.mutateAsync({ name: draft.name.trim(), ...payload })
       } else {
-        await create.mutateAsync({ key: draft.key.trim(), name: draft.name.trim(), ...payload })
+        await create.mutateAsync({ key: (draft.key.trim() || slugify(draft.name)), name: draft.name.trim(), ...payload })
       }
       toastSaved('Empresa salva'); setOpen(false)
     } catch (e) { toastError(e) }
@@ -178,11 +179,6 @@ export function AdminCompaniesPage() {
               <div className="space-y-1 col-span-2"><Label>Nome *</Label>
                 <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
               </div>
-              {!draft.id && (
-                <div className="space-y-1 col-span-2"><Label>Chave (snake_case) *</Label>
-                  <Input value={draft.key} onChange={(e) => setDraft({ ...draft, key: e.target.value })} />
-                </div>
-              )}
               <div className="space-y-1"><Label>CNPJ</Label>
                 <Input value={draft.cnpj} onChange={(e) => setDraft({ ...draft, cnpj: e.target.value })} placeholder="00.000.000/0000-00" />
               </div>
@@ -222,14 +218,17 @@ export function AdminCompaniesPage() {
               <div className="space-y-1"><Label>Instagram</Label>
                 <Input value={draft.instagram} onChange={(e) => setDraft({ ...draft, instagram: e.target.value })} placeholder="@empresa" />
               </div>
-              <div className="space-y-1"><Label>Ordem</Label>
-                <Input type="number" value={draft.displayOrder} onChange={(e) => setDraft({ ...draft, displayOrder: Number(e.target.value) || 0 })} />
-              </div>
               <div className="flex items-center gap-2 mt-6">
                 <Checkbox checked={draft.active} onCheckedChange={(c) => setDraft({ ...draft, active: c === true })} />
                 <Label>Ativo</Label>
               </div>
             </div>
+            {draft.id && (
+              <AuditInfoFooter
+                createdAt={(draft as any).createdAt}
+                updatedAt={(draft as any).updatedAt}
+              />
+            )}
           </SheetBody>
           <SheetFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>

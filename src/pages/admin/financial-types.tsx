@@ -21,6 +21,8 @@ import {
   DataTableActiveFilters, DataTableHeaderCell, DataTablePagination,
   useDataTable, type DataTableColumn,
 } from '@/shared/ui/data-table'
+import { slugify } from '@/shared/lib/slugify'
+import { AuditInfoFooter } from '@/shared/ui/audit-info-footer'
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
@@ -54,7 +56,9 @@ export function AdminFinancialTypesPage() {
     setDraft({
       id: String(it.id), key: String(it.key), name: String(it.name),
       displayOrder: Number(it.displayOrder ?? 0), active: it.active !== false,
-    })
+    createdAt: (it.createdAt as string) || null,
+    updatedAt: (it.updatedAt as string) || null,
+    } as any)
     setOpen(true)
   }
   async function handleDelete(item: FinancialType) {
@@ -70,7 +74,7 @@ export function AdminFinancialTypesPage() {
       if (draft.id) {
         await update.mutateAsync({ name: draft.name.trim(), displayOrder: draft.displayOrder, active: draft.active })
       } else {
-        await create.mutateAsync({ key: draft.key.trim(), name: draft.name.trim(), displayOrder: draft.displayOrder, active: draft.active })
+        await create.mutateAsync({ key: (draft.key.trim() || slugify(draft.name)), name: draft.name.trim(), displayOrder: draft.displayOrder, active: draft.active })
       }
       toastSaved('Salvo'); setOpen(false)
     } catch (e) { toastError(e) }
@@ -142,6 +146,12 @@ export function AdminFinancialTypesPage() {
               <Checkbox checked={draft.active} onCheckedChange={(c) => setDraft({ ...draft, active: c === true })} />
               <Label>Ativo</Label>
             </div>
+            {draft.id && (
+              <AuditInfoFooter
+                createdAt={(draft as any).createdAt}
+                updatedAt={(draft as any).updatedAt}
+              />
+            )}
           </SheetBody>
           <SheetFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
