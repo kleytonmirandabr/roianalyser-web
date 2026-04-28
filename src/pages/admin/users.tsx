@@ -1,10 +1,11 @@
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { Mail, Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useAppState, usePatchAppState } from '@/features/admin/hooks/use-app-state'
 import type { GlobalUser } from '@/features/admin/types'
 import { useAuth } from '@/features/auth/hooks/use-auth'
+import { useForgotPassword } from '@/features/auth/hooks/use-forgot-password'
 import { timezoneOptions } from '@/shared/lib/timezones'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
@@ -53,6 +54,35 @@ export function AdminUsersPage() {
   const allUsers = appState.data?.users ?? []
   const profiles = appState.data?.profiles ?? []
   const clients = appState.data?.clients ?? []
+  const forgotPassword = useForgotPassword()
+
+  /**
+   * Reenvia o link de definição de senha pro user. Reaproveita
+   * `/api/auth/forgot-password` — o template do e-mail funciona pra
+   * primeira ativação E pra reset (do ponto de vista do user, ele
+   * recebe o link e define a senha, em qualquer dos dois cenários).
+   *
+   * Próxima fase (backend lastLoginAt): usar endpoint dedicado
+   * `/api/auth/resend-invite` que dispara template específico.
+   */
+  async function resendInvite(u: GlobalUser) {
+    if (!u.email) {
+      toastError(new Error('Usuário sem e-mail cadastrado.'))
+      return
+    }
+    const ok = await confirm({
+      title: 'Reenviar link de senha',
+      description: `Vai enviar um e-mail pra ${u.email} com link pra definir/redefinir a senha. Confirmar?`,
+      confirmLabel: 'Reenviar',
+    })
+    if (!ok) return
+    try {
+      await forgotPassword.mutateAsync(u.email)
+      toastSaved('E-mail enviado.')
+    } catch (err) {
+      toastError(err)
+    }
+  }
 
   // Sprint H.1 — não-master vê só users do(s) próprio(s) tenant(s).
   // `activeClientId` (single) é o tenant ativo no header; `clientIds[]`
@@ -208,12 +238,19 @@ export function AdminUsersPage() {
             {dt.paginatedRows.map((u) => (
               <TableRow key={u.id}>
                 <TableCell className="font-medium">
-                  {u.name}
-                  {u.isMaster && (
-                    <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-primary">
-                      {t('admin.users.master')}
-                    </span>
-                  )}
+                  <span className="inline-flex items-center gap-1.5">
+                    {u.name}
+                    {u.isMaster && (
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-primary">
+                        {t('admin.users.master')}
+                      </span>
+                    )}
+                    {u.mfaEnabled && (
+                      <IconTooltip label="Autenticação em 2 fatores ativada">
+                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                      </IconTooltip>
+                    )}
+                  </span>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{u.email}</TableCell>
                 <TableCell className="text-muted-foreground">
@@ -224,6 +261,16 @@ export function AdminUsersPage() {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
+                    <IconTooltip label="Reenviar link de senha por e-mail">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => resendInvite(u)}
+                        disabled={forgotPassword.isPending || !u.email}
+                      >
+                        <Mail className="h-4 w-4" />
+                      </Button>
+                    </IconTooltip>
                     <IconTooltip label={t('catalogs.detail.edit')}>
                       <Button variant="ghost" size="icon" onClick={() => setEditing(u)}>
                         <Pencil className="h-4 w-4" />
