@@ -27,6 +27,9 @@ export type Opportunity = {
   currency: string
   expectedCloseDate: string | null  // yyyy-mm-dd
   description: string | null
+  companyId: string | null
+  leadSourceId: string | null
+  probability: number | null
   wonAt: string | null
   lostAt: string | null
   lostReasonKey: string | null
@@ -48,6 +51,9 @@ export type CreateOpportunityInput = {
   currency?: string
   expectedCloseDate?: string | null
   description?: string | null
+  companyId?: string | null
+  leadSourceId?: string | null
+  probability?: number | null
   tenantId?: string  // só master pode setar
 }
 
@@ -57,6 +63,9 @@ export type UpdateOpportunityInput = Partial<
     | 'name'
     | 'statusId'
     | 'opportunityTypeId'
+    | 'companyId'
+    | 'leadSourceId'
+    | 'probability'
     | 'clientId'
     | 'responsibleId'
     | 'sourceKey'
