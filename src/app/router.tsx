@@ -41,6 +41,9 @@ const NewContractPage = lazy(() =>
 const ContractDetailPage = lazy(() =>
   import('@/pages/contracts/detail').then((m) => ({ default: m.ContractDetailPage })),
 )
+const ContractsDashboardPage = lazy(() =>
+  import('@/pages/contracts/dashboard').then((m) => ({ default: m.ContractsDashboardPage })),
+)
 const Projects2ListPage = lazy(() =>
   import('@/pages/projects2/list').then((m) => ({ default: m.Projects2ListPage })),
 )
@@ -49,6 +52,9 @@ const NewProject2Page = lazy(() =>
 )
 const Project2DetailPage = lazy(() =>
   import('@/pages/projects2/detail').then((m) => ({ default: m.Project2DetailPage })),
+)
+const Projects2DashboardPage = lazy(() =>
+  import('@/pages/projects2/dashboard').then((m) => ({ default: m.Projects2DashboardPage })),
 )
 const ForecastDetailPage = lazy(() =>
   import('@/pages/forecasts/detail').then((m) => ({ default: m.ForecastDetailPage })),
@@ -323,6 +329,14 @@ export function AppRouter() {
           }
         />
         <Route
+          path="/contracts/dashboard"
+          element={
+            <Lazy>
+              <ContractsDashboardPage />
+            </Lazy>
+          }
+        />
+        <Route
           path="/contracts/new"
           element={
             <Lazy>
@@ -346,6 +360,14 @@ export function AppRouter() {
           element={
             <Lazy>
               <Projects2ListPage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="/projects-v2/dashboard"
+          element={
+            <Lazy>
+              <Projects2DashboardPage />
             </Lazy>
           }
         />

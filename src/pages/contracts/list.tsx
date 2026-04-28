@@ -7,9 +7,9 @@
  * Spec: PLAN_split-domain-entities.md, seção 4.4.
  */
 
-import { FileText, Plus } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { BarChart3, FileText, Plus } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import { useContracts } from '@/features/contracts2/hooks/use-contracts'
 import {
@@ -46,7 +46,25 @@ function daysUntil(dateStr: string | null): number | null {
 }
 
 export function ContractsListPage() {
-  const [statusFilter, setStatusFilter] = useState<ContractStatus | 'all'>('all')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const initialStatus = (searchParams.get('status') as ContractStatus) || 'all'
+  const [statusFilter, setStatusFilter] = useState<ContractStatus | 'all'>(initialStatus)
+
+  // Sincroniza filtro com URL pra drill-down do dashboard funcionar
+  useEffect(() => {
+    if (statusFilter === 'all') {
+      if (searchParams.has('status')) {
+        const next = new URLSearchParams(searchParams)
+        next.delete('status')
+        setSearchParams(next, { replace: true })
+      }
+    } else if (searchParams.get('status') !== statusFilter) {
+      const next = new URLSearchParams(searchParams)
+      next.set('status', statusFilter)
+      setSearchParams(next, { replace: true })
+    }
+  }, [statusFilter, searchParams, setSearchParams])
+
   const { data, isLoading, error } = useContracts()
 
   const filteredItems = useMemo(() => {
@@ -78,12 +96,20 @@ export function ContractsListPage() {
             </p>
           </div>
         </div>
-        <Button asChild>
-          <Link to="/contracts/new">
-            <Plus className="h-4 w-4" />
-            Novo contrato
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link to="/contracts/dashboard">
+              <BarChart3 className="h-4 w-4" />
+              Dashboard
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link to="/contracts/new">
+              <Plus className="h-4 w-4" />
+              Novo contrato
+            </Link>
+          </Button>
+        </div>
       </header>
 
       <Card className="p-4">

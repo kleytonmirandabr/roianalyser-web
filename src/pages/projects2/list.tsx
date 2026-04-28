@@ -3,9 +3,9 @@
  * Consome /api/projects2. Não confundir com pages/projects/list.tsx (legacy).
  */
 
-import { Plus, Rocket } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { BarChart3, Plus, Rocket } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import { useProjects2 } from '@/features/projects2/hooks/use-projects'
 import {
@@ -39,7 +39,24 @@ function daysLate(plannedEnd: string | null, status: ProjectStatus): number | nu
 }
 
 export function Projects2ListPage() {
-  const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'all'>('all')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const initialStatus = (searchParams.get('status') as ProjectStatus) || 'all'
+  const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'all'>(initialStatus)
+
+  useEffect(() => {
+    if (statusFilter === 'all') {
+      if (searchParams.has('status')) {
+        const next = new URLSearchParams(searchParams)
+        next.delete('status')
+        setSearchParams(next, { replace: true })
+      }
+    } else if (searchParams.get('status') !== statusFilter) {
+      const next = new URLSearchParams(searchParams)
+      next.set('status', statusFilter)
+      setSearchParams(next, { replace: true })
+    }
+  }, [statusFilter, searchParams, setSearchParams])
+
   const { data, isLoading, error } = useProjects2()
 
   const items = useMemo(() => {
@@ -64,12 +81,20 @@ export function Projects2ListPage() {
             </p>
           </div>
         </div>
-        <Button asChild>
-          <Link to="/projects-v2/new">
-            <Plus className="h-4 w-4" />
-            Novo projeto
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link to="/projects-v2/dashboard">
+              <BarChart3 className="h-4 w-4" />
+              Dashboard
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link to="/projects-v2/new">
+              <Plus className="h-4 w-4" />
+              Novo projeto
+            </Link>
+          </Button>
+        </div>
       </header>
 
       <Card className="p-4">
