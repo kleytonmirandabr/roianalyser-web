@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 
 import { useCatalog } from '@/features/catalogs/hooks/use-catalog'
 import { financialSummaries } from '@/features/dashboard/lib/aggregations'
+import { useOpportunitiesAsProjects } from '@/features/opportunities/hooks/use-opportunities-as-projects'
 import { useProjects } from '@/features/projects/hooks/use-projects'
 import { formatCurrency } from '@/features/projects/lib/money'
 import {
@@ -33,7 +34,9 @@ import { ProjectsTabs } from './components/projects-tabs'
  */
 export function ProjectsLostPage({ scope = 'projects' }: { scope?: FunnelScope } = {}) {
   const { t } = useTranslation()
-  const projects = useProjects()
+  const legacyProjects = useProjects()
+  const opportunityProjects = useOpportunitiesAsProjects()
+  const projects = scope === 'opportunities' ? opportunityProjects : legacyProjects
   const statuses = useCatalog('projectStatuses')
 
   // Detecta status "perda" combinando duas fontes:

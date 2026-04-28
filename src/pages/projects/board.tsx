@@ -11,6 +11,8 @@ import {
   useAdvancedFilters,
 } from '@/features/projects/components/advanced-filters'
 import { useMoveProject } from '@/features/projects/hooks/use-move-project'
+import { useOpportunityStatuses } from '@/features/opportunity-statuses/hooks/use-opportunity-statuses'
+import { useOpportunitiesAsProjects } from '@/features/opportunities/hooks/use-opportunities-as-projects'
 import { useProjects } from '@/features/projects/hooks/use-projects'
 import { formatCurrency } from '@/features/projects/lib/money'
 import { applyFilters } from '@/features/projects/lib/project-fields'
@@ -64,8 +66,17 @@ export function ProjectsBoardPage({
   scope?: FunnelScope
 }) {
   const { t, i18n } = useTranslation()
-  const projects = useProjects()
-  const statuses = useCatalog('projectStatuses')
+  const legacyProjects = useProjects()
+  const opportunityProjects = useOpportunitiesAsProjects()
+  // scope='opportunities' usa /api/opportunities (nova fonte);
+  // scope='projects' usa /api/contracts (legacy).
+  const projects = scope === 'opportunities' ? opportunityProjects : legacyProjects
+  // Hooks SEMPRE chamadas (regra do React); o resultado é selecionado pelo scope.
+  const projectsCatalogStatuses = useCatalog('projectStatuses')
+  const oppStatuses = useOpportunityStatuses()
+  const statuses = scope === 'opportunities'
+    ? { data: oppStatuses.data, isLoading: oppStatuses.isLoading, isError: oppStatuses.isError, isSuccess: oppStatuses.isSuccess }
+    : projectsCatalogStatuses
 
   // Filtros
   const [search, setSearch] = useState('')
@@ -157,7 +168,7 @@ export function ProjectsBoardPage({
   ])
 
   const columns = useMemo<StatusColumn[]>(() => {
-    const cats = statuses.data ?? []
+    const cats = (scope === 'opportunities' ? (oppStatuses.data ?? []) : (statuses.data ?? []))
     const cols: StatusColumn[] = cats
       .filter((c) => c.active !== false && typeof c.name === 'string')
       // Esconde colunas de status 'lost' quando o toggle está desligado.
@@ -166,7 +177,7 @@ export function ProjectsBoardPage({
         name: c.name as string,
         label: c.name as string,
         color: typeof c.color === 'string' ? c.color : undefined,
-        order: typeof c.order === 'number' ? c.order : 999,
+        order: typeof (c as any).order === 'number' ? (c as any).order : (typeof (c as any).displayOrder === 'number' ? (c as any).displayOrder : 999),
         projects: filtered.filter((p) => p.status === c.name),
       }))
     cols.sort((a, b) => a.order - b.order)

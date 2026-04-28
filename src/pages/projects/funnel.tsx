@@ -9,6 +9,7 @@ import {
   AdvancedFilters,
   useAdvancedFilters,
 } from '@/features/projects/components/advanced-filters'
+import { useOpportunitiesAsProjects } from '@/features/opportunities/hooks/use-opportunities-as-projects'
 import { useProjects } from '@/features/projects/hooks/use-projects'
 import { formatCurrency } from '@/features/projects/lib/money'
 import { applyFilters } from '@/features/projects/lib/project-fields'
@@ -56,7 +57,9 @@ type FunnelStage = {
  */
 export function ProjectsFunnelPage({ scope = 'projects' }: { scope?: FunnelScope } = {}) {
   const { t } = useTranslation()
-  const projects = useProjects()
+  const legacyProjects = useProjects()
+  const opportunityProjects = useOpportunitiesAsProjects()
+  const projects = scope === 'opportunities' ? opportunityProjects : legacyProjects
   const statuses = useCatalog('projectStatuses')
 
   const [search, setSearch] = useState('')
