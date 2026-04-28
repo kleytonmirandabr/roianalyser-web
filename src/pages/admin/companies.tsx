@@ -1,6 +1,6 @@
 /** Admin → Empresas (master only) — formulário rico (cnpj, setor, endereço, redes). */
 import { Pencil, Plus, Save, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 
 import { useAuth } from '@/features/auth/hooks/use-auth'
@@ -18,7 +18,12 @@ import { Combobox } from '@/shared/ui/combobox'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Skeleton } from '@/shared/ui/skeleton'
+import {
+  DataTableActiveFilters, DataTableHeaderCell, DataTablePagination,
+  useDataTable, type DataTableColumn,
+} from '@/shared/ui/data-table'
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
 interface Draft {
   id?: string
@@ -51,12 +56,14 @@ export function AdminCompaniesPage() {
 
   if (user && !user.isMaster) return <Navigate to="/admin" replace />
 
-  const items = ((data ?? []) as Company[]).slice().sort((a, b) => {
-    const ao = Number((a as unknown as { displayOrder?: number }).displayOrder ?? 0)
-    const bo = Number((b as unknown as { displayOrder?: number }).displayOrder ?? 0)
-    if (ao !== bo) return ao - bo
-    return String(a.name).localeCompare(String(b.name))
-  })
+  const items = (data ?? []) as Company[]
+  const columns = useMemo<DataTableColumn<Company>[]>(() => [
+    { key: 'name', label: 'Nome', getValue: (r: any) => r.name },
+    { key: 'cnpj', label: 'CNPJ', getValue: (r: any) => r.cnpj ?? "" },
+    { key: 'sectorId', label: 'Setor', getValue: (r: any) => r.sectorId ? (sectorById.get(String(r.sectorId)) ?? "") : "" },
+    { key: 'city', label: 'Cidade/UF', getValue: (r: any) => [r.city, r.state].filter(Boolean).join("/") },
+  ], [])
+  const dt = useDataTable(items, columns)
   const sectorById = new Map(sectors.map(s => [s.id, s.name]))
 
   function openCreate() { setDraft(EMPTY); setOpen(true) }
@@ -129,34 +136,37 @@ export function AdminCompaniesPage() {
         ) : items.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground">Nenhuma empresa cadastrada.</div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-muted/30">
-              <tr className="text-left">
-                <th className="px-4 py-2">Nome</th>
-                <th className="px-4 py-2">CNPJ</th>
-                <th className="px-4 py-2">Setor</th>
-                <th className="px-4 py-2">Cidade/UF</th>
-                <th className="px-4 py-2 w-32 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((c) => {
-                const o = c as unknown as Record<string, unknown>
-                return (
-                  <tr key={String(o.id)} className="border-t">
-                    <td className="px-4 py-2 font-medium">{String(o.name)}</td>
-                    <td className="px-4 py-2 text-xs">{asStr(o.cnpj) || <span className="text-muted-foreground">—</span>}</td>
-                    <td className="px-4 py-2 text-xs">{o.sectorId ? (sectorById.get(String(o.sectorId)) || '—') : <span className="text-muted-foreground">—</span>}</td>
-                    <td className="px-4 py-2 text-xs">{[asStr(o.city), asStr(o.state)].filter(Boolean).join('/') || <span className="text-muted-foreground">—</span>}</td>
-                    <td className="px-4 py-2 text-right space-x-1">
-                      <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => handleDelete(c)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          <>
+            <DataTableActiveFilters state={dt} columns={columns} />
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {columns.map(col => (
+                    <DataTableHeaderCell key={col.key} column={col} state={dt} />
+                  ))}
+                  <TableHead className="w-32 text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dt.rows.map((c) => {
+                  const o = c as unknown as Record<string, unknown>
+                  return (
+                    <TableRow key={String(o.id)}>
+                      <TableCell className="font-medium">{String(o.name)}</TableCell>
+                      <TableCell className="text-xs">{asStr(o.cnpj) || <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="text-xs">{o.sectorId ? (sectorById.get(String(o.sectorId)) || '—') : <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="text-xs">{[asStr(o.city), asStr(o.state)].filter(Boolean).join('/') || <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="text-right space-x-1">
+                        <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => handleDelete(c)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+            <DataTablePagination state={dt} />
+          </>
         )}
       </Card>
 

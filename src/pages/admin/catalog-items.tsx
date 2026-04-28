@@ -1,6 +1,6 @@
 /** Admin → Itens do Catálogo (master only) — 25+ campos do motor financeiro. */
 import { Pencil, Plus, Save, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 
 import { useAuth } from '@/features/auth/hooks/use-auth'
@@ -20,7 +20,12 @@ import { Combobox } from '@/shared/ui/combobox'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Skeleton } from '@/shared/ui/skeleton'
+import {
+  DataTableActiveFilters, DataTableHeaderCell, DataTablePagination,
+  useDataTable, type DataTableColumn,
+} from '@/shared/ui/data-table'
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
 interface Draft {
   id?: string; key: string; name: string
@@ -63,9 +68,16 @@ export function AdminCatalogItemsPage() {
 
   if (user && !user.isMaster) return <Navigate to="/admin" replace />
 
-  const items = ((data ?? []) as CatalogItem[]).slice()
-    .sort((a, b) => String(a.name).localeCompare(String(b.name)))
-  const catNameById = new Map(categories.map(c => [c.id, c.name]))
+  const items = (data ?? []) as CatalogItem[]
+  const columns = useMemo<DataTableColumn<CatalogItem>[]>(() => [
+    { key: 'name', label: 'Nome', getValue: (r: any) => r.name },
+    { key: 'code', label: 'Código', getValue: (r: any) => r.code ?? "" },
+    { key: 'cat', label: 'Cat', getValue: (r: any) => r.cat ?? "" },
+    { key: 'categoryId', label: 'Categoria', getValue: (r: any) => r.categoryId ? (categoryById.get(String(r.categoryId)) ?? "") : "" },
+    { key: 'unit', label: 'Unidade', getValue: (r: any) => r.unit ?? "" },
+  ], [])
+  const dt = useDataTable(items, columns)
+  const categoryById = new Map(categories.map(c => [c.id, c.name]))
 
   function openCreate() { setDraft(EMPTY); setOpen(true) }
   function openEdit(c: CatalogItem) {
@@ -145,36 +157,38 @@ export function AdminCatalogItemsPage() {
         ) : items.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground">Nenhum item cadastrado.</div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-muted/30">
-              <tr className="text-left">
-                <th className="px-4 py-2">Nome</th>
-                <th className="px-4 py-2">Código</th>
-                <th className="px-4 py-2">Cat</th>
-                <th className="px-4 py-2">Categoria</th>
-                <th className="px-4 py-2">Unidade</th>
-                <th className="px-4 py-2 w-32 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((c) => {
-                const o = c as unknown as Record<string, unknown>
-                return (
-                  <tr key={String(o.id)} className="border-t">
-                    <td className="px-4 py-2 font-medium">{String(o.name)}</td>
-                    <td className="px-4 py-2 text-xs">{asStr(o.code) || <span className="text-muted-foreground">—</span>}</td>
-                    <td className="px-4 py-2 text-xs">{asStr(o.cat) || <span className="text-muted-foreground">—</span>}</td>
-                    <td className="px-4 py-2 text-xs">{o.categoryId ? (catNameById.get(String(o.categoryId)) || '—') : <span className="text-muted-foreground">—</span>}</td>
-                    <td className="px-4 py-2 text-xs">{asStr(o.unit) || <span className="text-muted-foreground">—</span>}</td>
-                    <td className="px-4 py-2 text-right space-x-1">
-                      <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => handleDelete(c)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          <>
+            <DataTableActiveFilters state={dt} columns={columns} />
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {columns.map(col => (
+                    <DataTableHeaderCell key={col.key} column={col} state={dt} />
+                  ))}
+                  <TableHead className="w-32 text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dt.rows.map((i) => {
+                  const o = i as unknown as Record<string, unknown>
+                  return (
+                    <TableRow key={String(o.id)}>
+                      <TableCell className="font-medium">{String(o.name)}</TableCell>
+                      <TableCell className="text-xs"><code className="text-xs bg-muted/50 px-1 rounded">{asStr(o.code) || '—'}</code></TableCell>
+                      <TableCell className="text-xs">{asStr(o.cat) || <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="text-xs">{o.categoryId ? (categoryById.get(String(o.categoryId)) || '—') : <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="text-xs">{asStr(o.unit) || <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="text-right space-x-1">
+                        <Button size="icon" variant="ghost" onClick={() => openEdit(i)}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => handleDelete(i)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+            <DataTablePagination state={dt} />
+          </>
         )}
       </Card>
 
