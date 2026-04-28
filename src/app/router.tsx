@@ -29,6 +29,9 @@ const NewOpportunityPage = lazy(() =>
 const OpportunityDetailPage = lazy(() =>
   import('@/pages/opportunities/detail').then((m) => ({ default: m.OpportunityDetailPage })),
 )
+const OpportunitiesDashboardPage = lazy(() =>
+  import('@/pages/opportunities/dashboard').then((m) => ({ default: m.OpportunitiesDashboardPage })),
+)
 const ContractsListPage = lazy(() =>
   import('@/pages/contracts/list').then((m) => ({ default: m.ContractsListPage })),
 )
@@ -258,6 +261,14 @@ export function AppRouter() {
         <Route
           path="/opportunities"
           element={<OpportunitiesListPage />}
+        />
+        <Route
+          path="/opportunities/dashboard"
+          element={
+            <Lazy>
+              <OpportunitiesDashboardPage />
+            </Lazy>
+          }
         />
         <Route
           path="/opportunities/new"

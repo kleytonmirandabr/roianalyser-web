@@ -8,9 +8,9 @@
  * Spec: PLAN_split-domain-entities.md, seção 4.2.
  */
 
-import { Plus, Target } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { BarChart3, Plus, Target } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import { useOpportunities } from '@/features/opportunities/hooks/use-opportunities'
 import {
@@ -39,7 +39,25 @@ function statusColor(status: OpportunityStatus): string {
 }
 
 export function OpportunitiesListPage() {
-  const [statusFilter, setStatusFilter] = useState<OpportunityStatus | 'all'>('all')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const initialStatus = (searchParams.get('status') as OpportunityStatus) || 'all'
+  const [statusFilter, setStatusFilter] = useState<OpportunityStatus | 'all'>(initialStatus)
+
+  // Sincroniza filtro com URL pra drill-down do dashboard funcionar
+  useEffect(() => {
+    if (statusFilter === 'all') {
+      if (searchParams.has('status')) {
+        const next = new URLSearchParams(searchParams)
+        next.delete('status')
+        setSearchParams(next, { replace: true })
+      }
+    } else if (searchParams.get('status') !== statusFilter) {
+      const next = new URLSearchParams(searchParams)
+      next.set('status', statusFilter)
+      setSearchParams(next, { replace: true })
+    }
+  }, [statusFilter, searchParams, setSearchParams])
+
   const { data, isLoading, error } = useOpportunities()
 
   const filteredItems = useMemo(() => {
@@ -71,12 +89,20 @@ export function OpportunitiesListPage() {
             </p>
           </div>
         </div>
-        <Button asChild>
-          <Link to="/opportunities/new">
-            <Plus className="h-4 w-4" />
-            Nova oportunidade
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link to="/opportunities/dashboard">
+              <BarChart3 className="h-4 w-4" />
+              Dashboard
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link to="/opportunities/new">
+              <Plus className="h-4 w-4" />
+              Nova oportunidade
+            </Link>
+          </Button>
+        </div>
       </header>
 
       <Card className="p-4">
