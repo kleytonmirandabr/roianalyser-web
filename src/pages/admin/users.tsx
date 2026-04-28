@@ -338,42 +338,39 @@ function makeEmptyUser(defaultClientId = ''): GlobalUser {
 }
 
 /**
- * Reduz uma string de telefone livre pra apenas dígitos com prefixo `+`
- * (formato canônico de armazenamento E.164). Ex: "(11) 99999-0000" →
- * "+5511999990000" (assume DDI 55 quando não informado e tem 10-11 dígitos).
+ * Storage canônico do telefone. Sempre `+55XXXXXXXXXXX` (DDI fixo BR).
+ * Strip do leading 55 (se presente) e cap em 11 dígitos (DDD + celular).
  */
 function normalizePhoneBR(raw: string): string {
-  const digits = raw.replace(/\D/g, '')
+  if (!raw) return ''
+  let digits = raw.replace(/\D/g, '')
   if (!digits) return ''
-  // Se já começa com 55 e tem 12-13 dígitos (DDI + DDD + número), ok.
-  if (digits.length >= 12 && digits.startsWith('55')) return `+${digits}`
-  // Se tem 10-11 dígitos (DDD + número, sem DDI), assume Brasil.
-  if (digits.length === 10 || digits.length === 11) return `+55${digits}`
-  // Outros casos (DDI diferente, internacional): preserva como veio com `+`.
-  return `+${digits}`
+  if (digits.startsWith('55') && digits.length > 2) digits = digits.slice(2)
+  digits = digits.slice(0, 11)
+  return digits ? `+55${digits}` : ''
 }
 
 /**
- * Aplica máscara visual `+DDI (DDD) NNNNN-NNNN` em cima de uma string
- * normalizada (`+5511999990000`). Robusto a entradas parciais — usuário
- * digitando recebe formatação progressiva.
+ * Formata só a parte LOCAL `(DD) NNNNN-NNNN` — o `+55` + 🇧🇷 ficam
+ * fixos numa caixa separada à esquerda do input (estilo Stripe/Wise).
+ *
+ * Progressão por contagem de dígitos (sem DDI):
+ *   1-2:  (XX
+ *   3-6:  (DD) XXXX
+ *   7-10: (DD) XXXX-XXXX  (telefone fixo)
+ *   11:   (DD) XXXXX-XXXX (celular com 9 na frente)
  */
-function formatPhoneBR(stored: string | null | undefined): string {
+function formatPhoneBRLocal(stored: string | null | undefined): string {
   if (!stored) return ''
-  const digits = stored.replace(/\D/g, '')
+  let digits = stored.replace(/\D/g, '')
+  if (digits.startsWith('55')) digits = digits.slice(2)
   if (!digits) return ''
-  // BR: 13 dígitos completos = +55 (DD) NNNNN-NNNN
-  if (digits.startsWith('55') && digits.length >= 12) {
-    const ddi = '+55'
-    const ddd = digits.slice(2, 4)
-    const rest = digits.slice(4)
-    if (rest.length <= 4) return `${ddi} (${ddd}) ${rest}`
-    if (rest.length <= 8) return `${ddi} (${ddd}) ${rest.slice(0, 4)}-${rest.slice(4)}`
-    // 9 dígitos (celular com 9 na frente)
-    return `${ddi} (${ddd}) ${rest.slice(0, 5)}-${rest.slice(5, 9)}`
+  if (digits.length <= 2) return `(${digits}`
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+  if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
   }
-  // Sem DDI 55 — exibe livre com `+` na frente
-  return `+${digits}`
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`
 }
 
 function UserForm({
@@ -444,19 +441,25 @@ function UserForm({
           </div>
           <div className="space-y-1.5">
             <Label>Telefone</Label>
-            <Input
-              type="tel"
-              value={formatPhoneBR(draft.phone ?? '')}
-              onChange={(e) =>
-                patch('phone', normalizePhoneBR(e.target.value) || null)
-              }
-              placeholder="+55 (11) 99999-0000"
-              inputMode="tel"
-              maxLength={20}
-            />
-            <p className="text-[11px] text-muted-foreground">
-              DDI + DDD + número. Formato auto-aplicado.
-            </p>
+            <div className="flex">
+              {/* Caixa fixa do DDI com bandeira BR (estilo Stripe/Wise).
+                  Não-clicável por enquanto — multi-país fica pra v2. */}
+              <div className="inline-flex items-center gap-1.5 rounded-l-md border border-r-0 border-input bg-muted px-2.5 text-sm">
+                <span className="text-base leading-none" aria-label="Brasil">🇧🇷</span>
+                <span className="tabular-nums text-muted-foreground">+55</span>
+              </div>
+              <Input
+                type="tel"
+                inputMode="tel"
+                className="rounded-l-none"
+                value={formatPhoneBRLocal(draft.phone ?? '')}
+                onChange={(e) =>
+                  patch('phone', normalizePhoneBR(e.target.value) || null)
+                }
+                placeholder="(11) 99999-0000"
+                maxLength={16}
+              />
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label>Idioma padrão</Label>
