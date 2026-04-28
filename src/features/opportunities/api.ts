@@ -9,9 +9,8 @@ import type {
 
 function buildQueryString(filters: ListOpportunitiesFilters = {}): string {
   const params = new URLSearchParams()
-  if (filters.status) {
-    params.set('status', Array.isArray(filters.status) ? filters.status.join(',') : filters.status)
-  }
+  if (filters.statusId) params.set('statusId', filters.statusId)
+  if (filters.opportunityTypeId) params.set('opportunityTypeId', filters.opportunityTypeId)
   if (filters.responsibleId) params.set('responsibleId', filters.responsibleId)
   if (filters.clientId) params.set('clientId', filters.clientId)
   if (filters.tenantId) params.set('tenantId', filters.tenantId)

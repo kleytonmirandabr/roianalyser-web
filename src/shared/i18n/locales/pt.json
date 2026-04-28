@@ -1235,6 +1235,9 @@
     "audit": "Auditoria",
     "adminFormFields": "Campos personalizados",
     "roiAnalyses": "Análise ROI",
-    "forecast": "Forecast"
+    "forecast": "Forecast",
+    "adminOpportunityStatuses": "Status de Oportunidade",
+    "adminOpportunityTypes": "Tipo de Oportunidade",
+    "adminTaskTemplates": "Modelos de Tarefas"
   }
 }

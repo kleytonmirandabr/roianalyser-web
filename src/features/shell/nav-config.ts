@@ -161,6 +161,9 @@ export const NAV_ITEMS: NavItem[] = [
       { i18nKey: 'adminWorkflow', to: '/admin/workflow-rules', requiresLevel: 'master' },
       { i18nKey: 'adminBranding', to: '/admin/branding', requiresLevel: 'master' },
       { i18nKey: 'adminFormFields', to: '/admin/form-fields', requiresLevel: 'master' },
+      { i18nKey: 'adminOpportunityStatuses', to: '/admin/opportunity-statuses', requiresLevel: 'master' },
+      { i18nKey: 'adminOpportunityTypes', to: '/admin/opportunity-types', requiresLevel: 'master' },
+      { i18nKey: 'adminTaskTemplates', to: '/admin/task-templates', requiresLevel: 'master' },
     ],
   },
 ]

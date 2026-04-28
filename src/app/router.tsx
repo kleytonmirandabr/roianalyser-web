@@ -214,6 +214,21 @@ const AdminFormFieldsPage = lazy(() =>
     default: m.AdminFormFieldsPage,
   })),
 )
+const AdminOpportunityStatusesPage = lazy(() =>
+  import('@/pages/admin/opportunity-statuses').then((m) => ({
+    default: m.AdminOpportunityStatusesPage,
+  })),
+)
+const AdminOpportunityTypesPage = lazy(() =>
+  import('@/pages/admin/opportunity-types').then((m) => ({
+    default: m.AdminOpportunityTypesPage,
+  })),
+)
+const AdminTaskTemplatesPage = lazy(() =>
+  import('@/pages/admin/task-templates').then((m) => ({
+    default: m.AdminTaskTemplatesPage,
+  })),
+)
 const ImportsIndexPage = lazy(() =>
   import('@/pages/imports').then((m) => ({ default: m.ImportsIndexPage })),
 )
@@ -577,6 +592,36 @@ export function AppRouter() {
             <RequireRole level="master">
               <Lazy>
                 <AdminFormFieldsPage />
+              </Lazy>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/opportunity-statuses"
+          element={
+            <RequireRole level="master">
+              <Lazy>
+                <AdminOpportunityStatusesPage />
+              </Lazy>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/opportunity-types"
+          element={
+            <RequireRole level="master">
+              <Lazy>
+                <AdminOpportunityTypesPage />
+              </Lazy>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/task-templates"
+          element={
+            <RequireRole level="master">
+              <Lazy>
+                <AdminTaskTemplatesPage />
               </Lazy>
             </RequireRole>
           }

@@ -10,34 +10,9 @@
  * Spec: PLAN_split-domain-entities.md, seção 2.2.1.
  */
 
-export type OpportunityStatus =
-  | 'draft'
-  | 'qualified'
-  | 'proposal'
-  | 'negotiation'
-  | 'won'
-  | 'lost'
-  | 'cancelled'
-
-export const OPPORTUNITY_STATUSES: OpportunityStatus[] = [
-  'draft',
-  'qualified',
-  'proposal',
-  'negotiation',
-  'won',
-  'lost',
-  'cancelled',
-]
-
-export const OPPORTUNITY_STATUS_LABELS: Record<OpportunityStatus, string> = {
-  draft: 'Rascunho',
-  qualified: 'Qualificada',
-  proposal: 'Proposta',
-  negotiation: 'Negociação',
-  won: 'Ganha',
-  lost: 'Perdida',
-  cancelled: 'Cancelada',
-}
+// Status agora é FK pro catálogo opportunity_statuses (ver useOpportunityStatuses).
+// Mantemos o type alias só pra compatibilidade — é apenas string.
+export type OpportunityStatusId = string
 
 export type Opportunity = {
   id: string
@@ -45,7 +20,8 @@ export type Opportunity = {
   clientId: string
   responsibleId: string
   name: string
-  status: OpportunityStatus
+  statusId: string | null
+  opportunityTypeId: string | null
   sourceKey: string | null
   estimatedValue: number | null
   currency: string
@@ -63,7 +39,8 @@ export type Opportunity = {
 
 export type CreateOpportunityInput = {
   name: string
-  status?: OpportunityStatus
+  statusId?: string | null
+  opportunityTypeId?: string | null
   clientId?: string
   responsibleId?: string
   sourceKey?: string | null
@@ -78,7 +55,8 @@ export type UpdateOpportunityInput = Partial<
   Pick<
     Opportunity,
     | 'name'
-    | 'status'
+    | 'statusId'
+    | 'opportunityTypeId'
     | 'clientId'
     | 'responsibleId'
     | 'sourceKey'
@@ -91,7 +69,8 @@ export type UpdateOpportunityInput = Partial<
 >
 
 export type ListOpportunitiesFilters = {
-  status?: OpportunityStatus | OpportunityStatus[]
+  statusId?: string
+  opportunityTypeId?: string
   responsibleId?: string
   clientId?: string
   tenantId?: string  // só master

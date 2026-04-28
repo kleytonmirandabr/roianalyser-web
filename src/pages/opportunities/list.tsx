@@ -1,205 +1,106 @@
-/**
- * Lista de Oportunidades — módulo isolado (Sprint 2 Batch B).
- *
- * Consome `/api/opportunities` (entity nova pós-Phase 0). Não usa o legacy
- * `/api/contracts`. Lista todos os registros do tenant ativo, filtros em
- * memória (status), navega pro detalhe ao clicar.
- *
- * Spec: PLAN_split-domain-entities.md, seção 4.2.
- */
-
-import { BarChart3, Plus, Target } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { Plus, BarChart3 } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { useOpportunities } from '@/features/opportunities/hooks/use-opportunities'
-import {
-  OPPORTUNITY_STATUSES,
-  OPPORTUNITY_STATUS_LABELS,
-  type OpportunityStatus,
-} from '@/features/opportunities/types'
-import { formatCurrencyShort, formatDate } from '@/shared/lib/format'
-import { Alert, AlertDescription } from '@/shared/ui/alert'
+import { useOpportunityStatuses } from '@/features/opportunity-statuses/hooks/use-opportunity-statuses'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Combobox } from '@/shared/ui/combobox'
 import { Skeleton } from '@/shared/ui/skeleton'
-
-function statusColor(status: OpportunityStatus): string {
-  switch (status) {
-    case 'won':         return 'bg-emerald-100 text-emerald-800'
-    case 'lost':        return 'bg-rose-100 text-rose-800'
-    case 'cancelled':   return 'bg-slate-100 text-slate-700'
-    case 'negotiation': return 'bg-blue-100 text-blue-800'
-    case 'proposal':    return 'bg-violet-100 text-violet-800'
-    case 'qualified':   return 'bg-sky-100 text-sky-800'
-    case 'draft':
-    default:            return 'bg-slate-100 text-slate-700'
-  }
-}
+import { formatCurrencyShort, formatDate } from '@/shared/lib/format'
 
 export function OpportunitiesListPage() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const initialStatus = (searchParams.get('status') as OpportunityStatus) || 'all'
-  const [statusFilter, setStatusFilter] = useState<OpportunityStatus | 'all'>(initialStatus)
+  const [params, setParams] = useSearchParams()
+  const initial = params.get('statusId') || 'all'
+  const [statusFilter, setStatusFilter] = useState<string>(initial)
 
-  // Sincroniza filtro com URL pra drill-down do dashboard funcionar
-  useEffect(() => {
-    if (statusFilter === 'all') {
-      if (searchParams.has('status')) {
-        const next = new URLSearchParams(searchParams)
-        next.delete('status')
-        setSearchParams(next, { replace: true })
-      }
-    } else if (searchParams.get('status') !== statusFilter) {
-      const next = new URLSearchParams(searchParams)
-      next.set('status', statusFilter)
-      setSearchParams(next, { replace: true })
-    }
-  }, [statusFilter, searchParams, setSearchParams])
-
-  const { data, isLoading, error } = useOpportunities()
-
-  const filteredItems = useMemo(() => {
-    if (!data) return []
-    if (statusFilter === 'all') return data
-    return data.filter((opp) => opp.status === statusFilter)
-  }, [data, statusFilter])
-
-  const statusOptions = useMemo(
-    () => [
-      { value: 'all', label: 'Todos os status' },
-      ...OPPORTUNITY_STATUSES.map((s) => ({
-        value: s,
-        label: OPPORTUNITY_STATUS_LABELS[s],
-      })),
-    ],
-    [],
+  const { data: items = [], isLoading } = useOpportunities(
+    statusFilter !== 'all' ? { statusId: statusFilter } : {},
   )
+  const { data: statuses = [] } = useOpportunityStatuses()
+
+  const statusById = useMemo(() => {
+    const m = new Map<string, { name: string; color: string | null; category: string | null }>()
+    for (const s of statuses) m.set(s.id, { name: s.name, color: s.color, category: s.category })
+    return m
+  }, [statuses])
+
+  function setStatus(v: string) {
+    setStatusFilter(v)
+    if (v === 'all') params.delete('statusId')
+    else params.set('statusId', v)
+    setParams(params)
+  }
+
+  const statusOptions = [
+    { value: 'all', label: 'Todos os status' },
+    ...statuses.filter(s => s.active).map(s => ({ value: s.id, label: s.name })),
+  ]
 
   return (
-    <div className="space-y-6 p-6">
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Target className="h-6 w-6 text-indigo-600" />
-          <div>
-            <h1 className="text-2xl font-semibold">Oportunidades</h1>
-            <p className="text-sm text-muted-foreground">
-              Funil comercial — leads em movimento
-            </p>
-          </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Oportunidades</h1>
+          <p className="text-sm text-muted-foreground">Funil comercial — leads em movimento</p>
         </div>
         <div className="flex gap-2">
-          <Button asChild variant="outline">
-            <Link to="/opportunities/dashboard">
-              <BarChart3 className="h-4 w-4" />
-              Dashboard
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link to="/opportunities/new">
-              <Plus className="h-4 w-4" />
-              Nova oportunidade
-            </Link>
-          </Button>
+          <Button variant="outline" asChild><Link to="/opportunities/dashboard"><BarChart3 className="h-4 w-4 mr-2" /> Dashboard</Link></Button>
+          <Button asChild><Link to="/opportunities/new"><Plus className="h-4 w-4 mr-2" /> Nova oportunidade</Link></Button>
         </div>
-      </header>
+      </div>
 
-      <Card className="p-4">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium">Filtro:</span>
-          <div className="w-64">
-            <Combobox
-              value={statusFilter}
-              onChange={(v) => setStatusFilter((v as OpportunityStatus | 'all') || 'all')}
-              options={statusOptions}
-              placeholder="Status"
-            />
+      <div className="flex items-end justify-between gap-4">
+        <div className="flex items-end gap-3">
+          <div className="space-y-1">
+            <span className="text-xs text-muted-foreground">Filtro:</span>
+            <Combobox options={statusOptions} value={statusFilter} onChange={setStatus} />
           </div>
-          <span className="ml-auto text-sm text-muted-foreground">
-            {filteredItems.length} {filteredItems.length === 1 ? 'oportunidade' : 'oportunidades'}
-          </span>
         </div>
-      </Card>
+        <span className="text-sm text-muted-foreground">{items.length} oportunidades</span>
+      </div>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>
-            Erro ao carregar oportunidades: {(error as Error).message}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {isLoading && (
-        <div className="space-y-2">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-        </div>
-      )}
-
-      {!isLoading && !error && filteredItems.length === 0 && (
-        <Card className="p-8 text-center text-muted-foreground">
-          Nenhuma oportunidade encontrada.
-          {statusFilter === 'all' && (
-            <div className="mt-3">
-              <Button asChild variant="outline">
-                <Link to="/opportunities/new">
-                  <Plus className="h-4 w-4" />
-                  Criar primeira oportunidade
-                </Link>
-              </Button>
-            </div>
-          )}
-        </Card>
-      )}
-
-      {!isLoading && filteredItems.length > 0 && (
-        <Card className="overflow-hidden">
+      <Card className="p-0 overflow-hidden">
+        {isLoading ? (
+          <div className="p-6 space-y-3"><Skeleton className="h-5 w-1/2" /><Skeleton className="h-5 w-2/3" /></div>
+        ) : items.length === 0 ? (
+          <div className="p-8 text-center text-sm text-muted-foreground">Nenhuma oportunidade nesse filtro.</div>
+        ) : (
           <table className="w-full text-sm">
-            <thead className="bg-muted/50">
+            <thead className="bg-muted/30">
               <tr className="text-left">
-                <th className="px-4 py-3 font-medium">Nome</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium text-right">Valor estimado</th>
-                <th className="px-4 py-3 font-medium">Fechamento</th>
-                <th className="px-4 py-3 font-medium">Atualizada</th>
+                <th className="px-4 py-2">Nome</th>
+                <th className="px-4 py-2">Status</th>
+                <th className="px-4 py-2">Valor estimado</th>
+                <th className="px-4 py-2">Fechamento</th>
+                <th className="px-4 py-2">Atualizada</th>
               </tr>
             </thead>
             <tbody>
-              {filteredItems.map((opp) => (
-                <tr
-                  key={opp.id}
-                  className="border-t hover:bg-muted/30 cursor-pointer"
-                >
-                  <td className="px-4 py-3">
-                    <Link
-                      to={`/opportunities/${opp.id}`}
-                      className="font-medium text-indigo-600 hover:underline"
-                    >
-                      {opp.name}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusColor(opp.status)}`}
-                    >
-                      {OPPORTUNITY_STATUS_LABELS[opp.status] || opp.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">
-                    {formatCurrencyShort(opp.estimatedValue, opp.currency)}
-                  </td>
-                  <td className="px-4 py-3">{formatDate(opp.expectedCloseDate)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {formatDate(opp.updatedAt)}
-                  </td>
-                </tr>
-              ))}
+              {items.map((op) => {
+                const st = op.statusId ? statusById.get(op.statusId) : null
+                return (
+                  <tr key={op.id} className="border-t hover:bg-muted/20">
+                    <td className="px-4 py-2"><Link to={`/opportunities/${op.id}`} className="text-primary hover:underline">{op.name}</Link></td>
+                    <td className="px-4 py-2">
+                      {st ? (
+                        <span className="inline-flex items-center gap-2 rounded-full px-2 py-0.5 text-xs"
+                          style={{ backgroundColor: (st.color || '#6b7280') + '22', color: st.color || '#6b7280' }}>
+                          {st.name}
+                        </span>
+                      ) : (<span className="text-muted-foreground">—</span>)}
+                    </td>
+                    <td className="px-4 py-2 tabular-nums">{op.estimatedValue != null ? formatCurrencyShort(op.estimatedValue, op.currency) : '—'}</td>
+                    <td className="px-4 py-2 text-xs">{op.expectedCloseDate ? formatDate(op.expectedCloseDate) : '—'}</td>
+                    <td className="px-4 py-2 text-xs">{formatDate(op.updatedAt)}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
-        </Card>
-      )}
+        )}
+      </Card>
     </div>
   )
 }

@@ -25,11 +25,8 @@ import { useCreateRoiAnalysis } from '@/features/roi-analyses/hooks/use-create-r
 import { useRoiAnalysesByOpportunity } from '@/features/roi-analyses/hooks/use-roi-analyses'
 import { ROI_STATUS_LABELS } from '@/features/roi-analyses/types'
 import { formatCurrencyShort } from '@/shared/lib/format'
-import {
-  OPPORTUNITY_STATUSES,
-  OPPORTUNITY_STATUS_LABELS,
-  type OpportunityStatus,
-} from '@/features/opportunities/types'
+import { useOpportunityStatuses } from '@/features/opportunity-statuses/hooks/use-opportunity-statuses'
+import { useOpportunityTypes } from '@/features/opportunity-types/hooks/use-opportunity-types'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
@@ -54,7 +51,10 @@ export function OpportunityDetailPage() {
   const hasApprovedRoi = roiAnalyses.some(r => r.status === 'approved')
 
   const [name, setName] = useState('')
-  const [status, setStatus] = useState<OpportunityStatus>('draft')
+  const [statusId, setStatusId] = useState<string>('')
+  const [opportunityTypeId, setOpportunityTypeId] = useState<string>('')
+  const { data: statuses = [] } = useOpportunityStatuses()
+  const { data: types = [] } = useOpportunityTypes()
   const [estimatedValue, setEstimatedValue] = useState('')
   const [currency, setCurrency] = useState('BRL')
   const [expectedCloseDate, setExpectedCloseDate] = useState('')
@@ -64,7 +64,8 @@ export function OpportunityDetailPage() {
   useEffect(() => {
     if (!opp) return
     setName(opp.name || '')
-    setStatus(opp.status)
+    setStatusId(opp.statusId || '')
+    setOpportunityTypeId(opp.opportunityTypeId || '')
     setEstimatedValue(opp.estimatedValue != null ? String(opp.estimatedValue) : '')
     setCurrency(opp.currency || 'BRL')
     setExpectedCloseDate(opp.expectedCloseDate || '')
@@ -72,17 +73,17 @@ export function OpportunityDetailPage() {
     setDirty(false)
   }, [opp])
 
-  const statusOptions = OPPORTUNITY_STATUSES.map((s) => ({
-    value: s,
-    label: OPPORTUNITY_STATUS_LABELS[s],
-  }))
+  const statusOptions = [{ value: '', label: '— sem status —' }, ...statuses.filter(s => s.active).map(s => ({ value: s.id, label: s.name }))]
+  const typeOptions = [{ value: '', label: '— sem tipo —' }, ...types.filter(t => t.active).map(t => ({ value: t.id, label: t.name }))]
+  const currentStatus = statusId ? statuses.find(s => s.id === statusId) : null
 
   async function handleSave() {
     if (!opp) return
     try {
       await update.mutateAsync({
         name: name.trim() || opp.name,
-        status,
+        statusId: statusId || null,
+        opportunityTypeId: opportunityTypeId || null,
         estimatedValue: estimatedValue ? Number(estimatedValue) : null,
         currency,
         expectedCloseDate: expectedCloseDate || null,
@@ -186,9 +187,17 @@ export function OpportunityDetailPage() {
           <div>
             <Label>Status</Label>
             <Combobox
-              value={status}
-              onChange={(v) => { setStatus(v as OpportunityStatus); setDirty(true) }}
+              value={statusId}
+              onChange={(v) => { setStatusId(v); setDirty(true) }}
               options={statusOptions}
+            />
+          </div>
+          <div>
+            <Label>Tipo</Label>
+            <Combobox
+              value={opportunityTypeId}
+              onChange={(v) => { setOpportunityTypeId(v); setDirty(true) }}
+              options={typeOptions}
             />
           </div>
           <div>
@@ -244,7 +253,8 @@ export function OpportunityDetailPage() {
             onClick={() => {
               if (!opp) return
               setName(opp.name)
-              setStatus(opp.status)
+              setStatusId(opp.statusId || '')
+    setOpportunityTypeId(opp.opportunityTypeId || '')
               setEstimatedValue(opp.estimatedValue != null ? String(opp.estimatedValue) : '')
               setCurrency(opp.currency || 'BRL')
               setExpectedCloseDate(opp.expectedCloseDate || '')
@@ -327,13 +337,13 @@ export function OpportunityDetailPage() {
 
       {/* Card "Contratos relacionados" — destrava após ROI aprovado.
           Permite gerar contrato com o opportunityId pré-preenchido. */}
-      {(opp.status === 'won' || hasApprovedRoi || relatedContracts.length > 0) && (
+      {(currentStatus?.category === 'gain' || hasApprovedRoi || relatedContracts.length > 0) && (
         <Card className="p-6 space-y-3">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold">Contratos relacionados ({relatedContracts.length})</h2>
               <p className="text-xs text-muted-foreground mt-1">
-                {hasApprovedRoi || opp.status === 'won'
+                {hasApprovedRoi || currentStatus?.category === 'gain'
                   ? 'Gere contratos a partir desta oportunidade.'
                   : 'Aprove uma análise de ROI pra liberar geração de contrato.'}
               </p>
@@ -341,7 +351,7 @@ export function OpportunityDetailPage() {
             <Button
               size="sm"
               asChild
-              disabled={!hasApprovedRoi && opp.status !== 'won'}
+              disabled={!hasApprovedRoi && currentStatus?.category !== 'gain'}
             >
               <Link to={`/contracts/new?opportunityId=${opp.id}`}>
                 <Plus className="h-4 w-4" />Gerar contrato

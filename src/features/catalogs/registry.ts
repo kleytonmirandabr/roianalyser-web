@@ -1,8 +1,3 @@
-import {
-  STATUS_CATEGORIES,
-  STATUS_CATEGORY_LABELS,
-} from '@/features/projects/lib/status-categories'
-
 import type { CatalogType } from './types'
 
 /**
@@ -108,36 +103,6 @@ const NAME_DESC_ORDER_FIELDS: CatalogFieldDef[] = [
   },
 ]
 
-const STATUS_FIELDS: CatalogFieldDef[] = [
-  {
-    key: 'name',
-    label: 'Nome',
-    kind: 'text',
-    required: true,
-    showInTable: true,
-  },
-  {
-    key: 'description',
-    label: 'Descrição',
-    kind: 'text',
-  },
-  {
-    key: 'color',
-    label: 'Cor',
-    kind: 'color',
-    showInTable: true,
-    width: '5rem',
-    defaultValue: '#6b7280',
-  },
-  {
-    key: 'order',
-    label: 'Ordem',
-    kind: 'number',
-    showInTable: true,
-    width: '6rem',
-    defaultValue: 0,
-  },
-]
 
 export const CATALOG_REGISTRY: CatalogDef[] = [
   {
@@ -155,44 +120,6 @@ export const CATALOG_REGISTRY: CatalogDef[] = [
     label: 'Setores',
     description: 'Setores/segmentos de atuação dos clientes.',
     group: 'crm',
-    ready: true,
-    fields: NAME_DESC_FIELDS,
-  },
-  {
-    slug: 'project-statuses',
-    type: 'projectStatuses',
-    label: 'Status de Projeto',
-    description:
-      'Workflow de status. O nome é livre, mas a "categoria" (opcional) liga o status a automações do sistema (ganho, perda, execução, etc). Cada categoria não-funil aceita só 1 status.',
-    group: 'project',
-    ready: true,
-    fields: [
-      ...STATUS_FIELDS,
-      {
-        key: 'category',
-        label: 'Categoria',
-        kind: 'enum',
-        showInTable: true,
-        width: '10rem',
-        // Lista FECHADA — admin escolhe uma das 10 categorias canônicas
-        // ('' = não categorizado). Cada categoria controla automações
-        // do sistema (ROI, contrato, cronograma, etc).
-        enumOptions: [
-          { value: '', label: '— Não categorizado' },
-          ...STATUS_CATEGORIES.map((c) => ({
-            value: c,
-            label: STATUS_CATEGORY_LABELS[c],
-          })),
-        ],
-      },
-    ],
-  },
-  {
-    slug: 'contract-types',
-    type: 'contractTypes',
-    label: 'Tipos de Contrato',
-    description: 'Tipos de contrato disponíveis.',
-    group: 'project',
     ready: true,
     fields: NAME_DESC_FIELDS,
   },
@@ -297,18 +224,6 @@ export const CATALOG_REGISTRY: CatalogDef[] = [
       { key: 'companyId', label: 'Empresa', kind: 'catalogRef', refCatalog: 'companies', showInTable: true },
       { key: 'linkedin', label: 'LinkedIn', kind: 'text' },
       { key: 'notes', label: 'Observações', kind: 'text' },
-    ],
-  },
-  {
-    slug: 'task-catalogs',
-    type: 'taskCatalogs',
-    label: 'Catálogo de Tarefas',
-    description: 'Tarefas pré-cadastradas para projetos (ligação, reunião, follow-up).',
-    group: 'project',
-    ready: true,
-    fields: [
-      { key: 'name', label: 'Nome', kind: 'text', required: true, showInTable: true },
-      { key: 'taskType', label: 'Tipo da tarefa', kind: 'text', showInTable: true, placeholder: 'Ligar, Reunião…' },
     ],
   },
   {
