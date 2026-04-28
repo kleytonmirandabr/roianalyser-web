@@ -67,7 +67,6 @@ export function AdminLeadSourcesPage() {
   }
   async function handleSave() {
     if (!draft.name.trim()) return toastError(new Error('Informe o nome'))
-    if (!draft.id && !draft.key.trim()) return toastError(new Error('Informe a chave'))
     try {
       if (draft.id) {
         await update.mutateAsync({ name: draft.name.trim(), displayOrder: draft.displayOrder, active: draft.active })
@@ -129,14 +128,6 @@ export function AdminLeadSourcesPage() {
           <SheetBody className="space-y-4">
             <div className="space-y-1"><Label>Nome</Label>
               <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
-            </div>
-            {!draft.id && (
-              <div className="space-y-1"><Label>Chave (snake_case)</Label>
-                <Input value={draft.key} onChange={(e) => setDraft({ ...draft, key: e.target.value })} />
-              </div>
-            )}
-            <div className="space-y-1"><Label>Ordem</Label>
-              <Input type="number" value={draft.displayOrder} onChange={(e) => setDraft({ ...draft, displayOrder: Number(e.target.value) || 0 })} />
             </div>
             <div className="flex items-center gap-2">
               <Checkbox checked={draft.active} onCheckedChange={(c) => setDraft({ ...draft, active: c === true })} />

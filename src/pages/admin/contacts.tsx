@@ -22,7 +22,9 @@ import {
   DataTableActiveFilters, DataTableHeaderCell, DataTablePagination,
   useDataTable, type DataTableColumn,
 } from '@/shared/ui/data-table'
+import { isValidEmail } from '@/shared/lib/phone-mask'
 import { slugify } from '@/shared/lib/slugify'
+import { PhoneInput } from '@/shared/ui/phone-input'
 import { AuditInfoFooter } from '@/shared/ui/audit-info-footer'
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
@@ -80,6 +82,7 @@ export function AdminContactsPage() {
     try { await del.mutateAsync(c.id); toastDeleted('Contato removido') } catch (e) { toastError(e) }
   }
   async function handleSave() {
+    if (draft.email && !isValidEmail(draft.email)) return toastError(new Error('E-mail inválido'))
     if (!draft.name.trim()) return toastError(new Error('Informe o nome'))
         const payload = {
       role: draft.role.trim() || null,
@@ -171,7 +174,7 @@ export function AdminContactsPage() {
                 <Input type="email" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} />
               </div>
               <div className="space-y-1"><Label>Telefone</Label>
-                <Input value={draft.phone} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} placeholder="(11) 99999-0000" />
+                <PhoneInput value={draft.phone} onChange={(v) => setDraft({ ...draft, phone: v })} />
               </div>
               <div className="space-y-1 col-span-2"><Label>LinkedIn</Label>
                 <Input value={draft.linkedin} onChange={(e) => setDraft({ ...draft, linkedin: e.target.value })} placeholder="https://linkedin.com/in/..." />

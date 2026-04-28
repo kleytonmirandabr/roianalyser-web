@@ -3,6 +3,7 @@ import { Pencil, Plus, Save, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 
+import { useAppState } from '@/features/admin/hooks/use-app-state'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import {
   useCreateSalesGoal, useDeleteSalesGoal,
@@ -14,6 +15,7 @@ import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
+import { Combobox } from '@/shared/ui/combobox'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -28,12 +30,24 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 interface Draft {
   id?: string; key: string; name: string;
+  description: string;
+  target: string;  // numeric input as string for empty-state UX
+  responsibleUserId: string;
+  periodStart: string;
+  periodEnd: string;
   displayOrder: number; active: boolean;
 }
-const EMPTY: Draft = { key: '', name: '', displayOrder: 0, active: true }
+const EMPTY: Draft = {
+  key: '', name: '', description: '', target: '',
+  responsibleUserId: '', periodStart: '', periodEnd: '',
+  displayOrder: 0, active: true,
+}
 
 export function AdminSalesGoalsPage() {
   const { user } = useAuth()
+  const appState = useAppState()
+  const users = (appState.data?.users ?? []) as Array<{ id?: string; name?: string; email?: string }>
+  const userOptions = [{ value: '', label: '— sem responsável —' }, ...users.filter(u => u.id).map(u => ({ value: String(u.id), label: u.name || u.email || '?' }))]
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<Draft>(EMPTY)
   const { data, isLoading } = useSalesGoals()
@@ -45,6 +59,9 @@ export function AdminSalesGoalsPage() {
   const items = (data ?? []) as SalesGoal[]
   const columns = useMemo<DataTableColumn<SalesGoal>[]>(() => [
     { key: 'name', label: 'Nome', getValue: (r: any) => r.name },
+    { key: 'target', label: 'Meta (R$)', getValue: (r: any) => r.target ?? 0 },
+    { key: 'periodStart', label: 'Início', getValue: (r: any) => r.periodStart ?? '' },
+    { key: 'periodEnd', label: 'Fim', getValue: (r: any) => r.periodEnd ?? '' },
   ], [])
   const dt = useDataTable(items, columns)
 
@@ -53,8 +70,15 @@ export function AdminSalesGoalsPage() {
     const it = item as unknown as Record<string, unknown>
     setDraft({
       id: String(it.id), key: String(it.key), name: String(it.name),
+      description: String(it.description ?? ''),
+      target: it.target != null ? String(it.target) : '',
+      responsibleUserId: it.responsibleUserId != null ? String(it.responsibleUserId) : '',
+      periodStart: String(it.periodStart ?? ''),
+      periodEnd: String(it.periodEnd ?? ''),
       displayOrder: Number(it.displayOrder ?? 0), active: it.active !== false,
-    })
+      createdAt: (it.createdAt as string) || null,
+      updatedAt: (it.updatedAt as string) || null,
+    } as any)
     setOpen(true)
   }
   async function handleDelete(item: SalesGoal) {
@@ -65,7 +89,6 @@ export function AdminSalesGoalsPage() {
   }
   async function handleSave() {
     if (!draft.name.trim()) return toastError(new Error('Informe o nome'))
-    if (!draft.id && !draft.key.trim()) return toastError(new Error('Informe a chave'))
     try {
       if (draft.id) {
         await update.mutateAsync({ name: draft.name.trim(), displayOrder: draft.displayOrder, active: draft.active })
@@ -108,6 +131,9 @@ export function AdminSalesGoalsPage() {
                   return (
                     <TableRow key={String(it.id)}>
                       <TableCell className="font-medium">{String(it.name)}</TableCell>
+                      <TableCell className="tabular-nums">{it.target != null ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(it.target)) : '—'}</TableCell>
+                      <TableCell className="text-xs">{it.periodStart ? new Date(String(it.periodStart)).toLocaleDateString('pt-BR') : '—'}</TableCell>
+                      <TableCell className="text-xs">{it.periodEnd ? new Date(String(it.periodEnd)).toLocaleDateString('pt-BR') : '—'}</TableCell>
                       <TableCell className="text-right space-x-1">
                         <Button size="icon" variant="ghost" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => handleDelete(t)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
@@ -125,8 +151,43 @@ export function AdminSalesGoalsPage() {
         <SheetContent className="sm:max-w-lg">
           <SheetHeader><SheetTitle>{draft.id ? 'Editar' : 'Novo'}</SheetTitle></SheetHeader>
           <SheetBody className="space-y-4">
-            <div className="space-y-1"><Label>Nome</Label>
-              <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+            <div className="space-y-1"><Label>Nome *</Label>
+              <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Ex: Meta Q1 2026 - SP" autoFocus />
+            </div>
+            <div className="space-y-1"><Label>Descrição</Label>
+              <textarea
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                rows={2}
+                value={draft.description}
+                onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+                placeholder="Detalhes da meta (opcional)"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1"><Label>Meta (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={draft.target}
+                  onChange={(e) => setDraft({ ...draft, target: e.target.value })}
+                  placeholder="100000"
+                />
+              </div>
+              <div className="space-y-1"><Label>Responsável</Label>
+                <Combobox
+                  options={userOptions}
+                  value={draft.responsibleUserId}
+                  onChange={(v) => setDraft({ ...draft, responsibleUserId: v })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1"><Label>Início do período</Label>
+                <Input type="date" value={draft.periodStart} onChange={(e) => setDraft({ ...draft, periodStart: e.target.value })} />
+              </div>
+              <div className="space-y-1"><Label>Fim do período</Label>
+                <Input type="date" value={draft.periodEnd} onChange={(e) => setDraft({ ...draft, periodEnd: e.target.value })} />
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Checkbox checked={draft.active} onCheckedChange={(c) => setDraft({ ...draft, active: c === true })} />

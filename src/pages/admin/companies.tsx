@@ -22,6 +22,7 @@ import {
   DataTableActiveFilters, DataTableHeaderCell, DataTablePagination,
   useDataTable, type DataTableColumn,
 } from '@/shared/ui/data-table'
+import { fetchViaCep, normalizeCep } from '@/shared/lib/viacep'
 import { slugify } from '@/shared/lib/slugify'
 import { AuditInfoFooter } from '@/shared/ui/audit-info-footer'
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
@@ -69,6 +70,23 @@ export function AdminCompaniesPage() {
   const sectorById = new Map(sectors.map(s => [s.id, s.name]))
 
   function openCreate() { setDraft(EMPTY); setOpen(true) }
+
+  // ViaCEP autofill: ao sair do campo CEP, busca endereço e preenche
+  // rua/bairro/cidade/UF se estiverem vazios. País fica como Brasil.
+  async function handleCepBlur() {
+    if (!normalizeCep(draft.cep)) return
+    const data = await fetchViaCep(draft.cep)
+    if (!data) return
+    setDraft((d) => ({
+      ...d,
+      street: d.street || data.logradouro || '',
+      district: d.district || data.bairro || '',
+      city: d.city || data.localidade || '',
+      state: d.state || data.uf || '',
+      country: d.country || 'Brasil',
+      complement: d.complement || data.complemento || '',
+    }))
+  }
   function openEdit(c: Company) {
     const o = c as unknown as Record<string, unknown>
     setDraft({
@@ -189,7 +207,7 @@ export function AdminCompaniesPage() {
                 <Input type="number" value={draft.employeeCount} onChange={(e) => setDraft({ ...draft, employeeCount: e.target.value })} />
               </div>
               <div className="space-y-1"><Label>CEP</Label>
-                <Input value={draft.cep} onChange={(e) => setDraft({ ...draft, cep: e.target.value })} placeholder="00000-000" />
+                <Input value={draft.cep} onChange={(e) => setDraft({ ...draft, cep: e.target.value })} onBlur={handleCepBlur} placeholder="00000-000" />
               </div>
               <div className="space-y-1 col-span-2"><Label>Rua</Label>
                 <Input value={draft.street} onChange={(e) => setDraft({ ...draft, street: e.target.value })} />
