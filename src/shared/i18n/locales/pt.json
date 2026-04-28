@@ -860,7 +860,12 @@
       "master": "MASTER",
       "deleteTitle": "Remover usuário?",
       "deleteDesc": "\"{{name}}\" será removido. Logins atuais não serão revogados imediatamente.",
-      "th": { "name": "Nome", "email": "E-mail", "client": "Cliente", "profile": "Perfil" },
+      "th": {
+        "name": "Nome",
+        "email": "E-mail",
+        "client": "Cliente",
+        "profile": "Perfil"
+      },
       "field": {
         "name": "Nome",
         "email": "E-mail",
@@ -894,8 +899,16 @@
       "applyDefaultsConfirm": "Criar",
       "applyDefaultsDone": "{{count}} perfil(is) padrão criado(s)",
       "applyDefaultsAlready": "Os perfis padrão já existem. Nenhum criado.",
-      "th": { "name": "Nome", "client": "Escopo", "functionalities": "Func." },
-      "field": { "name": "Nome", "client": "Cliente", "functionalities": "Funcionalidades habilitadas" }
+      "th": {
+        "name": "Nome",
+        "client": "Escopo",
+        "functionalities": "Func."
+      },
+      "field": {
+        "name": "Nome",
+        "client": "Cliente",
+        "functionalities": "Funcionalidades habilitadas"
+      }
     },
     "plans": {
       "subtitle": "{{count}} planos de assinatura.",
@@ -905,8 +918,17 @@
       "saved": "Plano salvo",
       "deleteTitle": "Remover plano?",
       "deleteDesc": "\"{{name}}\" será removido. Clientes nesse plano precisarão ser realocados.",
-      "th": { "name": "Nome", "code": "Código", "functionalities": "Func." },
-      "field": { "name": "Nome", "code": "Código curto", "description": "Descrição", "functionalities": "Funcionalidades incluídas" }
+      "th": {
+        "name": "Nome",
+        "code": "Código",
+        "functionalities": "Func."
+      },
+      "field": {
+        "name": "Nome",
+        "code": "Código curto",
+        "description": "Descrição",
+        "functionalities": "Funcionalidades incluídas"
+      }
     },
     "functionalities": {
       "subtitle": "{{count}} funcionalidades.",
@@ -916,8 +938,17 @@
       "saved": "Funcionalidade salva",
       "deleteTitle": "Remover funcionalidade?",
       "deleteDesc": "\"{{name}}\" será removida dos perfis e planos que a referenciam.",
-      "th": { "name": "Nome", "category": "Categoria", "plan": "Plano" },
-      "field": { "name": "Nome", "category": "Categoria", "plan": "Plano (visível em)", "description": "Descrição" }
+      "th": {
+        "name": "Nome",
+        "category": "Categoria",
+        "plan": "Plano"
+      },
+      "field": {
+        "name": "Nome",
+        "category": "Categoria",
+        "plan": "Plano (visível em)",
+        "description": "Descrição"
+      }
     },
     "clients": {
       "subtitle": "{{count}} tenants cadastrados.",
@@ -927,7 +958,11 @@
       "saved": "Cliente salvo",
       "deleteTitle": "Remover cliente?",
       "deleteDesc": "\"{{name}}\" e seus dados serão removidos. Backups precisam ser feitos antes.",
-      "th": { "name": "Nome", "plan": "Plano", "contact": "Contato" },
+      "th": {
+        "name": "Nome",
+        "plan": "Plano",
+        "contact": "Contato"
+      },
       "field": {
         "name": "Nome do tenant",
         "plan": "Plano de acesso",
@@ -1197,6 +1232,7 @@
     "adminClients": "Clientes",
     "adminWorkflow": "Workflow",
     "adminBranding": "Marca",
-    "audit": "Auditoria"
+    "audit": "Auditoria",
+    "adminFormFields": "Campos personalizados"
   }
 }

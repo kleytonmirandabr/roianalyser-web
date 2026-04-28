@@ -209,6 +209,11 @@ const AdminContractFormPage = lazy(() =>
     default: m.AdminContractFormPage,
   })),
 )
+const AdminFormFieldsPage = lazy(() =>
+  import('@/pages/admin/form-fields').then((m) => ({
+    default: m.AdminFormFieldsPage,
+  })),
+)
 const ImportsIndexPage = lazy(() =>
   import('@/pages/imports').then((m) => ({ default: m.ImportsIndexPage })),
 )
@@ -562,6 +567,16 @@ export function AppRouter() {
             <RequireRole level="master">
               <Lazy>
                 <AdminContractFormPage />
+              </Lazy>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/form-fields"
+          element={
+            <RequireRole level="master">
+              <Lazy>
+                <AdminFormFieldsPage />
               </Lazy>
             </RequireRole>
           }

@@ -24,6 +24,7 @@ import { Card } from '@/shared/ui/card'
 import { Combobox } from '@/shared/ui/combobox'
 import { Input } from '@/shared/ui/input'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { CustomFieldsCard } from '@/features/form-fields/components/custom-fields-card'
 
 export function RoiAnalysisDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -228,6 +229,8 @@ export function RoiAnalysisDetailPage() {
           </tbody>
         </table>
       </Card>
+
+      <CustomFieldsCard scope="roi" entityType="roi_analysis" entityId={id} />
     </div>
   )
 }

@@ -160,6 +160,7 @@ export const NAV_ITEMS: NavItem[] = [
       { i18nKey: 'adminClients', to: '/admin/clients', requiresLevel: 'master' },
       { i18nKey: 'adminWorkflow', to: '/admin/workflow-rules', requiresLevel: 'master' },
       { i18nKey: 'adminBranding', to: '/admin/branding', requiresLevel: 'master' },
+      { i18nKey: 'adminFormFields', to: '/admin/form-fields', requiresLevel: 'master' },
     ],
   },
 ]

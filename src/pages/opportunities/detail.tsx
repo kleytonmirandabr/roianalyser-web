@@ -39,6 +39,7 @@ import { confirm } from '@/shared/ui/confirm-dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { CustomFieldsCard } from '@/features/form-fields/components/custom-fields-card'
 
 export function OpportunityDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -378,6 +379,8 @@ export function OpportunityDetailPage() {
           )}
         </Card>
       )}
+
+      <CustomFieldsCard scope="opportunity" entityType="opportunity" entityId={id} />
     </div>
   )
 }

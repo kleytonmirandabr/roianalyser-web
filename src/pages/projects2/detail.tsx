@@ -25,6 +25,7 @@ import { confirm } from '@/shared/ui/confirm-dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { CustomFieldsCard } from '@/features/form-fields/components/custom-fields-card'
 
 export function Project2DetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -245,6 +246,8 @@ export function Project2DetailPage() {
           </ul>
         )}
       </Card>
+
+      <CustomFieldsCard scope="project" entityType="project" entityId={id} />
     </div>
   )
 }

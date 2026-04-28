@@ -860,7 +860,12 @@
       "master": "MASTER",
       "deleteTitle": "Delete user?",
       "deleteDesc": "\"{{name}}\" will be deleted. Active sessions will not be revoked immediately.",
-      "th": { "name": "Name", "email": "Email", "client": "Client", "profile": "Profile" },
+      "th": {
+        "name": "Name",
+        "email": "Email",
+        "client": "Client",
+        "profile": "Profile"
+      },
       "field": {
         "name": "Name",
         "email": "Email",
@@ -894,8 +899,16 @@
       "applyDefaultsConfirm": "Create",
       "applyDefaultsDone": "{{count}} default profile(s) created",
       "applyDefaultsAlready": "Default profiles already exist. None created.",
-      "th": { "name": "Name", "client": "Scope", "functionalities": "Func." },
-      "field": { "name": "Name", "client": "Client", "functionalities": "Enabled functionalities" }
+      "th": {
+        "name": "Name",
+        "client": "Scope",
+        "functionalities": "Func."
+      },
+      "field": {
+        "name": "Name",
+        "client": "Client",
+        "functionalities": "Enabled functionalities"
+      }
     },
     "plans": {
       "subtitle": "{{count}} subscription plans.",
@@ -905,8 +918,17 @@
       "saved": "Plan saved",
       "deleteTitle": "Delete plan?",
       "deleteDesc": "\"{{name}}\" will be deleted. Clients on this plan must be reassigned.",
-      "th": { "name": "Name", "code": "Code", "functionalities": "Func." },
-      "field": { "name": "Name", "code": "Short code", "description": "Description", "functionalities": "Included functionalities" }
+      "th": {
+        "name": "Name",
+        "code": "Code",
+        "functionalities": "Func."
+      },
+      "field": {
+        "name": "Name",
+        "code": "Short code",
+        "description": "Description",
+        "functionalities": "Included functionalities"
+      }
     },
     "functionalities": {
       "subtitle": "{{count}} functionalities.",
@@ -916,8 +938,17 @@
       "saved": "Functionality saved",
       "deleteTitle": "Delete functionality?",
       "deleteDesc": "\"{{name}}\" will be removed from referencing profiles and plans.",
-      "th": { "name": "Name", "category": "Category", "plan": "Plan" },
-      "field": { "name": "Name", "category": "Category", "plan": "Plan (visible in)", "description": "Description" }
+      "th": {
+        "name": "Name",
+        "category": "Category",
+        "plan": "Plan"
+      },
+      "field": {
+        "name": "Name",
+        "category": "Category",
+        "plan": "Plan (visible in)",
+        "description": "Description"
+      }
     },
     "clients": {
       "subtitle": "{{count}} tenants registered.",
@@ -927,7 +958,11 @@
       "saved": "Client saved",
       "deleteTitle": "Delete client?",
       "deleteDesc": "\"{{name}}\" and its data will be deleted. Make backups first.",
-      "th": { "name": "Name", "plan": "Plan", "contact": "Contact" },
+      "th": {
+        "name": "Name",
+        "plan": "Plan",
+        "contact": "Contact"
+      },
       "field": {
         "name": "Tenant name",
         "plan": "Access plan",
@@ -1197,6 +1232,7 @@
     "adminClients": "Clients",
     "adminWorkflow": "Workflow",
     "adminBranding": "Branding",
-    "audit": "Audit"
+    "audit": "Audit",
+    "adminFormFields": "Custom Fields"
   }
 }
