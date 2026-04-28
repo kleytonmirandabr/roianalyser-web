@@ -53,7 +53,7 @@ export function NewProject2Page() {
         description: description.trim() || null,
       })
       toastSaved(`Projeto ${created.projectCode} criado`)
-      navigate(`/projects-v2/${created.id}`)
+      navigate(`/projects/${created.id}`)
     } catch (err) {
       toastError(`Erro: ${(err as Error).message}`)
     }
@@ -63,7 +63,7 @@ export function NewProject2Page() {
     <div className="space-y-6 p-6 max-w-3xl">
       <header className="flex items-center gap-3">
         <Button asChild variant="ghost" size="sm">
-          <Link to="/projects-v2"><ArrowLeft className="h-4 w-4" />Projetos</Link>
+          <Link to="/projects"><ArrowLeft className="h-4 w-4" />Projetos</Link>
         </Button>
       </header>
 
@@ -116,7 +116,7 @@ export function NewProject2Page() {
 
           <div className="flex gap-2 justify-end pt-2 border-t">
             <Button asChild variant="outline" type="button">
-              <Link to="/projects-v2">Cancelar</Link>
+              <Link to="/projects">Cancelar</Link>
             </Button>
             <Button type="submit" disabled={create.isPending}>
               {create.isPending ? 'Salvando…' : 'Criar projeto'}

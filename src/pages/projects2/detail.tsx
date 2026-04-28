@@ -96,7 +96,7 @@ export function Project2DetailPage() {
     try {
       await remove.mutateAsync(prj.id)
       toastDeleted('Projeto excluído')
-      navigate('/projects-v2')
+      navigate('/projects')
     } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
   }
 
@@ -120,7 +120,7 @@ export function Project2DetailPage() {
     <div className="space-y-6 p-6 max-w-3xl">
       <header className="flex items-center gap-3">
         <Button asChild variant="ghost" size="sm">
-          <Link to="/projects-v2"><ArrowLeft className="h-4 w-4" />Projetos</Link>
+          <Link to="/projects"><ArrowLeft className="h-4 w-4" />Projetos</Link>
         </Button>
       </header>
 

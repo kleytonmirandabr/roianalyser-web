@@ -72,14 +72,14 @@ export const NAV_ITEMS: NavItem[] = [
   {
     /**
      * Projetos — Sprint 4 (módulo isolado pós-Phase 0). Lista nova consome
-     * /api/projects2. Path /projects-v2 evita conflito com /projects legacy
+     * /api/projects2. Path /projects evita conflito com /projects legacy
      * (que ainda usa /api/contracts → contracts_legacy). Cleanup na Fase 4.
      */
     i18nKey: 'projects',
-    to: '/projects-v2',
+    to: '/projects',
     icon: BarChart3,
     children: [
-      { i18nKey: 'projectsList', to: '/projects-v2' },
+      { i18nKey: 'projectsList', to: '/projects' },
     ],
   },
   {

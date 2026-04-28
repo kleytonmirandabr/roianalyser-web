@@ -85,7 +85,7 @@ export function Projects2ListPage() {
         </div>
         <div className="flex gap-2">
           <Button asChild variant="outline">
-            <Link to="/projects-v2/dashboard">
+            <Link to="/projects/dashboard">
               <BarChart3 className="h-4 w-4" />
               Dashboard
             </Link>
@@ -150,7 +150,7 @@ export function Projects2ListPage() {
                   <tr key={p.id} className="border-t hover:bg-muted/30 cursor-pointer">
                     <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{p.projectCode}</td>
                     <td className="px-4 py-3">
-                      <Link to={`/projects-v2/${p.id}`} className="font-medium text-indigo-600 hover:underline">
+                      <Link to={`/projects/${p.id}`} className="font-medium text-indigo-600 hover:underline">
                         {p.name}
                       </Link>
                     </td>

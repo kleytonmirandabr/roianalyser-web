@@ -103,7 +103,7 @@ export function ForecastDetailPage() {
     <div className="space-y-6 p-6 max-w-4xl">
       <header className="flex items-center gap-3">
         <Button asChild variant="ghost" size="sm">
-          <Link to={`/projects-v2/${fc.projectId}`}><ArrowLeft className="h-4 w-4" />Projeto</Link>
+          <Link to={`/projects/${fc.projectId}`}><ArrowLeft className="h-4 w-4" />Projeto</Link>
         </Button>
       </header>
 

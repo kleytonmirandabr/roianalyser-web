@@ -134,7 +134,7 @@ export function Projects2DashboardPage() {
           </div>
         </div>
         <Button asChild variant="outline">
-          <Link to="/projects-v2">Ver lista</Link>
+          <Link to="/projects">Ver lista</Link>
         </Button>
       </header>
 
@@ -152,7 +152,7 @@ export function Projects2DashboardPage() {
           </div>
         </Card>
 
-        <Link to="/projects-v2?status=execution" className="block group">
+        <Link to="/projects?status=execution" className="block group">
           <Card className="p-4 group-hover:border-indigo-300 transition">
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground uppercase">Em execução</span>
@@ -230,7 +230,7 @@ export function Projects2DashboardPage() {
               const days = daysLate(p.plannedEnd, p.status)
               return (
                 <li key={p.id}>
-                  <Link to={`/projects-v2/${p.id}`} className="flex items-center justify-between rounded border p-3 hover:bg-muted/30">
+                  <Link to={`/projects/${p.id}`} className="flex items-center justify-between rounded border p-3 hover:bg-muted/30">
                     <div>
                       <span className="font-mono text-xs text-muted-foreground mr-2">{p.projectCode}</span>
                       <span className="font-medium">{p.name}</span>
@@ -265,7 +265,7 @@ export function Projects2DashboardPage() {
           return (
             <div className="space-y-2">
               {top.map(p => (
-                <Link key={p.id} to={`/projects-v2/${p.id}`} className="block group">
+                <Link key={p.id} to={`/projects/${p.id}`} className="block group">
                   <div className="flex items-center justify-between text-sm mb-1">
                     <span className="font-medium truncate max-w-[60%]">{p.name}</span>
                     <span className="text-xs tabular-nums">{formatCurrencyShort(Number(p.budget), p.currency)}</span>
@@ -324,7 +324,7 @@ export function Projects2DashboardPage() {
         </div>
         <div className="space-y-3">
           {statusData.map(d => (
-            <Link key={d.status} to={`/projects-v2?status=${d.status}`} className="block group">
+            <Link key={d.status} to={`/projects?status=${d.status}`} className="block group">
               <div className="flex items-center justify-between text-sm mb-1">
                 <span className="font-medium">{PROJECT_STATUS_LABELS[d.status]}</span>
                 <span className="font-medium tabular-nums">{d.count}</span>

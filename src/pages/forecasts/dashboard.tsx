@@ -157,7 +157,7 @@ export function ForecastsDashboardPage() {
           </div>
         </div>
         <Button asChild variant="outline">
-          <Link to="/projects-v2">Ver projetos</Link>
+          <Link to="/projects">Ver projetos</Link>
         </Button>
       </header>
 

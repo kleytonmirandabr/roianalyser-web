@@ -1,5 +1,5 @@
 /**
- * Drawer para criar/editar Projeto novo — substitui /projects-v2/new.
+ * Drawer para criar/editar Projeto novo — substitui /projects/new.
  */
 import { Save } from 'lucide-react'
 import { useEffect, useState } from 'react'

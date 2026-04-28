@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
 import { UserAvatar } from '@/features/admin/components/user-select'
-import { useCatalog } from '@/features/catalogs/hooks/use-catalog'
 import { financialSummaries } from '@/features/dashboard/lib/aggregations'
 import {
   AdvancedFilters,
@@ -13,7 +12,6 @@ import {
 import { useMoveProject } from '@/features/projects/hooks/use-move-project'
 import { useOpportunityStatuses } from '@/features/opportunity-statuses/hooks/use-opportunity-statuses'
 import { useOpportunitiesAsProjects } from '@/features/opportunities/hooks/use-opportunities-as-projects'
-import { useProjects } from '@/features/projects/hooks/use-projects'
 import { formatCurrency } from '@/features/projects/lib/money'
 import { applyFilters } from '@/features/projects/lib/project-fields'
 import {
@@ -66,17 +64,9 @@ export function ProjectsBoardPage({
   scope?: FunnelScope
 }) {
   const { t, i18n } = useTranslation()
-  const legacyProjects = useProjects()
-  const opportunityProjects = useOpportunitiesAsProjects()
-  // scope='opportunities' usa /api/opportunities (nova fonte);
-  // scope='projects' usa /api/contracts (legacy).
-  const projects = scope === 'opportunities' ? opportunityProjects : legacyProjects
-  // Hooks SEMPRE chamadas (regra do React); o resultado é selecionado pelo scope.
-  const projectsCatalogStatuses = useCatalog('projectStatuses')
+  const projects = useOpportunitiesAsProjects()
   const oppStatuses = useOpportunityStatuses()
-  const statuses = scope === 'opportunities'
-    ? { data: oppStatuses.data, isLoading: oppStatuses.isLoading, isError: oppStatuses.isError, isSuccess: oppStatuses.isSuccess }
-    : projectsCatalogStatuses
+  const statuses = { data: oppStatuses.data, isLoading: oppStatuses.isLoading, isError: oppStatuses.isError, isSuccess: oppStatuses.isSuccess }
 
   // Filtros
   const [search, setSearch] = useState('')

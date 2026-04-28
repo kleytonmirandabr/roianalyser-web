@@ -365,7 +365,7 @@ export function ContractDetailPage() {
               </p>
             </div>
             <Button size="sm" asChild>
-              <Link to={`/projects-v2/new?contractId=${ctr.id}`}>
+              <Link to={`/projects/new?contractId=${ctr.id}`}>
                 <Plus className="h-4 w-4" />Iniciar projeto
               </Link>
             </Button>
@@ -379,7 +379,7 @@ export function ContractDetailPage() {
               {relatedProjects.map(p => (
                 <li key={p.id}>
                   <Link
-                    to={`/projects-v2/${p.id}`}
+                    to={`/projects/${p.id}`}
                     className="flex items-center justify-between rounded border p-3 hover:bg-muted/30"
                   >
                     <div>

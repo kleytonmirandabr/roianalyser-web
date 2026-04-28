@@ -9,7 +9,6 @@ import { ForgotPasswordPage } from '@/pages/forgot-password'
 import { LoginPage } from '@/pages/login'
 import { MfaPage } from '@/pages/mfa'
 import { NotFoundPage } from '@/pages/not-found'
-import { ProjectsListPage } from '@/pages/projects/list'
 import { OpportunitiesListPage } from '@/pages/opportunities/list'
 import { ReportsListPage } from '@/pages/reports/list'
 import { CatalogsIndexPage } from '@/pages/catalogs'
@@ -80,66 +79,6 @@ const ProjectsFunnelPage = lazy(() =>
 )
 const ProjectsLostPage = lazy(() =>
   import('@/pages/projects/lost').then((m) => ({ default: m.ProjectsLostPage })),
-)
-const ProjectDetailPage = lazy(() =>
-  import('@/pages/projects/detail').then((m) => ({
-    default: m.ProjectDetailPage,
-  })),
-)
-const ProjectInfoView = lazy(() =>
-  import('@/pages/projects/views/info').then((m) => ({
-    default: m.ProjectInfoView,
-  })),
-)
-const ProjectResumoView = lazy(() =>
-  import('@/pages/projects/views/resumo').then((m) => ({
-    default: m.ProjectResumoView,
-  })),
-)
-const ProjectEntradasView = lazy(() =>
-  import('@/pages/projects/views/entradas').then((m) => ({
-    default: m.ProjectEntradasView,
-  })),
-)
-const ProjectFinanceiroView = lazy(() =>
-  import('@/pages/projects/views/financeiro').then((m) => ({
-    default: m.ProjectFinanceiroView,
-  })),
-)
-const ProjectTasksView = lazy(() =>
-  import('@/pages/projects/views/tasks').then((m) => ({
-    default: m.ProjectTasksView,
-  })),
-)
-const ProjectForecastView = lazy(() =>
-  import('@/pages/projects/views/forecast').then((m) => ({
-    default: m.ProjectForecastView,
-  })),
-)
-const ProjectScheduleView = lazy(() =>
-  import('@/pages/projects/views/schedule').then((m) => ({
-    default: m.ProjectScheduleView,
-  })),
-)
-const ProjectContractView = lazy(() =>
-  import('@/pages/projects/views/contract').then((m) => ({
-    default: m.ProjectContractView,
-  })),
-)
-const ProjectAttachmentsView = lazy(() =>
-  import('@/pages/projects/views/attachments').then((m) => ({
-    default: m.ProjectAttachmentsView,
-  })),
-)
-const ProjectHistoryView = lazy(() =>
-  import('@/pages/projects/views/history').then((m) => ({
-    default: m.ProjectHistoryView,
-  })),
-)
-const ProjectCommentsView = lazy(() =>
-  import('@/pages/projects/views/comments').then((m) => ({
-    default: m.ProjectCommentsView,
-  })),
 )
 const CatalogDetailPage = lazy(() =>
   import('@/pages/catalogs/detail').then((m) => ({
@@ -431,9 +370,9 @@ export function AppRouter() {
         />
 
         {/* Projetos V2 — Sprint 4 (módulo isolado pós-Phase 0).
-            Path /projects-v2 evita conflito com /projects (legacy). */}
+            Path /projects evita conflito com /projects (legacy). */}
         <Route
-          path="/projects-v2"
+          path="/projects"
           element={
             <Lazy>
               <Projects2ListPage />
@@ -441,7 +380,7 @@ export function AppRouter() {
           }
         />
         <Route
-          path="/projects-v2/dashboard"
+          path="/projects/dashboard"
           element={
             <Lazy>
               <Projects2DashboardPage />
@@ -449,7 +388,7 @@ export function AppRouter() {
           }
         />
         <Route
-          path="/projects-v2/new"
+          path="/projects/new"
           element={
             <Lazy>
               <NewProject2Page />
@@ -457,7 +396,7 @@ export function AppRouter() {
           }
         />
         <Route
-          path="/projects-v2/:id"
+          path="/projects/:id"
           element={
             <Lazy>
               <Project2DetailPage />
@@ -465,7 +404,7 @@ export function AppRouter() {
           }
         />
 
-        {/* Forecast — detalhe único (lista vem do projeto pai) + dashboard */}
+        {/* Forecast — detalhe único + dashboard */}
         <Route
           path="/forecasts/dashboard"
           element={
@@ -483,7 +422,7 @@ export function AppRouter() {
           }
         />
 
-        {/* ROI Analysis — detalhe único (lista vem da oportunidade pai) + dashboard */}
+        {/* ROI Analysis — detalhe único + dashboard */}
         <Route
           path="/roi-analyses/dashboard"
           element={
@@ -500,128 +439,6 @@ export function AppRouter() {
             </Lazy>
           }
         />
-
-        {/* Redirects de bookmarks antigos → /opportunities/* */}
-        <Route
-          path="/projects/board"
-          element={<Navigate to="/opportunities/board" replace />}
-        />
-        <Route
-          path="/projects/funnel"
-          element={<Navigate to="/opportunities/funnel" replace />}
-        />
-        <Route
-          path="/projects/lost"
-          element={<Navigate to="/opportunities/lost" replace />}
-        />
-
-        {/* Projetos — pós-Win (won/execution/invoicing/done/warranty) */}
-        <Route path="/projects" element={<ProjectsListPage scope="projects" />} />
-        {/* /projects/new redireciona pra /opportunities/new — projeto SEMPRE
-            nasce de uma oportunidade ganha (status=won), não é criado direto.
-            Mantém URL antiga funcionando com redirect transparente. */}
-        <Route
-          path="/projects/new"
-          element={<Navigate to="/opportunities/new" replace />}
-        />
-        <Route
-          path="/projects/:id"
-          element={
-            <Lazy>
-              <ProjectDetailPage />
-            </Lazy>
-          }
-        >
-          <Route index element={<Navigate to="info" replace />} />
-          <Route
-            path="info"
-            element={
-              <Lazy>
-                <ProjectInfoView />
-              </Lazy>
-            }
-          />
-          <Route
-            path="resumo"
-            element={
-              <Lazy>
-                <ProjectResumoView />
-              </Lazy>
-            }
-          />
-          <Route
-            path="entradas"
-            element={
-              <Lazy>
-                <ProjectEntradasView />
-              </Lazy>
-            }
-          />
-          <Route
-            path="financeiro"
-            element={
-              <Lazy>
-                <ProjectFinanceiroView />
-              </Lazy>
-            }
-          />
-          <Route
-            path="tasks"
-            element={
-              <Lazy>
-                <ProjectTasksView />
-              </Lazy>
-            }
-          />
-          <Route
-            path="forecast"
-            element={
-              <Lazy>
-                <ProjectForecastView />
-              </Lazy>
-            }
-          />
-          <Route
-            path="schedule"
-            element={
-              <Lazy>
-                <ProjectScheduleView />
-              </Lazy>
-            }
-          />
-          <Route
-            path="contract"
-            element={
-              <Lazy>
-                <ProjectContractView />
-              </Lazy>
-            }
-          />
-          <Route
-            path="attachments"
-            element={
-              <Lazy>
-                <ProjectAttachmentsView />
-              </Lazy>
-            }
-          />
-          <Route
-            path="history"
-            element={
-              <Lazy>
-                <ProjectHistoryView />
-              </Lazy>
-            }
-          />
-          <Route
-            path="comments"
-            element={
-              <Lazy>
-                <ProjectCommentsView />
-              </Lazy>
-            }
-          />
-        </Route>
 
         {/* Catálogos */}
         <Route path="/catalogs" element={<CatalogsIndexPage />} />
