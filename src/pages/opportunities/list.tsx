@@ -1,4 +1,5 @@
 import { Plus, BarChart3 } from 'lucide-react'
+import { OpportunityFormSheet } from '@/features/opportunities/components/opportunity-form-sheet'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
@@ -14,6 +15,7 @@ export function OpportunitiesListPage() {
   const [params, setParams] = useSearchParams()
   const initial = params.get('statusId') || 'all'
   const [statusFilter, setStatusFilter] = useState<string>(initial)
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   const { data: items = [], isLoading } = useOpportunities(
     statusFilter !== 'all' ? { statusId: statusFilter } : {},
@@ -47,7 +49,7 @@ export function OpportunitiesListPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild><Link to="/opportunities/dashboard"><BarChart3 className="h-4 w-4 mr-2" /> Dashboard</Link></Button>
-          <Button asChild><Link to="/opportunities/new"><Plus className="h-4 w-4 mr-2" /> Nova oportunidade</Link></Button>
+          <Button onClick={() => setDrawerOpen(true)}><Plus className="h-4 w-4 mr-2" /> Nova oportunidade</Button>
         </div>
       </div>
 
@@ -101,6 +103,8 @@ export function OpportunitiesListPage() {
           </table>
         )}
       </Card>
+      <OpportunityFormSheet open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+    
     </div>
   )
 }
