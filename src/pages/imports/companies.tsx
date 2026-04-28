@@ -12,7 +12,8 @@ export function ImportCompaniesPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const { user } = useAuth()
-  const clientId = user?.clientId ?? ''
+  // Importação grava no tenant ATIVO. Veja contacts.tsx para a justificativa.
+  const clientId = user?.activeClientId ?? user?.clientId ?? ''
 
   const fields: ImportField[] = [
     {

@@ -12,7 +12,10 @@ export function ImportContactsPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const { user } = useAuth()
-  const clientId = user?.clientId ?? ''
+  // Importação grava no tenant ATIVO. user.clientId é o tenant base do
+  // user; se ele estiver com outro tenant selecionado no switcher,
+  // gravar com clientId base seria vazamento cross-tenant.
+  const clientId = user?.activeClientId ?? user?.clientId ?? ''
 
   const fields: ImportField[] = [
     {

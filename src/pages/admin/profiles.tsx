@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import { useAppState, usePatchAppState } from '@/features/admin/hooks/use-app-state'
 import type { GlobalProfile } from '@/features/admin/types'
+import { useAuth } from '@/features/auth/hooks/use-auth'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
@@ -43,11 +44,26 @@ export function AdminProfilesPage() {
   const { t } = useTranslation()
   const appState = useAppState()
   const patch = usePatchAppState()
+  const { user: currentUser } = useAuth()
+  const isMasterUser = currentUser?.isMaster === true
   const [editing, setEditing] = useState<GlobalProfile | null>(null)
 
-  const profiles = appState.data?.profiles ?? []
+  const allProfiles = appState.data?.profiles ?? []
   const functionalities = appState.data?.functionalities ?? []
   const clients = appState.data?.clients ?? []
+
+  // Tenant isolation: admin não-master vê só perfis globais (clientId
+  // vazio = compartilhado entre todos tenants) + perfis do tenant ativo.
+  // Master vê tudo cross-tenant.
+  //
+  // Defesa em profundidade: mesmo que o backend filtre por X-Active-Tenant,
+  // refiltrar aqui evita vazamento se o cache do React Query ainda tiver
+  // dados do tenant anterior durante uma troca rápida no switcher.
+  const activeTenantId =
+    currentUser?.activeClientId ?? currentUser?.clientId ?? ''
+  const profiles = isMasterUser
+    ? allProfiles
+    : allProfiles.filter((p) => !p.clientId || p.clientId === activeTenantId)
 
   // DataTable Excel-style — sort + filtro multi-select por coluna.
   const profileColumns = useMemo<DataTableColumn<GlobalProfile>[]>(

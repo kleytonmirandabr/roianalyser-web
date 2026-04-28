@@ -84,27 +84,33 @@ export function AdminUsersPage() {
     }
   }
 
-  // Sprint H.1 — não-master vê só users do(s) próprio(s) tenant(s).
-  // `activeClientId` (single) é o tenant ativo no header; `clientIds[]`
-  // é a lista de tenants a que o user pertence (master tem todos).
-  // Filtro client-side: garantia adicional sobre o que o backend já filtra.
+  // Tenant isolation: a lista reflete SEMPRE o tenant ativo no switcher.
+  // Mesmo se o admin tem acesso a múltiplos tenants (clientIds[] com
+  // 2+), a tela admin/users mostra só os users do tenant onde ele está
+  // trabalhando agora. Master ignora — vê tudo cross-tenant.
+  //
+  // Bug anterior (corrigido aqui): filtrava por `clientIds` (união de
+  // todos os tenants acessíveis), causando vazamento — admin de SODEP+
+  // Tecnofink via os 7 users SODEP mesmo com Tecnofink selecionado
+  // no header.
   const allowedClientIds = isMasterUser
     ? null
     : new Set(
-        currentUser?.clientIds && currentUser.clientIds.length > 0
-          ? currentUser.clientIds
-          : currentUser?.activeClientId
-            ? [currentUser.activeClientId]
+        currentUser?.activeClientId
+          ? [currentUser.activeClientId]
+          : currentUser?.clientIds && currentUser.clientIds.length > 0
+            ? currentUser.clientIds
             : [],
       )
   const users = allowedClientIds
     ? allUsers.filter((u) => {
         // Admin/user comum NUNCA vê master users — eles são cross-tenant
         // e tipicamente sem clientId, o que antes os deixava passar pelo
-        // ramo `!u.clientId` por engano. Bug visual: SODEP admin via o
-        // "Administrador Master" na lista. Corrigido bloqueando explicitamente.
+        // ramo `!u.clientId` por engano.
         if (u.isMaster) return false
-        return !u.clientId || allowedClientIds.has(u.clientId)
+        // Sem clientId em u = user órfão — esconde por segurança.
+        if (!u.clientId) return false
+        return allowedClientIds.has(u.clientId)
       })
     : allUsers
 

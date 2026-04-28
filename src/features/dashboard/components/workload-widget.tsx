@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import { UserAvatar } from '@/features/admin/components/user-select'
 import { useAppState } from '@/features/admin/hooks/use-app-state'
+import { useAuth } from '@/features/auth/hooks/use-auth'
 import {
   effectiveStatus,
   readMilestones,
@@ -31,7 +32,17 @@ type Workload = {
 export function WorkloadWidget({ projects }: { projects: Project[] }) {
   const { t } = useTranslation()
   const appState = useAppState()
-  const users = appState.data?.users ?? []
+  const { user: currentUser } = useAuth()
+  // Tenant isolation: o widget mostra carga de trabalho do tenant ativo.
+  // Master vê tudo; admin/user não-master só vê users do tenant onde
+  // está logado agora.
+  const isMasterUser = currentUser?.isMaster === true
+  const activeTenantId =
+    currentUser?.activeClientId ?? currentUser?.clientId ?? ''
+  const allUsers = appState.data?.users ?? []
+  const users = isMasterUser
+    ? allUsers
+    : allUsers.filter((u) => !u.isMaster && u.clientId === activeTenantId)
 
   const workload = useMemo<Workload[]>(() => {
     const map = new Map<string, Workload>()

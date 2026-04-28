@@ -75,13 +75,16 @@ export function ForecastPage() {
     return cur
   }, [projects.data])
 
-  // Horizonte do tenant (do client ativo)
+  // Horizonte do tenant ATIVO (não do clientId base do user). Se o admin
+  // tem múltiplos tenants e troca pelo switcher, o horizon precisa
+  // refletir o tenant onde ele está olhando agora.
+  const activeTenantId = user?.activeClientId ?? user?.clientId
   const horizon = useMemo(() => {
     const client = (appState.data?.clients ?? []).find(
-      (c) => c.id === user?.clientId,
+      (c) => c.id === activeTenantId,
     )
     return client?.forecastHorizonMonths ?? 18
-  }, [appState.data, user?.clientId])
+  }, [appState.data, activeTenantId])
 
   const result = useMemo(
     () =>

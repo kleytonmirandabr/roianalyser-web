@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 
 import { useAppState } from '@/features/admin/hooks/use-app-state'
+import { useAuth } from '@/features/auth/hooks/use-auth'
 import { Combobox } from '@/shared/ui/combobox'
 
 type UserSelectProps = {
@@ -8,7 +9,12 @@ type UserSelectProps = {
   /** ID do user selecionado, ou string vazia se nenhum. */
   value: string
   onChange: (userId: string) => void
-  /** Filtra usuários por clientId (escopo do tenant). Se null, mostra todos. */
+  /**
+   * Filtra usuários por clientId (escopo do tenant). Se omitido, usa o
+   * tenant ativo do user logado como default — proteção contra vazamento
+   * cross-tenant em telas que esquecem de passar a prop. Pra explicitamente
+   * mostrar todos os tenants (master only), passe `null`.
+   */
   scopeClientId?: string | null
   placeholder?: string
   disabled?: boolean
@@ -34,10 +40,20 @@ export function UserSelect({
   onlyActive = true,
 }: UserSelectProps) {
   const appState = useAppState()
+  const { user: currentUser } = useAuth()
+  // Tenant isolation default: se scopeClientId não foi passado (undefined),
+  // assume tenant ativo do user logado. `null` explícito = sem filtro
+  // (master only). String vazia trata como undefined → default ativo.
+  const effectiveScope =
+    scopeClientId === null
+      ? null
+      : scopeClientId && scopeClientId.length > 0
+        ? scopeClientId
+        : currentUser?.activeClientId ?? currentUser?.clientId ?? null
   const options = useMemo(() => {
     const base = (appState.data?.users ?? [])
       .filter((u) => (onlyActive ? u.active !== false : true))
-      .filter((u) => (scopeClientId ? u.clientId === scopeClientId : true))
+      .filter((u) => (effectiveScope ? u.clientId === effectiveScope : true))
       .map((u) => ({
         value: u.id,
         label: u.name || u.email || u.id,
@@ -48,7 +64,7 @@ export function UserSelect({
       base.unshift({ value, label: `(usuário não encontrado: ${value})`, hint: undefined })
     }
     return base
-  }, [appState.data, scopeClientId, onlyActive, value])
+  }, [appState.data, effectiveScope, onlyActive, value])
 
   return (
     <Combobox
@@ -82,8 +98,17 @@ export function MultiUserSelect({
   disabled,
 }: MultiUserSelectProps) {
   const appState = useAppState()
+  const { user: currentUser } = useAuth()
+  // Mesma defesa em profundidade que UserSelect: undefined cai pra tenant
+  // ativo do user logado, `null` = sem filtro (master).
+  const effectiveScope =
+    scopeClientId === null
+      ? null
+      : scopeClientId && scopeClientId.length > 0
+        ? scopeClientId
+        : currentUser?.activeClientId ?? currentUser?.clientId ?? null
   const allUsers = (appState.data?.users ?? []).filter((u) =>
-    scopeClientId ? u.clientId === scopeClientId : true,
+    effectiveScope ? u.clientId === effectiveScope : true,
   )
   const selected = values
     .map((id) => allUsers.find((u) => u.id === id))

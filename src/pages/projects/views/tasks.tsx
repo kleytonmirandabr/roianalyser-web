@@ -190,6 +190,11 @@ export function ProjectTasksView() {
             .filter((it) => it.active !== false)
             .map((it) => String(it.taskType ?? it.name ?? ''))
             .filter(Boolean)}
+          scopeClientId={
+            (typeof project.data?.clientId === 'string'
+              ? project.data.clientId
+              : null) ?? null
+          }
           onCancel={() => setEditing(null)}
           onSave={saveTask}
           saving={update.isPending}
@@ -371,12 +376,15 @@ function TasksKanban({
 function TaskForm({
   initial,
   taskTypeOptions,
+  scopeClientId,
   onCancel,
   onSave,
   saving,
 }: {
   initial: Task
   taskTypeOptions: string[]
+  /** Tenant do projeto. Restringe lista de responsáveis a usuários desse tenant. */
+  scopeClientId?: string | null
   onCancel: () => void
   onSave: (task: Task) => Promise<void> | void
   saving: boolean
@@ -472,6 +480,7 @@ function TaskForm({
             <MultiUserSelect
               values={task.responsibleIds ?? []}
               onChange={(ids) => patch('responsibleIds', ids)}
+              scopeClientId={scopeClientId}
             />
           </div>
 
