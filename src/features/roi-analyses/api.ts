@@ -5,6 +5,9 @@ import type {
 } from './types'
 
 export const roiAnalysesApi = {
+  list: () =>
+    api.get<{ items: RoiAnalysis[] }>('/roi-analyses').then(r => r.items),
+
   listByOpportunity: (opportunityId: string) =>
     api.get<{ items: RoiAnalysis[] }>(`/roi-analyses?opportunityId=${encodeURIComponent(opportunityId)}`)
        .then(r => r.items),

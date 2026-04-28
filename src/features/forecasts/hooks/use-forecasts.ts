@@ -8,3 +8,11 @@ export function useForecastsByProject(projectId: string | undefined | null) {
     enabled: Boolean(projectId),
   })
 }
+
+/** Todos os forecasts do tenant. Usado no dashboard rolling. */
+export function useAllForecasts() {
+  return useQuery({
+    queryKey: ['forecasts', 'list'],
+    queryFn: () => forecastsApi.list(),
+  })
+}

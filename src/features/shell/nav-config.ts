@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Briefcase,
+  Calculator,
   FileText,
   LayoutDashboard,
   LineChart,
@@ -96,6 +97,16 @@ export const NAV_ITEMS: NavItem[] = [
     icon: FileText,
   },
   {
+    /**
+     * ROI Analysis — Sprint 5 (módulo isolado). Cada análise vive
+     * dentro de uma Oportunidade; aqui a sidebar atalha pro dashboard
+     * agregado (gargalos, NPV médio, taxa de aprovação).
+     */
+    i18nKey: 'roiAnalyses',
+    to: '/roi-analyses/dashboard',
+    icon: Calculator,
+  },
+  {
     i18nKey: 'catalogs',
     to: '/catalogs',
     icon: Tags,
@@ -110,8 +121,14 @@ export const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
+    /**
+     * Forecast — Sprint 4. Cada revisão pertence a um Projeto; aqui
+     * a sidebar atalha pro dashboard rolling 12m (esperado vs realizado,
+     * variância). Path /forecasts/dashboard (não confundir com /forecast
+     * legacy do roll-up vanilla, ainda em uso pra projetos legacy).
+     */
     i18nKey: 'rollingForecast',
-    to: '/forecast',
+    to: '/forecasts/dashboard',
     icon: LineChart,
   },
   {

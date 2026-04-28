@@ -59,8 +59,14 @@ const Projects2DashboardPage = lazy(() =>
 const ForecastDetailPage = lazy(() =>
   import('@/pages/forecasts/detail').then((m) => ({ default: m.ForecastDetailPage })),
 )
+const ForecastsDashboardPage = lazy(() =>
+  import('@/pages/forecasts/dashboard').then((m) => ({ default: m.ForecastsDashboardPage })),
+)
 const RoiAnalysisDetailPage = lazy(() =>
   import('@/pages/roi-analyses/detail').then((m) => ({ default: m.RoiAnalysisDetailPage })),
+)
+const RoiDashboardPage = lazy(() =>
+  import('@/pages/roi-analyses/dashboard').then((m) => ({ default: m.RoiDashboardPage })),
 )
 const ProjectsBoardPage = lazy(() =>
   import('@/pages/projects/board').then((m) => ({
@@ -388,7 +394,15 @@ export function AppRouter() {
           }
         />
 
-        {/* Forecast — detalhe único (lista vem do projeto pai) */}
+        {/* Forecast — detalhe único (lista vem do projeto pai) + dashboard */}
+        <Route
+          path="/forecasts/dashboard"
+          element={
+            <Lazy>
+              <ForecastsDashboardPage />
+            </Lazy>
+          }
+        />
         <Route
           path="/forecasts/:id"
           element={
@@ -398,7 +412,15 @@ export function AppRouter() {
           }
         />
 
-        {/* ROI Analysis — detalhe único (lista vem da oportunidade pai) */}
+        {/* ROI Analysis — detalhe único (lista vem da oportunidade pai) + dashboard */}
+        <Route
+          path="/roi-analyses/dashboard"
+          element={
+            <Lazy>
+              <RoiDashboardPage />
+            </Lazy>
+          }
+        />
         <Route
           path="/roi-analyses/:id"
           element={

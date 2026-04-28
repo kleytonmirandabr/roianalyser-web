@@ -8,3 +8,11 @@ export function useRoiAnalysesByOpportunity(opportunityId: string | undefined | 
     enabled: Boolean(opportunityId),
   })
 }
+
+/** Todas as análises de ROI do tenant. Usado no dashboard. */
+export function useAllRoiAnalyses() {
+  return useQuery({
+    queryKey: ['roi-analyses', 'list'],
+    queryFn: () => roiAnalysesApi.list(),
+  })
+}
