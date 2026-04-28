@@ -6,6 +6,7 @@ import { useAppState, usePatchAppState } from '@/features/admin/hooks/use-app-st
 import type { GlobalUser } from '@/features/admin/types'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { useForgotPassword } from '@/features/auth/hooks/use-forgot-password'
+import { stripDraftIds } from '@/shared/lib/strip-draft-id'
 import { timezoneOptions } from '@/shared/lib/timezones'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
@@ -158,7 +159,9 @@ export function AdminUsersPage() {
       : [...users, u]
     setEditing(null)
     try {
-      await patch.mutateAsync({ users: next })
+      // stripDraftIds remove `id` de users novos (formato "user_<ts>") pra
+      // que o DB IDENTITY autogere o BIGINT. Users existentes mantêm id.
+      await patch.mutateAsync({ users: stripDraftIds(next) })
       toastSaved(t('admin.users.saved'))
     } catch (err) {
       toastError(err)
@@ -174,7 +177,7 @@ export function AdminUsersPage() {
     })
     if (!ok) return
     try {
-      await patch.mutateAsync({ users: users.filter((x) => x.id !== u.id) })
+      await patch.mutateAsync({ users: stripDraftIds(users.filter((x) => x.id !== u.id)) })
       toastDeleted(t('admin.users.deleted'))
     } catch (err) {
       toastError(err)

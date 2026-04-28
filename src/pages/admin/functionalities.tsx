@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useAppState, usePatchAppState } from '@/features/admin/hooks/use-app-state'
 import type { GlobalFunctionality } from '@/features/admin/types'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
+import { stripDraftIds } from '@/shared/lib/strip-draft-id'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -71,7 +72,7 @@ export function AdminFunctionalitiesPage() {
       : [...functionalities, f]
     setEditing(null)
     try {
-      await patch.mutateAsync({ functionalities: next })
+      await patch.mutateAsync({ functionalities: stripDraftIds(next) })
       toastSaved(t('admin.functionalities.saved'))
     } catch (err) {
       toastError(err)

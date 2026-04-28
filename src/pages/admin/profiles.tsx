@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useAppState, usePatchAppState } from '@/features/admin/hooks/use-app-state'
 import type { GlobalProfile } from '@/features/admin/types'
 import { useAuth } from '@/features/auth/hooks/use-auth'
+import { stripDraftIds } from '@/shared/lib/strip-draft-id'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
@@ -95,7 +96,7 @@ export function AdminProfilesPage() {
     const next = exists ? profiles.map((x) => (x.id === p.id ? p : x)) : [...profiles, p]
     setEditing(null)
     try {
-      await patch.mutateAsync({ profiles: next })
+      await patch.mutateAsync({ profiles: stripDraftIds(next) })
       toastSaved(t('admin.profiles.saved'))
     } catch (err) {
       toastError(err)
@@ -111,7 +112,7 @@ export function AdminProfilesPage() {
     })
     if (!ok) return
     try {
-      await patch.mutateAsync({ profiles: profiles.filter((x) => x.id !== p.id) })
+      await patch.mutateAsync({ profiles: stripDraftIds(profiles.filter((x) => x.id !== p.id)) })
       toastDeleted()
     } catch (err) {
       toastError(err)
@@ -183,7 +184,7 @@ export function AdminProfilesPage() {
                 return
               }
               try {
-                await patch.mutateAsync({ profiles: [...profiles, ...defaults] })
+                await patch.mutateAsync({ profiles: stripDraftIds([...profiles, ...defaults]) })
                 toastSaved(
                   t('admin.profiles.applyDefaultsDone', { count: defaults.length }),
                 )

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useAppState, usePatchAppState } from '@/features/admin/hooks/use-app-state'
 import type { GlobalClient } from '@/features/admin/types'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
+import { stripDraftIds } from '@/shared/lib/strip-draft-id'
 import { timezoneOptions } from '@/shared/lib/timezones'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
@@ -77,7 +78,7 @@ export function AdminClientsPage() {
     const next = exists ? clients.map((x) => (x.id === c.id ? c : x)) : [...clients, c]
     setEditing(null)
     try {
-      await patch.mutateAsync({ clients: next })
+      await patch.mutateAsync({ clients: stripDraftIds(next) })
       toastSaved(t('admin.clients.saved'))
     } catch (err) {
       toastError(err)
@@ -93,7 +94,7 @@ export function AdminClientsPage() {
     })
     if (!ok) return
     try {
-      await patch.mutateAsync({ clients: clients.filter((x) => x.id !== c.id) })
+      await patch.mutateAsync({ clients: stripDraftIds(clients.filter((x) => x.id !== c.id)) })
       toastDeleted()
     } catch (err) {
       toastError(err)

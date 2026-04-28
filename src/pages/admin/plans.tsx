@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useAppState, usePatchAppState } from '@/features/admin/hooks/use-app-state'
 import type { AccessPlan } from '@/features/admin/types'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
+import { stripDraftIds } from '@/shared/lib/strip-draft-id'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -71,7 +72,7 @@ export function AdminPlansPage() {
     const next = exists ? plans.map((x) => (x.id === p.id ? p : x)) : [...plans, p]
     setEditing(null)
     try {
-      await patch.mutateAsync({ accessPlans: next })
+      await patch.mutateAsync({ accessPlans: stripDraftIds(next) })
       toastSaved(t('admin.plans.saved'))
     } catch (err) {
       toastError(err)
@@ -87,7 +88,7 @@ export function AdminPlansPage() {
     })
     if (!ok) return
     try {
-      await patch.mutateAsync({ accessPlans: plans.filter((x) => x.id !== p.id) })
+      await patch.mutateAsync({ accessPlans: stripDraftIds(plans.filter((x) => x.id !== p.id)) })
       toastDeleted()
     } catch (err) {
       toastError(err)
