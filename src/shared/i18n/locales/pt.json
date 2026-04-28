@@ -1238,6 +1238,18 @@
     "forecast": "Forecast",
     "adminOpportunityStatuses": "Status de Oportunidade",
     "adminOpportunityTypes": "Tipo de Oportunidade",
-    "adminTaskTemplates": "Modelos de Tarefas"
+    "adminTaskTemplates": "Modelos de Tarefas",
+    "cadastrosCrm": "Cadastros CRM",
+    "cadastrosRoi": "Cadastros ROI",
+    "adminCompanies": "Empresas",
+    "adminContacts": "Contatos",
+    "adminSectors": "Setores",
+    "adminLeadSources": "Fontes de Lead",
+    "adminSalesGoals": "Metas de Vendas",
+    "adminCatalogItems": "Itens do Catálogo",
+    "adminItemCategories": "Categorias de Item",
+    "adminBillingUnits": "Unidades de Cobrança",
+    "adminFinancialTypes": "Tipos Financeiros",
+    "adminUserGroups": "Grupos de Usuários"
   }
 }

@@ -1238,6 +1238,18 @@
     "forecast": "Forecast",
     "adminOpportunityStatuses": "Opportunity Statuses",
     "adminOpportunityTypes": "Opportunity Types",
-    "adminTaskTemplates": "Task Templates"
+    "adminTaskTemplates": "Task Templates",
+    "cadastrosCrm": "CRM Setup",
+    "cadastrosRoi": "ROI Setup",
+    "adminCompanies": "Companies",
+    "adminContacts": "Contacts",
+    "adminSectors": "Sectors",
+    "adminLeadSources": "Lead Sources",
+    "adminSalesGoals": "Sales Goals",
+    "adminCatalogItems": "Catalog Items",
+    "adminItemCategories": "Item Categories",
+    "adminBillingUnits": "Billing Units",
+    "adminFinancialTypes": "Financial Types",
+    "adminUserGroups": "User Groups"
   }
 }

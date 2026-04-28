@@ -229,6 +229,57 @@ const AdminTaskTemplatesPage = lazy(() =>
     default: m.AdminTaskTemplatesPage,
   })),
 )
+const AdminSectorsPage = lazy(() =>
+  import('@/pages/admin/sectors').then((m) => ({
+    default: m.AdminSectorsPage,
+  })),
+)
+const AdminLeadSourcesPage = lazy(() =>
+  import('@/pages/admin/lead-sources').then((m) => ({
+    default: m.AdminLeadSourcesPage,
+  })),
+)
+const AdminItemCategoriesPage = lazy(() =>
+  import('@/pages/admin/item-categories').then((m) => ({
+    default: m.AdminItemCategoriesPage,
+  })),
+)
+const AdminBillingUnitsPage = lazy(() =>
+  import('@/pages/admin/billing-units').then((m) => ({
+    default: m.AdminBillingUnitsPage,
+  })),
+)
+const AdminUserGroupsPage = lazy(() =>
+  import('@/pages/admin/user-groups').then((m) => ({
+    default: m.AdminUserGroupsPage,
+  })),
+)
+const AdminFinancialTypesPage = lazy(() =>
+  import('@/pages/admin/financial-types').then((m) => ({
+    default: m.AdminFinancialTypesPage,
+  })),
+)
+const AdminCatalogItemsPage = lazy(() =>
+  import('@/pages/admin/catalog-items').then((m) => ({
+    default: m.AdminCatalogItemsPage,
+  })),
+)
+const AdminCompaniesPage = lazy(() =>
+  import('@/pages/admin/companies').then((m) => ({
+    default: m.AdminCompaniesPage,
+  })),
+)
+const AdminContactsPage = lazy(() =>
+  import('@/pages/admin/contacts').then((m) => ({
+    default: m.AdminContactsPage,
+  })),
+)
+const AdminSalesGoalsPage = lazy(() =>
+  import('@/pages/admin/sales-goals').then((m) => ({
+    default: m.AdminSalesGoalsPage,
+  })),
+)
+
 const ImportsIndexPage = lazy(() =>
   import('@/pages/imports').then((m) => ({ default: m.ImportsIndexPage })),
 )
@@ -622,6 +673,106 @@ export function AppRouter() {
             <RequireRole level="master">
               <Lazy>
                 <AdminTaskTemplatesPage />
+              </Lazy>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/sectors"
+          element={
+            <RequireRole level="master">
+              <Lazy>
+                <AdminSectorsPage />
+              </Lazy>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/lead-sources"
+          element={
+            <RequireRole level="master">
+              <Lazy>
+                <AdminLeadSourcesPage />
+              </Lazy>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/item-categories"
+          element={
+            <RequireRole level="master">
+              <Lazy>
+                <AdminItemCategoriesPage />
+              </Lazy>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/billing-units"
+          element={
+            <RequireRole level="master">
+              <Lazy>
+                <AdminBillingUnitsPage />
+              </Lazy>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/user-groups"
+          element={
+            <RequireRole level="master">
+              <Lazy>
+                <AdminUserGroupsPage />
+              </Lazy>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/financial-types"
+          element={
+            <RequireRole level="master">
+              <Lazy>
+                <AdminFinancialTypesPage />
+              </Lazy>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/catalog-items"
+          element={
+            <RequireRole level="master">
+              <Lazy>
+                <AdminCatalogItemsPage />
+              </Lazy>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/companies"
+          element={
+            <RequireRole level="master">
+              <Lazy>
+                <AdminCompaniesPage />
+              </Lazy>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/contacts"
+          element={
+            <RequireRole level="master">
+              <Lazy>
+                <AdminContactsPage />
+              </Lazy>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/sales-goals"
+          element={
+            <RequireRole level="master">
+              <Lazy>
+                <AdminSalesGoalsPage />
               </Lazy>
             </RequireRole>
           }

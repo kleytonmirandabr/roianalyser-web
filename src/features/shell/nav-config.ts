@@ -147,6 +147,38 @@ export const NAV_ITEMS: NavItem[] = [
       { i18nKey: 'importsOpportunities', to: '/imports/opportunities' },
     ],
   },
+  // ─── Cadastros CRM (Cliente / Comercial) ─────────────────────────
+  {
+    i18nKey: 'cadastrosCrm',
+    to: '/admin/companies',
+    icon: Briefcase,
+    requiresLevel: 'master',
+    children: [
+      { i18nKey: 'adminCompanies', to: '/admin/companies', requiresLevel: 'master' },
+      { i18nKey: 'adminContacts', to: '/admin/contacts', requiresLevel: 'master' },
+      { i18nKey: 'adminSectors', to: '/admin/sectors', requiresLevel: 'master' },
+      { i18nKey: 'adminLeadSources', to: '/admin/lead-sources', requiresLevel: 'master' },
+      { i18nKey: 'adminOpportunityTypes', to: '/admin/opportunity-types', requiresLevel: 'master' },
+      { i18nKey: 'adminOpportunityStatuses', to: '/admin/opportunity-statuses', requiresLevel: 'master' },
+      { i18nKey: 'adminSalesGoals', to: '/admin/sales-goals', requiresLevel: 'master' },
+    ],
+  },
+  // ─── Cadastros ROI / Operação ──────────────────────────────────
+  {
+    i18nKey: 'cadastrosRoi',
+    to: '/admin/catalog-items',
+    icon: Calculator,
+    requiresLevel: 'master',
+    children: [
+      { i18nKey: 'adminCatalogItems', to: '/admin/catalog-items', requiresLevel: 'master' },
+      { i18nKey: 'adminItemCategories', to: '/admin/item-categories', requiresLevel: 'master' },
+      { i18nKey: 'adminBillingUnits', to: '/admin/billing-units', requiresLevel: 'master' },
+      { i18nKey: 'adminFinancialTypes', to: '/admin/financial-types', requiresLevel: 'master' },
+      { i18nKey: 'adminTaskTemplates', to: '/admin/task-templates', requiresLevel: 'master' },
+      { i18nKey: 'adminFormFields', to: '/admin/form-fields', requiresLevel: 'master' },
+    ],
+  },
+  // ─── Administração (sistema) ───────────────────────────────────
   {
     i18nKey: 'admin',
     to: '/admin',
@@ -155,15 +187,12 @@ export const NAV_ITEMS: NavItem[] = [
     children: [
       { i18nKey: 'adminUsers', to: '/admin', requiresLevel: 'admin' },
       { i18nKey: 'adminProfiles', to: '/admin/profiles', requiresLevel: 'admin' },
+      { i18nKey: 'adminUserGroups', to: '/admin/user-groups', requiresLevel: 'master' },
       { i18nKey: 'adminPlans', to: '/admin/plans', requiresLevel: 'master' },
       { i18nKey: 'adminFunctionalities', to: '/admin/functionalities', requiresLevel: 'master' },
       { i18nKey: 'adminClients', to: '/admin/clients', requiresLevel: 'master' },
       { i18nKey: 'adminWorkflow', to: '/admin/workflow-rules', requiresLevel: 'master' },
       { i18nKey: 'adminBranding', to: '/admin/branding', requiresLevel: 'master' },
-      { i18nKey: 'adminFormFields', to: '/admin/form-fields', requiresLevel: 'master' },
-      { i18nKey: 'adminOpportunityStatuses', to: '/admin/opportunity-statuses', requiresLevel: 'master' },
-      { i18nKey: 'adminOpportunityTypes', to: '/admin/opportunity-types', requiresLevel: 'master' },
-      { i18nKey: 'adminTaskTemplates', to: '/admin/task-templates', requiresLevel: 'master' },
     ],
   },
 ]
