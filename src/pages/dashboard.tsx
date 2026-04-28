@@ -7,6 +7,7 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import { useMemo } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -27,6 +28,7 @@ import {
 import { useProjects } from '@/features/projects/hooks/use-projects'
 import { formatCurrency } from '@/features/projects/lib/money'
 import { Button } from '@/shared/ui/button'
+import { OpportunityFormSheet } from '@/features/opportunities/components/opportunity-form-sheet'
 import {
   Card,
   CardContent,
@@ -53,6 +55,7 @@ function formatDate(value?: string | null) {
 }
 
 export function DashboardPage() {
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const { t } = useTranslation()
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -96,11 +99,9 @@ export function DashboardPage() {
             {t('dashboard.welcome', { name: displayName })}
           </p>
         </div>
-        <Button asChild>
-          <Link to="/projects/new">
-            <Plus className="h-4 w-4" />
-            <span>{t('dashboard.newProject')}</span>
-          </Link>
+        <Button onClick={() => setDrawerOpen(true)}>
+          <Plus className="h-4 w-4" />
+          <span>Nova oportunidade</span>
         </Button>
       </div>
 
@@ -380,6 +381,7 @@ export function DashboardPage() {
 
       {/* Carga de trabalho por user */}
       <WorkloadWidget projects={data} />
+    <OpportunityFormSheet open={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </div>
   )
 }
