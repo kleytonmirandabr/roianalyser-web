@@ -20,9 +20,9 @@ import { ResetPasswordPage } from '@/pages/reset-password'
 const PortfolioPage = lazy(() =>
   import('@/pages/portfolio').then((m) => ({ default: m.PortfolioPage })),
 )
-const NewProjectPage = lazy(() =>
-  import('@/pages/projects/new').then((m) => ({ default: m.NewProjectPage })),
-)
+// NewProjectPage não é mais usado em rota (substituído por NewOpportunityPage
+// + redirects /projects/new → /opportunities/new). Mantido como re-export
+// histórico caso algum código externo importe — TODO: limpar quando confirmar.
 const NewOpportunityPage = lazy(() =>
   import('@/pages/opportunities/new').then((m) => ({ default: m.NewOpportunityPage })),
 )

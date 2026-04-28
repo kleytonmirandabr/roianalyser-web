@@ -79,8 +79,8 @@ export function NewOpportunityPage() {
       <div>
         <h1 className="text-2xl font-semibold">Nova oportunidade</h1>
         <p className="text-sm text-muted-foreground">
-          Cliente vinculado: <strong>{user?.clientName || 'tenant atual'}</strong> ·
-          Responsável: <strong>{user?.name}</strong>
+          Cliente vinculado: <strong>{String(user?.clientName || 'tenant atual')}</strong> ·
+          Responsável: <strong>{String(user?.name || '')}</strong>
         </p>
       </div>
 

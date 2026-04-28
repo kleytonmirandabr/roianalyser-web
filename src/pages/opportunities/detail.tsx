@@ -89,7 +89,7 @@ export function OpportunityDetailPage() {
       title: 'Excluir oportunidade?',
       description: `"${opp.name}" será excluída (soft delete). Não afeta contratos ou projetos derivados.`,
       confirmLabel: 'Excluir',
-      variant: 'destructive',
+      destructive: true,
     })
     if (!ok) return
     try {
