@@ -115,7 +115,12 @@ export async function apiRequest<T = unknown>(
 
   const contentType = response.headers.get('Content-Type') ?? ''
   const isJson = contentType.includes('application/json')
-  const payload = isJson ? await response.json() : await response.text()
+  // 204 No Content + empty body: NÃO parsear JSON (Response.json() crasha
+  // em body vazio com 'Unexpected end of JSON input').
+  const text = await response.text()
+  const payload = text
+    ? (isJson ? JSON.parse(text) : text)
+    : null
 
   if (!response.ok) {
     if (response.status === 401) {
