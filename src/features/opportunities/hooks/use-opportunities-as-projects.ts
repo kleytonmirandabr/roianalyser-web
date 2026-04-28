@@ -18,6 +18,7 @@ interface AdapterResult {
   data: Project[] | undefined
   isLoading: boolean
   isError: boolean
+  isSuccess: boolean
   error: unknown
 }
 
@@ -77,6 +78,7 @@ export function useOpportunitiesAsProjects(): AdapterResult {
     data,
     isLoading: ops.isLoading || statuses.isLoading || appState.isLoading,
     isError: ops.isError || statuses.isError || appState.isError,
+    isSuccess: ops.isSuccess && statuses.isSuccess && appState.isSuccess,
     error: ops.error ?? statuses.error ?? appState.error,
   }
 }

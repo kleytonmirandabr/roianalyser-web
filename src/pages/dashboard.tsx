@@ -25,7 +25,7 @@ import {
   projectsByMonth,
   topRecent,
 } from '@/features/dashboard/lib/aggregations'
-import { useProjects } from '@/features/projects/hooks/use-projects'
+import { useOpportunitiesAsProjects } from '@/features/opportunities/hooks/use-opportunities-as-projects'
 import { formatCurrency } from '@/features/projects/lib/money'
 import { Button } from '@/shared/ui/button'
 import { OpportunityFormSheet } from '@/features/opportunities/components/opportunity-form-sheet'
@@ -59,7 +59,7 @@ export function DashboardPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const navigate = useNavigate()
-  const projects = useProjects()
+  const projects = useOpportunitiesAsProjects()
 
   const data = projects.data ?? []
   const total = data.length

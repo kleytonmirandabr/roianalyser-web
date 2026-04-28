@@ -33,7 +33,7 @@ import {
   breakdownByStatus,
   financialSummaries,
 } from '@/features/dashboard/lib/aggregations'
-import { useProjects } from '@/features/projects/hooks/use-projects'
+import { useOpportunitiesAsProjects } from '@/features/opportunities/hooks/use-opportunities-as-projects'
 import { formatCurrency } from '@/features/projects/lib/money'
 import type { Project } from '@/features/projects/types'
 import { cn } from '@/shared/lib/cn'
@@ -76,7 +76,7 @@ function classifyStatus(status: string): 'won' | 'lost' | 'active' {
 
 export function PortfolioPage() {
   const { t, i18n } = useTranslation()
-  const projects = useProjects()
+  const projects = useOpportunitiesAsProjects()
   const companies = useCatalog('companies')
   const projectStatuses = useCatalog('projectStatuses')
   const navigate = useNavigate()
