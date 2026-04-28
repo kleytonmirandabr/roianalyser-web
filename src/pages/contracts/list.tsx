@@ -105,11 +105,9 @@ export function ContractsListPage() {
               Dashboard
             </Link>
           </Button>
-          <Button asChild>
-            <Link to="/contracts/new">
-              <Plus className="h-4 w-4" />
-              Novo contrato
-            </Link>
+          <Button onClick={() => setDrawerOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Novo contrato
           </Button>
         </div>
       </header>
@@ -152,11 +150,9 @@ export function ContractsListPage() {
           Nenhum contrato encontrado.
           {statusFilter === 'all' && (
             <div className="mt-3">
-              <Button asChild variant="outline">
-                <Link to="/contracts/new">
-                  <Plus className="h-4 w-4" />
-                  Criar primeiro contrato
-                </Link>
+              <Button onClick={() => setDrawerOpen(true)} variant="outline">
+                <Plus className="h-4 w-4" />
+                Criar primeiro contrato
               </Button>
             </div>
           )}

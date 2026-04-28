@@ -90,11 +90,9 @@ export function Projects2ListPage() {
               Dashboard
             </Link>
           </Button>
-          <Button asChild>
-            <Link to="/projects-v2/new">
-              <Plus className="h-4 w-4" />
-              Novo projeto
-            </Link>
+          <Button onClick={() => setDrawerOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Novo projeto
           </Button>
         </div>
       </header>

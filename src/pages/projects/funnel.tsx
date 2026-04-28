@@ -186,7 +186,7 @@ export function ProjectsFunnelPage({ scope = 'projects' }: { scope?: FunnelScope
         <Button asChild>
           <Link to={scope === 'opportunities' ? "/opportunities/new" : "/projects/new"}>
             <Plus className="h-4 w-4" />
-            <span>{t('projects.new')}</span>
+            <span>{scope === 'opportunities' ? 'Nova oportunidade' : t('projects.new')}</span>
           </Link>
         </Button>
       </div>
