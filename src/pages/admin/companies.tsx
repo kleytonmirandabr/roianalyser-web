@@ -79,11 +79,12 @@ export function AdminCompaniesPage() {
     if (!data) return
     setDraft((d) => ({
       ...d,
-      street: d.street || data.logradouro || '',
-      district: d.district || data.bairro || '',
-      city: d.city || data.localidade || '',
-      state: d.state || data.uf || '',
-      country: d.country || 'Brasil',
+      street: data.logradouro || d.street || '',
+      district: data.bairro || d.district || '',
+      city: data.localidade || d.city || '',
+      state: data.uf || d.state || '',
+      country: 'Brasil',
+      // complement: ViaCEP raramente retorna; mantém o que o user já digitou
       complement: d.complement || data.complemento || '',
     }))
   }
