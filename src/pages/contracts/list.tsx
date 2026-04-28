@@ -21,6 +21,7 @@ import { formatCurrencyShort, formatDate } from '@/shared/lib/format'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
+import { ContractFormSheet } from '@/features/contracts2/components/contract-form-sheet'
 import { Combobox } from '@/shared/ui/combobox'
 import { Skeleton } from '@/shared/ui/skeleton'
 
@@ -46,6 +47,7 @@ function daysUntil(dateStr: string | null): number | null {
 }
 
 export function ContractsListPage() {
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
   const initialStatus = (searchParams.get('status') as ContractStatus) || 'all'
   const [statusFilter, setStatusFilter] = useState<ContractStatus | 'all'>(initialStatus)
@@ -223,6 +225,7 @@ export function ContractsListPage() {
           </table>
         </Card>
       )}
+    <ContractFormSheet open={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </div>
   )
 }

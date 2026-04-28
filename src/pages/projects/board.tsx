@@ -211,13 +211,13 @@ export function ProjectsBoardPage({
             {scope === 'opportunities' ? t('nav.opportunities') : t('nav.projects')}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {t('projects.board.subtitle')}
+            {scope === 'opportunities' ? 'Arraste cards entre colunas para mudar o status da oportunidade.' : t('projects.board.subtitle')}
           </p>
         </div>
         <Button asChild>
-          <Link to="/projects/new">
+          <Link to={scope === 'opportunities' ? "/opportunities/new" : "/projects/new"}>
             <Plus className="h-4 w-4" />
-            <span>{t('projects.new')}</span>
+            <span>{scope === 'opportunities' ? 'Nova oportunidade' : t('projects.new')}</span>
           </Link>
         </Button>
       </div>

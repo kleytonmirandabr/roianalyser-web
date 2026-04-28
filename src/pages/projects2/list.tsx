@@ -14,6 +14,7 @@ import {
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
+import { ProjectFormSheet } from '@/features/projects2/components/project-form-sheet'
 import { Combobox } from '@/shared/ui/combobox'
 import { Skeleton } from '@/shared/ui/skeleton'
 
@@ -39,6 +40,7 @@ function daysLate(plannedEnd: string | null, status: ProjectStatus): number | nu
 }
 
 export function Projects2ListPage() {
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
   const initialStatus = (searchParams.get('status') as ProjectStatus) || 'all'
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'all'>(initialStatus)
@@ -175,6 +177,7 @@ export function Projects2ListPage() {
           </table>
         </Card>
       )}
+    <ProjectFormSheet open={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </div>
   )
 }
