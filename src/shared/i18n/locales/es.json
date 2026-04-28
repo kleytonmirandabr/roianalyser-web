@@ -1233,6 +1233,8 @@
     "adminWorkflow": "Workflow",
     "adminBranding": "Marca",
     "audit": "Auditoría",
-    "adminFormFields": "Campos personalizados"
+    "adminFormFields": "Campos personalizados",
+    "roiAnalyses": "Análisis ROI",
+    "forecast": "Forecast"
   }
 }
