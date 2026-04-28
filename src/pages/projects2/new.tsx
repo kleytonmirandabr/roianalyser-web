@@ -31,7 +31,6 @@ export function NewProject2Page() {
   const [plannedStart, setPlannedStart] = useState('')
   const [plannedEnd, setPlannedEnd] = useState('')
   const [budget, setBudget] = useState('')
-  const [currency, setCurrency] = useState('BRL')
   const [description, setDescription] = useState('')
 
   const statusOptions = PROJECT_STATUSES.map(s => ({ value: s, label: PROJECT_STATUS_LABELS[s] }))
@@ -50,7 +49,7 @@ export function NewProject2Page() {
         plannedStart: plannedStart || null,
         plannedEnd: plannedEnd || null,
         budget: budget ? Number(budget) : null,
-        currency,
+        currency: 'BRL',
         description: description.trim() || null,
       })
       toastSaved(`Projeto ${created.projectCode} criado`)

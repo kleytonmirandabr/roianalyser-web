@@ -17,11 +17,6 @@ import { Card } from '@/shared/ui/card'
 import { Combobox } from '@/shared/ui/combobox'
 import { Skeleton } from '@/shared/ui/skeleton'
 
-function fmtCurrency(v: number | null, c = 'BRL') {
-  if (v == null) return '—'
-  try { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: c, maximumFractionDigits: 0 }).format(v) }
-  catch { return `${c} ${v.toFixed(2)}` }
-}
 function fmtDate(s: string | null) { if (!s) return '—'; try { return new Date(s).toLocaleDateString('pt-BR') } catch { return s } }
 
 function statusColor(s: ProjectStatus): string {
