@@ -87,10 +87,13 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Briefcase,
   },
   {
+    /**
+     * Contratos — Sprint 3 (módulo isolado pós-Phase 0). Consome
+     * /api/contracts2 (entity nova). Lista, novo e detalhe disponíveis.
+     */
     i18nKey: 'contracts',
     to: '/contracts',
     icon: FileText,
-    badge: 'soon',
   },
   {
     i18nKey: 'catalogs',

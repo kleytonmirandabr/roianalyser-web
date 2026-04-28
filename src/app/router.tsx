@@ -29,6 +29,15 @@ const NewOpportunityPage = lazy(() =>
 const OpportunityDetailPage = lazy(() =>
   import('@/pages/opportunities/detail').then((m) => ({ default: m.OpportunityDetailPage })),
 )
+const ContractsListPage = lazy(() =>
+  import('@/pages/contracts/list').then((m) => ({ default: m.ContractsListPage })),
+)
+const NewContractPage = lazy(() =>
+  import('@/pages/contracts/new').then((m) => ({ default: m.NewContractPage })),
+)
+const ContractDetailPage = lazy(() =>
+  import('@/pages/contracts/detail').then((m) => ({ default: m.ContractDetailPage })),
+)
 const ProjectsBoardPage = lazy(() =>
   import('@/pages/projects/board').then((m) => ({
     default: m.ProjectsBoardPage,
@@ -272,6 +281,34 @@ export function AppRouter() {
           element={
             <Lazy>
               <ProjectsLostPage />
+            </Lazy>
+          }
+        />
+
+        {/* Contratos — Sprint 3 (módulo isolado pós-Phase 0).
+            Consome /api/contracts2 (entity nova). /api/contracts (legacy)
+            ainda alimenta ProjectsListPage scope='projects' até Sprint 6. */}
+        <Route
+          path="/contracts"
+          element={
+            <Lazy>
+              <ContractsListPage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="/contracts/new"
+          element={
+            <Lazy>
+              <NewContractPage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="/contracts/:id"
+          element={
+            <Lazy>
+              <ContractDetailPage />
             </Lazy>
           }
         />
