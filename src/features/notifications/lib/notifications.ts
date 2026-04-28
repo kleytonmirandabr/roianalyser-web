@@ -13,6 +13,10 @@
 import { effectiveStatus, readMilestones } from '@/features/projects/lib/milestones'
 import { isUserInProject } from '@/features/projects/lib/scope-filter'
 import { readTasks, scheduleStatus } from '@/features/projects/lib/tasks'
+import {
+  approvalsForUser,
+  readPendingApprovals,
+} from '@/features/projects/lib/workflow'
 import type { Project } from '@/features/projects/types'
 
 export type NotificationKind =
@@ -22,6 +26,7 @@ export type NotificationKind =
   | 'milestone_due_soon'
   | 'project_stalled'
   | 'project_no_team'
+  | 'approval_pending'
 
 export type Notification = {
   id: string
@@ -125,6 +130,24 @@ export function generateNotifications(
           tone: 'warn',
         })
       }
+    }
+
+    /**
+     * Aprovações pendentes onde EU sou o aprovador. Mais antigas
+     * primeiro — quem espera há mais tempo é prioridade. Não filtra
+     * por isUserInProject porque o approver pode ser de outro time.
+     */
+    const approvals = readPendingApprovals(payload)
+    const myApprovals = approvalsForUser(approvals, userId)
+    for (const ap of myApprovals) {
+      out.push({
+        id: `approval_${p.id}_${ap.id}`,
+        kind: 'approval_pending',
+        message: `Aprovação pendente em "${p.name}" (transição → ${ap.toCategory})`,
+        link: `/me`,
+        at: ap.requestedAt,
+        tone: 'warn',
+      })
     }
   }
 
