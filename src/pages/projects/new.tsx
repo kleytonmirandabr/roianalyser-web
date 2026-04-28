@@ -451,6 +451,12 @@ function FieldEditor({
     )
   }
 
+  // Responsável é sempre o usuário logado (auto-fill no useEffect de defaults).
+  // Campo fica visível mas desabilitado — confirmação visual sem permitir
+  // o user mudar arbitrariamente. Reatribuição é caso administrativo (e
+  // acontece em outra tela, não no momento de criar).
+  const isOwnerField = def.id === 'projectOwner'
+
   return (
     <div className={cn('space-y-1.5', span)}>
       <Label htmlFor={id}>
@@ -465,7 +471,15 @@ function FieldEditor({
         onChange={(e) => onChange(e.target.value)}
         placeholder={def.placeholder}
         autoFocus={def.id === 'projectName'}
+        disabled={isOwnerField}
+        readOnly={isOwnerField}
+        className={isOwnerField ? 'cursor-not-allowed bg-muted' : undefined}
       />
+      {isOwnerField && (
+        <p className="text-[11px] text-muted-foreground">
+          Definido automaticamente como o usuário que está criando.
+        </p>
+      )}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   )
