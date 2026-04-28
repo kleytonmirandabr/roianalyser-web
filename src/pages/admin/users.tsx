@@ -256,6 +256,20 @@ export function AdminUsersPage() {
                         <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
                       </IconTooltip>
                     )}
+                    {/* Badge "convidado": user nunca logou. Backend marca
+                        lastLoginAt no /login OK; null = nunca acessou. Ajuda
+                        admin a saber quem precisa receber/reenviar invite. */}
+                    {!u.lastLoginAt && (
+                      <IconTooltip
+                        label={
+                          'Convidado — ainda não acessou. Use o botão de e-mail para reenviar o link.'
+                        }
+                      >
+                        <span className="rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0 text-[10px] font-medium text-amber-700">
+                          Convidado
+                        </span>
+                      </IconTooltip>
+                    )}
                   </span>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{u.email}</TableCell>
