@@ -50,6 +50,9 @@ const Project2DetailPage = lazy(() =>
 const ForecastDetailPage = lazy(() =>
   import('@/pages/forecasts/detail').then((m) => ({ default: m.ForecastDetailPage })),
 )
+const RoiAnalysisDetailPage = lazy(() =>
+  import('@/pages/roi-analyses/detail').then((m) => ({ default: m.RoiAnalysisDetailPage })),
+)
 const ProjectsBoardPage = lazy(() =>
   import('@/pages/projects/board').then((m) => ({
     default: m.ProjectsBoardPage,
@@ -358,6 +361,16 @@ export function AppRouter() {
           element={
             <Lazy>
               <ForecastDetailPage />
+            </Lazy>
+          }
+        />
+
+        {/* ROI Analysis — detalhe único (lista vem da oportunidade pai) */}
+        <Route
+          path="/roi-analyses/:id"
+          element={
+            <Lazy>
+              <RoiAnalysisDetailPage />
             </Lazy>
           }
         />

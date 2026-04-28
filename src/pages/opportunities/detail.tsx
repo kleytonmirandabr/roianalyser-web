@@ -12,13 +12,16 @@
  * Spec: PLAN_split-domain-entities.md, seção 4.2.
  */
 
-import { ArrowLeft, Trash2 } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { useDeleteOpportunity } from '@/features/opportunities/hooks/use-delete-opportunity'
 import { useOpportunity } from '@/features/opportunities/hooks/use-opportunity'
 import { useUpdateOpportunity } from '@/features/opportunities/hooks/use-update-opportunity'
+import { useCreateRoiAnalysis } from '@/features/roi-analyses/hooks/use-create-roi'
+import { useRoiAnalysesByOpportunity } from '@/features/roi-analyses/hooks/use-roi-analyses'
+import { ROI_STATUS_LABELS } from '@/features/roi-analyses/types'
 import {
   OPPORTUNITY_STATUSES,
   OPPORTUNITY_STATUS_LABELS,
@@ -38,8 +41,10 @@ export function OpportunityDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { data: opp, isLoading, error } = useOpportunity(id)
+  const { data: roiAnalyses = [] } = useRoiAnalysesByOpportunity(id)
   const update = useUpdateOpportunity(id)
   const remove = useDeleteOpportunity()
+  const createRoi = useCreateRoiAnalysis()
 
   const [name, setName] = useState('')
   const [status, setStatus] = useState<OpportunityStatus>('draft')
@@ -247,6 +252,72 @@ export function OpportunityDetailPage() {
             {update.isPending ? 'Salvando…' : 'Salvar'}
           </Button>
         </div>
+      </Card>
+
+      <Card className="p-6 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Análise de ROI ({roiAnalyses.length})</h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Análises versionadas. ROI aprovado destrava criação de contrato.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            disabled={createRoi.isPending}
+            onClick={async () => {
+              if (!opp) return
+              try {
+                const r = await createRoi.mutateAsync({
+                  opportunityId: opp.id,
+                  name: `Análise ${new Date().toLocaleDateString('pt-BR')}`,
+                })
+                toastSaved(`ROI v${r.version} criado`)
+                navigate(`/roi-analyses/${r.id}`)
+              } catch (err) {
+                toastError(`Erro: ${(err as Error).message}`)
+              }
+            }}
+          >
+            <Plus className="h-4 w-4" />Nova revisão
+          </Button>
+        </div>
+        {roiAnalyses.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Nenhuma análise ainda. Clique em "Nova revisão" pra começar.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {roiAnalyses.map(roi => (
+              <li key={roi.id}>
+                <Link
+                  to={`/roi-analyses/${roi.id}`}
+                  className="flex items-center justify-between rounded border p-3 hover:bg-muted/30"
+                >
+                  <div>
+                    <span className="font-medium">v{roi.version}</span>
+                    <span className="text-muted-foreground ml-2">— {roi.name}</span>
+                    {roi.isBaseline && (
+                      <span className="ml-2 inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800">
+                        baseline
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 text-xs">
+                    {roi.netValue != null && (
+                      <span className="tabular-nums text-muted-foreground">
+                        {new Intl.NumberFormat('pt-BR', {
+                          style: 'currency', currency: roi.currency || 'BRL', maximumFractionDigits: 0,
+                        }).format(roi.netValue)}
+                      </span>
+                    )}
+                    <span className="text-muted-foreground">{ROI_STATUS_LABELS[roi.status]}</span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
     </div>
   )
