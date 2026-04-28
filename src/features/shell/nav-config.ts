@@ -70,15 +70,15 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     /**
-     * Projetos — pós-Win (won/execution/invoicing/done/warranty). Por
-     * enquanto só Lista. Kanban de execução + Dashboard ficam pra fases
-     * futuras (precisam de volume de projetos pra fazer sentido).
+     * Projetos — Sprint 4 (módulo isolado pós-Phase 0). Lista nova consome
+     * /api/projects2. Path /projects-v2 evita conflito com /projects legacy
+     * (que ainda usa /api/contracts → contracts_legacy). Cleanup na Fase 4.
      */
     i18nKey: 'projects',
-    to: '/projects',
+    to: '/projects-v2',
     icon: BarChart3,
     children: [
-      { i18nKey: 'projectsList', to: '/projects' },
+      { i18nKey: 'projectsList', to: '/projects-v2' },
     ],
   },
   {

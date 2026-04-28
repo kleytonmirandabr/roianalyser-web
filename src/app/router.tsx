@@ -38,6 +38,18 @@ const NewContractPage = lazy(() =>
 const ContractDetailPage = lazy(() =>
   import('@/pages/contracts/detail').then((m) => ({ default: m.ContractDetailPage })),
 )
+const Projects2ListPage = lazy(() =>
+  import('@/pages/projects2/list').then((m) => ({ default: m.Projects2ListPage })),
+)
+const NewProject2Page = lazy(() =>
+  import('@/pages/projects2/new').then((m) => ({ default: m.NewProject2Page })),
+)
+const Project2DetailPage = lazy(() =>
+  import('@/pages/projects2/detail').then((m) => ({ default: m.Project2DetailPage })),
+)
+const ForecastDetailPage = lazy(() =>
+  import('@/pages/forecasts/detail').then((m) => ({ default: m.ForecastDetailPage })),
+)
 const ProjectsBoardPage = lazy(() =>
   import('@/pages/projects/board').then((m) => ({
     default: m.ProjectsBoardPage,
@@ -309,6 +321,43 @@ export function AppRouter() {
           element={
             <Lazy>
               <ContractDetailPage />
+            </Lazy>
+          }
+        />
+
+        {/* Projetos V2 — Sprint 4 (módulo isolado pós-Phase 0).
+            Path /projects-v2 evita conflito com /projects (legacy). */}
+        <Route
+          path="/projects-v2"
+          element={
+            <Lazy>
+              <Projects2ListPage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="/projects-v2/new"
+          element={
+            <Lazy>
+              <NewProject2Page />
+            </Lazy>
+          }
+        />
+        <Route
+          path="/projects-v2/:id"
+          element={
+            <Lazy>
+              <Project2DetailPage />
+            </Lazy>
+          }
+        />
+
+        {/* Forecast — detalhe único (lista vem do projeto pai) */}
+        <Route
+          path="/forecasts/:id"
+          element={
+            <Lazy>
+              <ForecastDetailPage />
             </Lazy>
           }
         />
