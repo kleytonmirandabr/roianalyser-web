@@ -10,6 +10,7 @@ import { LoginPage } from '@/pages/login'
 import { MfaPage } from '@/pages/mfa'
 import { NotFoundPage } from '@/pages/not-found'
 import { ProjectsListPage } from '@/pages/projects/list'
+import { OpportunitiesListPage } from '@/pages/opportunities/list'
 import { ReportsListPage } from '@/pages/reports/list'
 import { CatalogsIndexPage } from '@/pages/catalogs'
 import { ResetPasswordPage } from '@/pages/reset-password'
@@ -21,6 +22,12 @@ const PortfolioPage = lazy(() =>
 )
 const NewProjectPage = lazy(() =>
   import('@/pages/projects/new').then((m) => ({ default: m.NewProjectPage })),
+)
+const NewOpportunityPage = lazy(() =>
+  import('@/pages/opportunities/new').then((m) => ({ default: m.NewOpportunityPage })),
+)
+const OpportunityDetailPage = lazy(() =>
+  import('@/pages/opportunities/detail').then((m) => ({ default: m.OpportunityDetailPage })),
 )
 const ProjectsBoardPage = lazy(() =>
   import('@/pages/projects/board').then((m) => ({
@@ -220,10 +227,29 @@ export function AppRouter() {
           }
         />
 
-        {/* Oportunidades — pré-Win (negotiation/evaluation/contract/lost/cancelled) */}
+        {/* Oportunidades — Sprint 2 (módulo isolado pós-Phase 0).
+            Lista, novo e detalhe usam /api/opportunities (entity nova).
+            board/funnel/lost ainda apontam pras pages legacy de projects;
+            serão migradas em Batch C. */}
         <Route
           path="/opportunities"
-          element={<ProjectsListPage scope="opportunities" />}
+          element={<OpportunitiesListPage />}
+        />
+        <Route
+          path="/opportunities/new"
+          element={
+            <Lazy>
+              <NewOpportunityPage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="/opportunities/:id"
+          element={
+            <Lazy>
+              <OpportunityDetailPage />
+            </Lazy>
+          }
         />
         <Route
           path="/opportunities/board"
@@ -246,14 +272,6 @@ export function AppRouter() {
           element={
             <Lazy>
               <ProjectsLostPage />
-            </Lazy>
-          }
-        />
-        <Route
-          path="/opportunities/new"
-          element={
-            <Lazy>
-              <NewProjectPage />
             </Lazy>
           }
         />

@@ -1,0 +1,253 @@
+/**
+ * Detalhe de Oportunidade — módulo isolado (Sprint 2 Batch B).
+ *
+ * Edição inline: campos podem ser editados e salvos via PATCH /api/opportunities/:id.
+ * Inclui transições de status (auto-stamp wonAt/lostAt no backend).
+ *
+ * Próximas iterações (Batches C/D):
+ *   - Aba "Análise de ROI" (Sprint 5)
+ *   - Linkagens (Contratos relacionados)
+ *   - Custom fields (form_fields scope=opportunity)
+ *
+ * Spec: PLAN_split-domain-entities.md, seção 4.2.
+ */
+
+import { ArrowLeft, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+
+import { useDeleteOpportunity } from '@/features/opportunities/hooks/use-delete-opportunity'
+import { useOpportunity } from '@/features/opportunities/hooks/use-opportunity'
+import { useUpdateOpportunity } from '@/features/opportunities/hooks/use-update-opportunity'
+import {
+  OPPORTUNITY_STATUSES,
+  OPPORTUNITY_STATUS_LABELS,
+  type OpportunityStatus,
+} from '@/features/opportunities/types'
+import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
+import { Alert, AlertDescription } from '@/shared/ui/alert'
+import { Button } from '@/shared/ui/button'
+import { Card } from '@/shared/ui/card'
+import { Combobox } from '@/shared/ui/combobox'
+import { confirm } from '@/shared/ui/confirm-dialog'
+import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
+import { Skeleton } from '@/shared/ui/skeleton'
+
+export function OpportunityDetailPage() {
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const { data: opp, isLoading, error } = useOpportunity(id)
+  const update = useUpdateOpportunity(id)
+  const remove = useDeleteOpportunity()
+
+  const [name, setName] = useState('')
+  const [status, setStatus] = useState<OpportunityStatus>('draft')
+  const [estimatedValue, setEstimatedValue] = useState('')
+  const [currency, setCurrency] = useState('BRL')
+  const [expectedCloseDate, setExpectedCloseDate] = useState('')
+  const [description, setDescription] = useState('')
+  const [dirty, setDirty] = useState(false)
+
+  useEffect(() => {
+    if (!opp) return
+    setName(opp.name || '')
+    setStatus(opp.status)
+    setEstimatedValue(opp.estimatedValue != null ? String(opp.estimatedValue) : '')
+    setCurrency(opp.currency || 'BRL')
+    setExpectedCloseDate(opp.expectedCloseDate || '')
+    setDescription(opp.description || '')
+    setDirty(false)
+  }, [opp])
+
+  const statusOptions = OPPORTUNITY_STATUSES.map((s) => ({
+    value: s,
+    label: OPPORTUNITY_STATUS_LABELS[s],
+  }))
+
+  async function handleSave() {
+    if (!opp) return
+    try {
+      await update.mutateAsync({
+        name: name.trim() || opp.name,
+        status,
+        estimatedValue: estimatedValue ? Number(estimatedValue) : null,
+        currency,
+        expectedCloseDate: expectedCloseDate || null,
+        description: description.trim() || null,
+      })
+      toastSaved('Oportunidade atualizada')
+      setDirty(false)
+    } catch (err) {
+      toastError(`Erro ao salvar: ${(err as Error).message}`)
+    }
+  }
+
+  async function handleDelete() {
+    if (!opp) return
+    const ok = await confirm({
+      title: 'Excluir oportunidade?',
+      description: `"${opp.name}" será excluída (soft delete). Não afeta contratos ou projetos derivados.`,
+      confirmLabel: 'Excluir',
+      variant: 'destructive',
+    })
+    if (!ok) return
+    try {
+      await remove.mutateAsync(opp.id)
+      toastDeleted('Oportunidade excluída')
+      navigate('/opportunities')
+    } catch (err) {
+      toastError(`Erro ao excluir: ${(err as Error).message}`)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4 p-6">
+        <Skeleton className="h-8 w-1/3" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <Alert variant="destructive">
+          <AlertDescription>
+            Erro ao carregar: {(error as Error).message}
+          </AlertDescription>
+        </Alert>
+      </div>
+    )
+  }
+
+  if (!opp) {
+    return (
+      <div className="p-6">
+        <Alert>
+          <AlertDescription>Oportunidade não encontrada.</AlertDescription>
+        </Alert>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6 p-6 max-w-3xl">
+      <header className="flex items-center gap-3">
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/opportunities">
+            <ArrowLeft className="h-4 w-4" />
+            Oportunidades
+          </Link>
+        </Button>
+      </header>
+
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">{opp.name}</h1>
+          <p className="text-sm text-muted-foreground">
+            ID #{opp.id} · Criada {new Date(opp.createdAt).toLocaleDateString('pt-BR')}
+            {opp.wonAt && ` · Ganha em ${new Date(opp.wonAt).toLocaleDateString('pt-BR')}`}
+            {opp.lostAt && ` · Perdida em ${new Date(opp.lostAt).toLocaleDateString('pt-BR')}`}
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={handleDelete}>
+          <Trash2 className="h-4 w-4" />
+          Excluir
+        </Button>
+      </div>
+
+      <Card className="p-6 space-y-5">
+        <h2 className="text-lg font-semibold">Informações</h2>
+
+        <div>
+          <Label htmlFor="name">Nome</Label>
+          <Input
+            id="name"
+            value={name}
+            onChange={(e) => { setName(e.target.value); setDirty(true) }}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label>Status</Label>
+            <Combobox
+              value={status}
+              onChange={(v) => { setStatus(v as OpportunityStatus); setDirty(true) }}
+              options={statusOptions}
+            />
+          </div>
+          <div>
+            <Label htmlFor="closeDate">Fechamento previsto</Label>
+            <Input
+              id="closeDate"
+              type="date"
+              value={expectedCloseDate}
+              onChange={(e) => { setExpectedCloseDate(e.target.value); setDirty(true) }}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="value">Valor estimado</Label>
+            <Input
+              id="value"
+              type="number"
+              step="0.01"
+              value={estimatedValue}
+              onChange={(e) => { setEstimatedValue(e.target.value); setDirty(true) }}
+            />
+          </div>
+          <div>
+            <Label htmlFor="currency">Moeda</Label>
+            <Input
+              id="currency"
+              value={currency}
+              onChange={(e) => {
+                setCurrency(e.target.value.toUpperCase().slice(0, 3))
+                setDirty(true)
+              }}
+              maxLength={3}
+            />
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="description">Descrição</Label>
+          <textarea
+            id="description"
+            value={description}
+            onChange={(e) => { setDescription(e.target.value); setDirty(true) }}
+            className="w-full min-h-[100px] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+        </div>
+
+        <div className="flex gap-2 justify-end pt-2 border-t">
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => {
+              if (!opp) return
+              setName(opp.name)
+              setStatus(opp.status)
+              setEstimatedValue(opp.estimatedValue != null ? String(opp.estimatedValue) : '')
+              setCurrency(opp.currency || 'BRL')
+              setExpectedCloseDate(opp.expectedCloseDate || '')
+              setDescription(opp.description || '')
+              setDirty(false)
+            }}
+            disabled={!dirty}
+          >
+            Descartar mudanças
+          </Button>
+          <Button onClick={handleSave} disabled={!dirty || update.isPending}>
+            {update.isPending ? 'Salvando…' : 'Salvar'}
+          </Button>
+        </div>
+      </Card>
+    </div>
+  )
+}
