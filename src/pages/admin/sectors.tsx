@@ -1,6 +1,6 @@
 /** Admin → Setor (master only). */
 import { Pencil, Plus, Save, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 
 import { useAuth } from '@/features/auth/hooks/use-auth'
@@ -17,7 +17,12 @@ import { Checkbox } from '@/shared/ui/checkbox'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Skeleton } from '@/shared/ui/skeleton'
+import {
+  DataTableActiveFilters, DataTableHeaderCell, DataTablePagination,
+  useDataTable, type DataTableColumn,
+} from '@/shared/ui/data-table'
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
 interface Draft {
   id?: string; key: string; name: string;
@@ -35,8 +40,13 @@ export function AdminSectorsPage() {
   const del = useDeleteSector()
 
   if (user && !user.isMaster) return <Navigate to="/admin" replace />
-  const items = ((data ?? []) as Sector[]).slice().sort((a, b) =>
-    Number((a as unknown as Draft).displayOrder ?? 0) - Number((b as unknown as Draft).displayOrder ?? 0))
+  const items = (data ?? []) as Sector[]
+  const columns = useMemo<DataTableColumn<Sector>[]>(() => [
+    { key: 'name', label: 'Nome', getValue: (r: any) => r.name },
+    { key: 'key', label: 'Chave', getValue: (r: any) => r.key },
+    { key: 'displayOrder', label: 'Ordem', getValue: (r: any) => r.displayOrder ?? 0 },
+  ], [])
+  const dt = useDataTable(items, columns)
 
   function openCreate() { setDraft(EMPTY); setOpen(true) }
   function openEdit(item: Sector) {
@@ -81,32 +91,36 @@ export function AdminSectorsPage() {
         ) : items.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground">Nenhum item.</div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-muted/30">
-              <tr className="text-left">
-                <th className="px-4 py-2">Nome</th>
-                <th className="px-4 py-2">Chave</th>
-                <th className="px-4 py-2">Ordem</th>
-                <th className="px-4 py-2 w-32 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((t) => {
-                const it = t as unknown as Record<string, unknown>
-                return (
-                  <tr key={String(it.id)} className="border-t">
-                    <td className="px-4 py-2 font-medium">{String(it.name)}</td>
-                    <td className="px-4 py-2"><code className="text-xs bg-muted/50 px-1 rounded">{String(it.key)}</code></td>
-                    <td className="px-4 py-2 tabular-nums text-xs">{String(it.displayOrder ?? 0)}</td>
-                    <td className="px-4 py-2 text-right space-x-1">
-                      <Button size="icon" variant="ghost" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => handleDelete(t)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          <>
+            <DataTableActiveFilters state={dt} columns={columns} />
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {columns.map(col => (
+                    <DataTableHeaderCell key={col.key} column={col} state={dt} />
+                  ))}
+                  <TableHead className="w-32 text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dt.rows.map((t) => {
+                  const it = t as unknown as Record<string, unknown>
+                  return (
+                    <TableRow key={String(it.id)}>
+                      <TableCell className="font-medium">{String(it.name)}</TableCell>
+                      <TableCell><code className="text-xs bg-muted/50 px-1 rounded">{String(it.key)}</code></TableCell>
+                      <TableCell className="tabular-nums text-xs">{String(it.displayOrder ?? 0)}</TableCell>
+                      <TableCell className="text-right space-x-1">
+                        <Button size="icon" variant="ghost" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => handleDelete(t)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+            <DataTablePagination state={dt} />
+          </>
         )}
       </Card>
       <Sheet open={open} onOpenChange={setOpen}>
