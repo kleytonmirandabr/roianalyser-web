@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import {
-  useAddRoiEntry, useDeleteRoiEntry, useUpdateRoiEntry,
+  useAddRoiEntry, useDeleteRoiEntry,
 } from '@/features/roi-analyses/hooks/use-roi-entries'
 import { useRoiAnalysis } from '@/features/roi-analyses/hooks/use-roi-analysis'
 import { useUpdateRoiAnalysis } from '@/features/roi-analyses/hooks/use-update-roi'
@@ -35,7 +35,6 @@ export function RoiAnalysisDetailPage() {
   const { data, isLoading, error } = useRoiAnalysis(id)
   const update = useUpdateRoiAnalysis(id)
   const addEntry = useAddRoiEntry(id)
-  const updateEntry = useUpdateRoiEntry(id)
   const deleteEntry = useDeleteRoiEntry(id)
 
   const [newPeriod, setNewPeriod] = useState('')
