@@ -230,6 +230,72 @@ export function RoiDashboardPage() {
       )}
 
       {/* Distribuição por status */}
+      {/* Top 5 por NPV */}
+      <Card className="p-6 space-y-3">
+        <div>
+          <h2 className="font-semibold">Top análises por NPV</h2>
+          <p className="text-xs text-muted-foreground">Maiores valores presentes líquidos</p>
+        </div>
+        {(() => {
+          const top = items
+            .filter(r => r.npv != null && Number(r.npv) > 0)
+            .sort((a, b) => Number(b.npv) - Number(a.npv))
+            .slice(0, 5)
+          if (top.length === 0) {
+            return <p className="text-sm text-muted-foreground">Nenhuma análise com NPV positivo.</p>
+          }
+          const max = Math.max(1, ...top.map(r => Number(r.npv)))
+          return (
+            <div className="space-y-2">
+              {top.map(r => (
+                <Link key={r.id} to={`/roi-analyses/${r.id}`} className="block group">
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="font-medium truncate max-w-[60%]">{r.name}</span>
+                    <span className="text-xs tabular-nums">{formatCurrencyShort(Number(r.npv), r.currency)}</span>
+                  </div>
+                  <div className="h-2 rounded bg-muted overflow-hidden">
+                    <div className="h-full bg-emerald-500/70 transition-all group-hover:opacity-80"
+                      style={{ width: `${(Number(r.npv) / max) * 100}%` }} />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )
+        })()}
+      </Card>
+
+      {/* Aguardando aprovação */}
+      <Card className="p-6 space-y-3">
+        <div>
+          <h2 className="font-semibold">Aguardando aprovação</h2>
+          <p className="text-xs text-muted-foreground">Análises submetidas que precisam de revisão</p>
+        </div>
+        {(() => {
+          const pending = items
+            .filter(r => r.status === 'submitted')
+            .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
+            .slice(0, 8)
+          if (pending.length === 0) {
+            return <p className="text-sm text-muted-foreground">Nenhuma análise pendente.</p>
+          }
+          return (
+            <ul className="space-y-2">
+              {pending.map(r => (
+                <li key={r.id}>
+                  <Link to={`/roi-analyses/${r.id}`} className="flex items-center justify-between text-sm py-1 hover:bg-muted/30 rounded px-2 -mx-2">
+                    <span className="font-medium truncate max-w-[70%]">{r.name}</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {r.npv != null ? formatCurrencyShort(Number(r.npv), r.currency) : '—'}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )
+        })()}
+      </Card>
+
+
       <Card className="p-6 space-y-4">
         <div>
           <h2 className="font-semibold">Distribuição por status</h2>

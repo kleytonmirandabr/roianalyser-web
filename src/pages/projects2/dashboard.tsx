@@ -247,6 +247,75 @@ export function Projects2DashboardPage() {
         </Card>
       )}
 
+      {/* Top 5 por orçamento */}
+      <Card className="p-6 space-y-3">
+        <div>
+          <h2 className="font-semibold">Top projetos por orçamento</h2>
+          <p className="text-xs text-muted-foreground">Maiores compromissos financeiros</p>
+        </div>
+        {(() => {
+          const top = items
+            .filter(p => p.budget != null && Number(p.budget) > 0)
+            .sort((a, b) => Number(b.budget) - Number(a.budget))
+            .slice(0, 5)
+          if (top.length === 0) {
+            return <p className="text-sm text-muted-foreground">Sem orçamentos definidos.</p>
+          }
+          const max = Math.max(1, ...top.map(p => Number(p.budget)))
+          return (
+            <div className="space-y-2">
+              {top.map(p => (
+                <Link key={p.id} to={`/projects-v2/${p.id}`} className="block group">
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="font-medium truncate max-w-[60%]">{p.name}</span>
+                    <span className="text-xs tabular-nums">{formatCurrencyShort(Number(p.budget), p.currency)}</span>
+                  </div>
+                  <div className="h-2 rounded bg-muted overflow-hidden">
+                    <div className="h-full bg-primary/70 transition-all group-hover:opacity-80"
+                      style={{ width: `${(Number(p.budget) / max) * 100}%` }} />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )
+        })()}
+      </Card>
+
+      {/* Por responsável */}
+      <Card className="p-6 space-y-3">
+        <div>
+          <h2 className="font-semibold">Carga por gestor</h2>
+          <p className="text-xs text-muted-foreground">Projetos por gestor</p>
+        </div>
+        {(() => {
+          const byResp = new Map<string, number>()
+          for (const p of items) {
+            if (!p.managerId) continue
+            byResp.set(p.managerId, (byResp.get(p.managerId) ?? 0) + 1)
+          }
+          const arr = Array.from(byResp.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8)
+          if (arr.length === 0) {
+            return <p className="text-sm text-muted-foreground">Sem responsáveis atribuídos.</p>
+          }
+          const max = Math.max(1, ...arr.map(([_, c]) => c))
+          return (
+            <div className="space-y-2">
+              {arr.map(([rid, c]) => (
+                <div key={rid}>
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="font-medium">Gestor #{rid}</span>
+                    <span className="text-xs tabular-nums font-semibold">{c}</span>
+                  </div>
+                  <div className="h-2 rounded bg-muted overflow-hidden">
+                    <div className="h-full bg-emerald-500/70" style={{ width: `${(c / max) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        })()}
+      </Card>
+
       {/* Distribuição por status */}
       <Card className="p-6 space-y-4">
         <div>
