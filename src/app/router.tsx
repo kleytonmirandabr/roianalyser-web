@@ -362,14 +362,6 @@ export function AppRouter() {
           }
         />
         <Route
-          path="/opportunities/:id"
-          element={
-            <Lazy>
-              <OpportunityDetailPage />
-            </Lazy>
-          }
-        />
-        <Route
           path="/opportunities/board"
           element={
             <Lazy>
@@ -381,7 +373,7 @@ export function AppRouter() {
           path="/opportunities/funnel"
           element={
             <Lazy>
-              <ProjectsFunnelPage />
+              <ProjectsFunnelPage scope="opportunities" />
             </Lazy>
           }
         />
@@ -389,7 +381,15 @@ export function AppRouter() {
           path="/opportunities/lost"
           element={
             <Lazy>
-              <ProjectsLostPage />
+              <ProjectsLostPage scope="opportunities" />
+            </Lazy>
+          }
+        />
+        <Route
+          path="/opportunities/:id"
+          element={
+            <Lazy>
+              <OpportunityDetailPage />
             </Lazy>
           }
         />

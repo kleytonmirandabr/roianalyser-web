@@ -10,6 +10,7 @@ import { formatCurrency } from '@/features/projects/lib/money'
 import {
   statusInCategory,
   type ProjectStatus,
+  type FunnelScope,
 } from '@/features/projects/lib/status-categories'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
@@ -30,7 +31,7 @@ import { ProjectsTabs } from './components/projects-tabs'
  * Tela "Perdidas" — filtra projetos cujo status tem categoria 'lost'
  * (ou nome contém keywords legadas se categoria ainda não foi setada).
  */
-export function ProjectsLostPage() {
+export function ProjectsLostPage({ scope = 'projects' }: { scope?: FunnelScope } = {}) {
   const { t } = useTranslation()
   const projects = useProjects()
   const statuses = useCatalog('projectStatuses')
@@ -154,14 +155,14 @@ export function ProjectsLostPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            {t('nav.projects')}
+            {scope === 'opportunities' ? t('nav.opportunities') : t('nav.projects')}
           </h1>
           <p className="text-sm text-muted-foreground">
             {t('projects.lost.subtitle')}
           </p>
         </div>
         <Button asChild>
-          <Link to="/projects/new">
+          <Link to={scope === 'opportunities' ? "/opportunities/new" : "/projects/new"}>
             <Plus className="h-4 w-4" />
             <span>{t('projects.new')}</span>
           </Link>

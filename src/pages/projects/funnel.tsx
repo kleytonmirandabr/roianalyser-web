@@ -12,8 +12,11 @@ import {
 import { useProjects } from '@/features/projects/hooks/use-projects'
 import { formatCurrency } from '@/features/projects/lib/money'
 import { applyFilters } from '@/features/projects/lib/project-fields'
-import { statusInCategory } from '@/features/projects/lib/status-categories'
-import type { ProjectStatus } from '@/features/projects/lib/status-categories'
+import {
+  statusInCategory,
+  type FunnelScope,
+  type ProjectStatus,
+} from '@/features/projects/lib/status-categories'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -51,7 +54,7 @@ type FunnelStage = {
  * funil são tratados como saídas — taxa de conversão se calcula sobre o
  * fluxo de negociação ativo (categoria 'negotiation').
  */
-export function ProjectsFunnelPage() {
+export function ProjectsFunnelPage({ scope = 'projects' }: { scope?: FunnelScope } = {}) {
   const { t } = useTranslation()
   const projects = useProjects()
   const statuses = useCatalog('projectStatuses')
@@ -171,14 +174,14 @@ export function ProjectsFunnelPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            {t('nav.projects')}
+            {scope === 'opportunities' ? t('nav.opportunities') : t('nav.projects')}
           </h1>
           <p className="text-sm text-muted-foreground">
             {t('projects.funnel.subtitle')}
           </p>
         </div>
         <Button asChild>
-          <Link to="/projects/new">
+          <Link to={scope === 'opportunities' ? "/opportunities/new" : "/projects/new"}>
             <Plus className="h-4 w-4" />
             <span>{t('projects.new')}</span>
           </Link>
