@@ -29,6 +29,7 @@ export type Opportunity = {
   description: string | null
   companyId: string | null
   leadSourceId: string | null
+  contactId: string | null
   probability: number | null
   wonAt: string | null
   lostAt: string | null
@@ -53,6 +54,7 @@ export type CreateOpportunityInput = {
   description?: string | null
   companyId?: string | null
   leadSourceId?: string | null
+  contactId?: string | null
   probability?: number | null
   tenantId?: string  // só master pode setar
 }
@@ -65,6 +67,7 @@ export type UpdateOpportunityInput = Partial<
     | 'opportunityTypeId'
     | 'companyId'
     | 'leadSourceId'
+    | 'contactId'
     | 'probability'
     | 'clientId'
     | 'responsibleId'

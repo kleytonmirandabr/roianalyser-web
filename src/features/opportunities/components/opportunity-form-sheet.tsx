@@ -1,14 +1,16 @@
 /**
- * Drawer rico para criar/editar oportunidade.
- * Sprint #196 — adiciona Empresa, Fonte do Lead, Probabilidade,
- * Moeda em listbox, Responsável read-only com botão Transferir.
+ * Drawer rico de Oportunidade — Sprint #197.
+ * - Moeda primeiro, Valor estimado depois com máscara baseada na moeda
+ * - Combobox Contato (filtrado pela empresa)
+ * - Layout 2 colunas amplo (sm:max-w-3xl) — sem scroll vertical
  */
 import { Save, UserCheck, ArrowRightLeft } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { useAppState } from '@/features/admin/hooks/use-app-state'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { useCompanies } from '@/features/companies/hooks/use-companies'
+import { useContacts } from '@/features/contacts/hooks/use-contacts'
 import { useLeadSources } from '@/features/lead-sources/hooks/use-lead-sources'
 import { useCreateOpportunity } from '@/features/opportunities/hooks/use-create-opportunity'
 import { useUpdateOpportunity } from '@/features/opportunities/hooks/use-update-opportunity'
@@ -19,6 +21,7 @@ import { toastError, toastSaved } from '@/shared/lib/toasts'
 import { AuditInfoFooter } from '@/shared/ui/audit-info-footer'
 import { Button } from '@/shared/ui/button'
 import { Combobox } from '@/shared/ui/combobox'
+import { CurrencyInput } from '@/shared/ui/currency-input'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import {
@@ -37,15 +40,11 @@ const CURRENCIES = [
 
 const PROBABILITIES = [
   { value: '0', label: '0% — Sem chance' },
-  { value: '10', label: '10%' },
-  { value: '20', label: '20%' },
-  { value: '30', label: '30%' },
-  { value: '40', label: '40%' },
+  { value: '10', label: '10%' }, { value: '20', label: '20%' },
+  { value: '30', label: '30%' }, { value: '40', label: '40%' },
   { value: '50', label: '50% — Em equilíbrio' },
-  { value: '60', label: '60%' },
-  { value: '70', label: '70% — Provável' },
-  { value: '80', label: '80%' },
-  { value: '90', label: '90% — Muito provável' },
+  { value: '60', label: '60%' }, { value: '70', label: '70% — Provável' },
+  { value: '80', label: '80%' }, { value: '90', label: '90% — Muito provável' },
   { value: '100', label: '100% — Certa' },
 ]
 
@@ -64,6 +63,7 @@ export function OpportunityFormSheet({ open, onClose, initial, onSaved }: Props)
   const { data: types = [] } = useOpportunityTypes()
   const { data: companies = [] } = useCompanies()
   const { data: leadSources = [] } = useLeadSources()
+  const { data: contacts = [] } = useContacts()
   const appState = useAppState()
   const tenantUsers = (appState.data?.users ?? []) as Array<{ id?: string; name?: string; email?: string }>
 
@@ -71,10 +71,11 @@ export function OpportunityFormSheet({ open, onClose, initial, onSaved }: Props)
   const [statusId, setStatusId] = useState('')
   const [opportunityTypeId, setOpportunityTypeId] = useState('')
   const [companyId, setCompanyId] = useState('')
+  const [contactId, setContactId] = useState('')
   const [leadSourceId, setLeadSourceId] = useState('')
   const [probability, setProbability] = useState('')
   const [expectedCloseDate, setExpectedCloseDate] = useState('')
-  const [estimatedValue, setEstimatedValue] = useState('')
+  const [estimatedValue, setEstimatedValue] = useState<number | null>(null)
   const [currency, setCurrency] = useState('BRL')
   const [description, setDescription] = useState('')
   const [responsibleId, setResponsibleId] = useState('')
@@ -87,22 +88,36 @@ export function OpportunityFormSheet({ open, onClose, initial, onSaved }: Props)
       setStatusId(initial.statusId ?? '')
       setOpportunityTypeId(initial.opportunityTypeId ?? '')
       setCompanyId(initial.companyId ?? '')
+      setContactId(initial.contactId ?? '')
       setLeadSourceId(initial.leadSourceId ?? '')
       setProbability(initial.probability != null ? String(initial.probability) : '')
       setExpectedCloseDate(initial.expectedCloseDate ?? '')
-      setEstimatedValue(initial.estimatedValue != null ? String(initial.estimatedValue) : '')
+      setEstimatedValue(initial.estimatedValue ?? null)
       setCurrency(initial.currency ?? 'BRL')
       setDescription(initial.description ?? '')
       setResponsibleId(String(initial.responsibleId ?? ''))
       setTransferring(false)
     } else {
       setName(''); setStatusId(''); setOpportunityTypeId('')
-      setCompanyId(''); setLeadSourceId(''); setProbability('')
-      setExpectedCloseDate(''); setEstimatedValue(''); setCurrency('BRL')
+      setCompanyId(''); setContactId(''); setLeadSourceId(''); setProbability('')
+      setExpectedCloseDate(''); setEstimatedValue(null); setCurrency('BRL')
       setDescription(''); setResponsibleId(String(user?.id ?? ''))
       setTransferring(false)
     }
   }, [open, initial, user])
+
+  // Reset contact when company changes (contato pertence à empresa)
+  useEffect(() => {
+    if (!companyId) {
+      setContactId('')
+      return
+    }
+    // Se o contato atual não pertence à empresa selecionada, limpa
+    const c = contacts.find((x: any) => String(x.id) === contactId)
+    if (c && companyId && String((c as any).companyId) !== companyId) {
+      setContactId('')
+    }
+  }, [companyId, contacts])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -113,14 +128,14 @@ export function OpportunityFormSheet({ open, onClose, initial, onSaved }: Props)
         statusId: statusId || null,
         opportunityTypeId: opportunityTypeId || null,
         companyId: companyId || null,
+        contactId: contactId || null,
         leadSourceId: leadSourceId || null,
         probability: probability !== '' ? Number(probability) : null,
-        estimatedValue: estimatedValue ? Number(estimatedValue) : null,
+        estimatedValue: estimatedValue,
         currency: currency || 'BRL',
         expectedCloseDate: expectedCloseDate || null,
         description: description.trim() || null,
       }
-      // Apenas envia responsibleId se for transferência (UX explícita)
       if (initial?.id && transferring && responsibleId !== String(initial.responsibleId)) {
         payload.responsibleId = responsibleId
       }
@@ -139,8 +154,19 @@ export function OpportunityFormSheet({ open, onClose, initial, onSaved }: Props)
   const typeOptions = [{ value: '', label: '— sem tipo —' }, ...types.filter((tp) => tp.active).map((tp) => ({ value: tp.id, label: tp.name }))]
   const companyOptions = [{ value: '', label: '— sem empresa —' }, ...companies.filter((c: any) => c.active !== false).map((c: any) => ({ value: String(c.id), label: c.name }))]
   const leadSourceOptions = [{ value: '', label: '— sem fonte —' }, ...leadSources.filter((l: any) => l.active !== false).map((l: any) => ({ value: String(l.id), label: l.name }))]
-  const userOptions = tenantUsers.filter(u => u.id).map(u => ({ value: String(u.id), label: u.name || u.email || '?' }))
 
+  // Contatos filtrados pela empresa (se nenhuma empresa selecionada → mostra todos)
+  const contactOptions = useMemo(() => {
+    const filtered = companyId
+      ? contacts.filter((c: any) => String(c.companyId) === companyId)
+      : contacts
+    return [{ value: '', label: '— sem contato —' }, ...filtered.filter((c: any) => c.active !== false).map((c: any) => ({
+      value: String(c.id),
+      label: c.name + (c.role ? ` · ${c.role}` : ''),
+    }))]
+  }, [contacts, companyId])
+
+  const userOptions = tenantUsers.filter(u => u.id).map(u => ({ value: String(u.id), label: u.name || u.email || '?' }))
   const responsibleName = tenantUsers.find(u => String(u.id) === responsibleId)?.name
     || tenantUsers.find(u => String(u.id) === responsibleId)?.email
     || '—'
@@ -149,18 +175,19 @@ export function OpportunityFormSheet({ open, onClose, initial, onSaved }: Props)
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent className="sm:max-w-2xl overflow-y-auto">
+      <SheetContent className="sm:max-w-3xl">
         <SheetHeader>
           <SheetTitle>{initial?.id ? 'Editar oportunidade' : 'Nova oportunidade'}</SheetTitle>
         </SheetHeader>
         <form onSubmit={handleSubmit}>
           <SheetBody className="space-y-4">
+            {/* Linha 1: Nome (full) */}
             <div className="space-y-1">
               <Label>Nome *</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus required />
             </div>
 
-            {/* Responsável read-only com botão Transferir */}
+            {/* Linha 2: Responsável (full) */}
             <div className="space-y-1">
               <Label>Responsável</Label>
               {!transferring ? (
@@ -181,11 +208,9 @@ export function OpportunityFormSheet({ open, onClose, initial, onSaved }: Props)
                   <Button type="button" variant="ghost" size="sm" onClick={() => { setResponsibleId(String(initial?.responsibleId ?? '')); setTransferring(false) }}>Cancelar</Button>
                 </div>
               )}
-              {!isCurrentResponsible && !user?.isMaster && initial?.id && (
-                <p className="text-xs text-muted-foreground">Apenas o responsável atual pode transferir.</p>
-              )}
             </div>
 
+            {/* Linha 3: Status / Tipo */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Status</Label>
@@ -197,25 +222,29 @@ export function OpportunityFormSheet({ open, onClose, initial, onSaved }: Props)
               </div>
             </div>
 
+            {/* Linha 4: Empresa / Contato (FK) */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Empresa</Label>
                 <Combobox options={companyOptions} value={companyId} onChange={setCompanyId} />
               </div>
               <div className="space-y-1">
-                <Label>Fonte do Lead</Label>
-                <Combobox options={leadSourceOptions} value={leadSourceId} onChange={setLeadSourceId} />
+                <Label>Contato</Label>
+                <Combobox
+                  options={contactOptions}
+                  value={contactId}
+                  onChange={setContactId}
+                  placeholder={companyId ? 'Selecione...' : 'Escolha uma empresa primeiro'}
+                  disabled={!companyId && contacts.length > 0 && contacts.every((c: any) => c.companyId)}
+                />
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            {/* Linha 5: Fonte / Probabilidade */}
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label>Valor estimado</Label>
-                <Input type="number" step="0.01" value={estimatedValue} onChange={(e) => setEstimatedValue(e.target.value)} placeholder="0,00" />
-              </div>
-              <div className="space-y-1">
-                <Label>Moeda</Label>
-                <Combobox options={CURRENCIES} value={currency} onChange={setCurrency} />
+                <Label>Fonte do Lead</Label>
+                <Combobox options={leadSourceOptions} value={leadSourceId} onChange={setLeadSourceId} />
               </div>
               <div className="space-y-1">
                 <Label>Probabilidade</Label>
@@ -223,9 +252,20 @@ export function OpportunityFormSheet({ open, onClose, initial, onSaved }: Props)
               </div>
             </div>
 
-            <div className="space-y-1">
-              <Label>Fechamento previsto</Label>
-              <Input type="date" value={expectedCloseDate} onChange={(e) => setExpectedCloseDate(e.target.value)} />
+            {/* Linha 6: Moeda PRIMEIRO, Valor SEGUNDO (com máscara), Fechamento */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label>Moeda</Label>
+                <Combobox options={CURRENCIES} value={currency} onChange={setCurrency} />
+              </div>
+              <div className="space-y-1">
+                <Label>Valor estimado</Label>
+                <CurrencyInput value={estimatedValue} currency={currency} onChange={setEstimatedValue} />
+              </div>
+              <div className="space-y-1">
+                <Label>Fechamento previsto</Label>
+                <Input type="date" value={expectedCloseDate} onChange={(e) => setExpectedCloseDate(e.target.value)} />
+              </div>
             </div>
 
             <div className="space-y-1">
