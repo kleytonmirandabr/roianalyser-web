@@ -333,7 +333,47 @@ function makeEmptyUser(defaultClientId = ''): GlobalUser {
     activeClientId: defaultClientId,
     active: true,
     isMaster: false,
+    defaultLanguage: 'pt',
   }
+}
+
+/**
+ * Reduz uma string de telefone livre pra apenas dígitos com prefixo `+`
+ * (formato canônico de armazenamento E.164). Ex: "(11) 99999-0000" →
+ * "+5511999990000" (assume DDI 55 quando não informado e tem 10-11 dígitos).
+ */
+function normalizePhoneBR(raw: string): string {
+  const digits = raw.replace(/\D/g, '')
+  if (!digits) return ''
+  // Se já começa com 55 e tem 12-13 dígitos (DDI + DDD + número), ok.
+  if (digits.length >= 12 && digits.startsWith('55')) return `+${digits}`
+  // Se tem 10-11 dígitos (DDD + número, sem DDI), assume Brasil.
+  if (digits.length === 10 || digits.length === 11) return `+55${digits}`
+  // Outros casos (DDI diferente, internacional): preserva como veio com `+`.
+  return `+${digits}`
+}
+
+/**
+ * Aplica máscara visual `+DDI (DDD) NNNNN-NNNN` em cima de uma string
+ * normalizada (`+5511999990000`). Robusto a entradas parciais — usuário
+ * digitando recebe formatação progressiva.
+ */
+function formatPhoneBR(stored: string | null | undefined): string {
+  if (!stored) return ''
+  const digits = stored.replace(/\D/g, '')
+  if (!digits) return ''
+  // BR: 13 dígitos completos = +55 (DD) NNNNN-NNNN
+  if (digits.startsWith('55') && digits.length >= 12) {
+    const ddi = '+55'
+    const ddd = digits.slice(2, 4)
+    const rest = digits.slice(4)
+    if (rest.length <= 4) return `${ddi} (${ddd}) ${rest}`
+    if (rest.length <= 8) return `${ddi} (${ddd}) ${rest.slice(0, 4)}-${rest.slice(4)}`
+    // 9 dígitos (celular com 9 na frente)
+    return `${ddi} (${ddd}) ${rest.slice(0, 5)}-${rest.slice(5, 9)}`
+  }
+  // Sem DDI 55 — exibe livre com `+` na frente
+  return `+${digits}`
 }
 
 function UserForm({
@@ -403,10 +443,33 @@ function UserForm({
             />
           </div>
           <div className="space-y-1.5">
-            <Label>{t('admin.users.field.username')}</Label>
+            <Label>Telefone</Label>
             <Input
-              value={draft.username ?? ''}
-              onChange={(e) => patch('username', e.target.value)}
+              type="tel"
+              value={formatPhoneBR(draft.phone ?? '')}
+              onChange={(e) =>
+                patch('phone', normalizePhoneBR(e.target.value) || null)
+              }
+              placeholder="+55 (11) 99999-0000"
+              inputMode="tel"
+              maxLength={20}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              DDI + DDD + número. Formato auto-aplicado.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Idioma padrão</Label>
+            <Combobox
+              options={[
+                { value: 'pt', label: 'Português (PT)' },
+                { value: 'en', label: 'English (EN)' },
+                { value: 'es', label: 'Español (ES)' },
+              ]}
+              value={draft.defaultLanguage ?? ''}
+              onChange={(v) => patch('defaultLanguage', v || undefined)}
+              noneLabel="—"
+              placeholder="Idioma"
             />
           </div>
           <div className="space-y-1.5">

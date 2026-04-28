@@ -19,7 +19,18 @@ export type GlobalUser = {
   isMaster?: boolean
   active?: boolean
   defaultLanguage?: string
+  /**
+   * Telefone do user em formato livre. Por convenção armazenamos
+   * normalizado: `+DDI DDD-numero` (ex: `+55 11 99999-0000`). Frontend
+   * tem helper `formatPhoneBR` que aplica a máscara visual.
+   */
+  phone?: string | null
   mfaEnabled?: boolean
+  /**
+   * Último login bem-sucedido (ISO 8601 string). `null` ou ausente =
+   * nunca acessou (convidado). Setado pelo backend no /login OK.
+   */
+  lastLoginAt?: string | null
   /**
    * Timezone IANA do user (ex: 'America/Sao_Paulo'). Se setado, datas/horas
    * exibidas pra esse user usam este fuso. Senão usa fuso do client (tenant)
