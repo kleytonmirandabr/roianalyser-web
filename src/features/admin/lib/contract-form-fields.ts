@@ -75,8 +75,13 @@ export type StandardFieldDef = {
 
 export const STANDARD_FIELDS: StandardFieldDef[] = [
   { id: 'projectName', label: 'Nome do Projeto', defaultVisible: true, defaultRequired: true, locked: true, storage: 'name', renderType: 'text', fullWidth: true },
+  // Responsável: auto-fill com user logado em new.tsx (default no useState).
+  // Texto editável só pra master/admin sobrescrever; users comuns ficam com o próprio nome.
   { id: 'projectOwner', label: 'Responsável', defaultVisible: true, defaultRequired: false, locked: true, storage: 'payload', payloadKey: 'responsible', renderType: 'text' },
-  { id: 'projectClient', label: 'Cliente', defaultVisible: true, defaultRequired: true, locked: true, storage: 'payload', payloadKey: 'clientName', renderType: 'text' },
+  // 'projectClient' (Cliente) REMOVIDO em 2026-04-28: redundante com tenant ativo
+  // do switcher; diag em prod confirmou 0 contratos com payloadKey='clientName'
+  // preenchido. Empresa-alvo da venda usa o campo `contractCompanyId` (catálogo
+  // Empresas). O backend já injeta tenantId via resolveTenantId(user) no POST.
   { id: 'projectStatus', label: 'Status', defaultVisible: true, defaultRequired: false, locked: true, storage: 'status', renderType: 'combobox-status' },
   { id: 'projectCurrency', label: 'Moeda', defaultVisible: true, defaultRequired: false, storage: 'currency', renderType: 'combobox-currency' },
   { id: 'contractOpportunityName', label: 'Nome da Oportunidade', defaultVisible: true, defaultRequired: false, storage: 'payload', renderType: 'text', fullWidth: true },

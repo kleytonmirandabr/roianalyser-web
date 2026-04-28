@@ -94,10 +94,19 @@ export function NewProjectPage() {
   const [values, setValues] = useState<Record<string, unknown>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Default da moeda: BRL.
+  // Defaults: moeda BRL e responsável = user logado (auto-fill).
+  // Caso o user troque de conta, o useEffect re-roda e atualiza o responsável
+  // (se ainda estiver vazio — não sobrescreve se admin já mudou pra outro nome).
   useEffect(() => {
-    setValues((prev) => (prev.projectCurrency ? prev : { ...prev, projectCurrency: 'BRL' }))
-  }, [])
+    setValues((prev) => {
+      const next = { ...prev }
+      if (!next.projectCurrency) next.projectCurrency = 'BRL'
+      if (!next.projectOwner && user) {
+        next.projectOwner = user.name || user.email || ''
+      }
+      return next
+    })
+  }, [user])
 
   function setValue(id: string, value: unknown) {
     setValues((prev) => ({ ...prev, [id]: value }))

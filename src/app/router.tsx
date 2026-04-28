@@ -274,13 +274,12 @@ export function AppRouter() {
 
         {/* Projetos — pós-Win (won/execution/invoicing/done/warranty) */}
         <Route path="/projects" element={<ProjectsListPage scope="projects" />} />
+        {/* /projects/new redireciona pra /opportunities/new — projeto SEMPRE
+            nasce de uma oportunidade ganha (status=won), não é criado direto.
+            Mantém URL antiga funcionando com redirect transparente. */}
         <Route
           path="/projects/new"
-          element={
-            <Lazy>
-              <NewProjectPage />
-            </Lazy>
-          }
+          element={<Navigate to="/opportunities/new" replace />}
         />
         <Route
           path="/projects/:id"
