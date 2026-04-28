@@ -8,7 +8,7 @@
  * Spec: PLAN_split-domain-entities.md, seção 4.4.
  */
 
-import { ArrowLeft, ExternalLink, Trash2 } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
@@ -22,6 +22,8 @@ import {
   type ContractStatus,
   type RenewalType,
 } from '@/features/contracts2/types'
+import { useProjects2 } from '@/features/projects2/hooks/use-projects'
+import { PROJECT_STATUS_LABELS } from '@/features/projects2/types'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
@@ -36,6 +38,7 @@ export function ContractDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { data: ctr, isLoading, error } = useContract(id)
+  const { data: relatedProjects = [] } = useProjects2(id ? { contractId: id } : {})
   const update = useUpdateContract(id)
   const remove = useDeleteContract()
 
@@ -347,6 +350,56 @@ export function ContractDetailPage() {
           </Button>
         </div>
       </Card>
+
+      {/* Card "Projetos derivados" — disponível em contratos active+.
+          Permite iniciar projeto com contractId pré-preenchido. */}
+      {(ctr.status === 'active' || ctr.status === 'ending_soon' ||
+        ctr.status === 'ended' || relatedProjects.length > 0) && (
+        <Card className="p-6 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Projetos derivados ({relatedProjects.length})</h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Inicie projetos a partir deste contrato.
+              </p>
+            </div>
+            <Button size="sm" asChild>
+              <Link to={`/projects-v2/new?contractId=${ctr.id}`}>
+                <Plus className="h-4 w-4" />Iniciar projeto
+              </Link>
+            </Button>
+          </div>
+          {relatedProjects.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nenhum projeto iniciado ainda.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {relatedProjects.map(p => (
+                <li key={p.id}>
+                  <Link
+                    to={`/projects-v2/${p.id}`}
+                    className="flex items-center justify-between rounded border p-3 hover:bg-muted/30"
+                  >
+                    <div>
+                      <span className="font-mono text-xs text-muted-foreground mr-2">
+                        {p.projectCode}
+                      </span>
+                      <span className="font-medium">{p.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span className="tabular-nums text-muted-foreground">
+                        {p.progressPct.toFixed(0)}%
+                      </span>
+                      <span className="text-muted-foreground">{PROJECT_STATUS_LABELS[p.status]}</span>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
     </div>
   )
 }

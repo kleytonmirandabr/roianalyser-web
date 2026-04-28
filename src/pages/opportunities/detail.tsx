@@ -19,6 +19,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useDeleteOpportunity } from '@/features/opportunities/hooks/use-delete-opportunity'
 import { useOpportunity } from '@/features/opportunities/hooks/use-opportunity'
 import { useUpdateOpportunity } from '@/features/opportunities/hooks/use-update-opportunity'
+import { useContracts } from '@/features/contracts2/hooks/use-contracts'
+import { CONTRACT_STATUS_LABELS } from '@/features/contracts2/types'
 import { useCreateRoiAnalysis } from '@/features/roi-analyses/hooks/use-create-roi'
 import { useRoiAnalysesByOpportunity } from '@/features/roi-analyses/hooks/use-roi-analyses'
 import { ROI_STATUS_LABELS } from '@/features/roi-analyses/types'
@@ -43,9 +45,12 @@ export function OpportunityDetailPage() {
   const navigate = useNavigate()
   const { data: opp, isLoading, error } = useOpportunity(id)
   const { data: roiAnalyses = [] } = useRoiAnalysesByOpportunity(id)
+  const { data: relatedContracts = [] } = useContracts(id ? { opportunityId: id } : {})
   const update = useUpdateOpportunity(id)
   const remove = useDeleteOpportunity()
   const createRoi = useCreateRoiAnalysis()
+
+  const hasApprovedRoi = roiAnalyses.some(r => r.status === 'approved')
 
   const [name, setName] = useState('')
   const [status, setStatus] = useState<OpportunityStatus>('draft')
@@ -318,6 +323,61 @@ export function OpportunityDetailPage() {
           </ul>
         )}
       </Card>
+
+      {/* Card "Contratos relacionados" — destrava após ROI aprovado.
+          Permite gerar contrato com o opportunityId pré-preenchido. */}
+      {(opp.status === 'won' || hasApprovedRoi || relatedContracts.length > 0) && (
+        <Card className="p-6 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Contratos relacionados ({relatedContracts.length})</h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                {hasApprovedRoi || opp.status === 'won'
+                  ? 'Gere contratos a partir desta oportunidade.'
+                  : 'Aprove uma análise de ROI pra liberar geração de contrato.'}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              asChild
+              disabled={!hasApprovedRoi && opp.status !== 'won'}
+            >
+              <Link to={`/contracts/new?opportunityId=${opp.id}`}>
+                <Plus className="h-4 w-4" />Gerar contrato
+              </Link>
+            </Button>
+          </div>
+          {relatedContracts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nenhum contrato gerado ainda.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {relatedContracts.map(c => (
+                <li key={c.id}>
+                  <Link
+                    to={`/contracts/${c.id}`}
+                    className="flex items-center justify-between rounded border p-3 hover:bg-muted/30"
+                  >
+                    <div>
+                      <span className="font-mono text-xs text-muted-foreground mr-2">
+                        {c.contractNumber}
+                      </span>
+                      <span className="font-medium">{c.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span className="tabular-nums text-muted-foreground">
+                        {formatCurrencyShort(c.totalValue, c.currency)}
+                      </span>
+                      <span className="text-muted-foreground">{CONTRACT_STATUS_LABELS[c.status]}</span>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
     </div>
   )
 }
