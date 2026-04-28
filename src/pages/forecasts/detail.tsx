@@ -17,6 +17,8 @@ import { useUpdateForecast } from '@/features/forecasts/hooks/use-update-forecas
 import {
   FORECAST_STATUSES, FORECAST_STATUS_LABELS, type ForecastStatus,
 } from '@/features/forecasts/types'
+import { useProject2 } from '@/features/projects2/hooks/use-project'
+import { formatCurrency, formatPercent } from '@/shared/lib/format'
 import { toastError, toastSaved } from '@/shared/lib/toasts'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
@@ -24,12 +26,6 @@ import { Card } from '@/shared/ui/card'
 import { Combobox } from '@/shared/ui/combobox'
 import { Input } from '@/shared/ui/input'
 import { Skeleton } from '@/shared/ui/skeleton'
-
-function fmtMoney(v: number | null): string {
-  if (v == null) return '—'
-  try { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 }).format(v) }
-  catch { return `R$ ${v.toFixed(2)}` }
-}
 
 export function ForecastDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -47,6 +43,10 @@ export function ForecastDetailPage() {
   const fc = data?.item
   const entries = data?.entries || []
   const isFrozen = fc?.status === 'approved' || fc?.status === 'archived'
+
+  // Forecast não tem currency próprio — herda do projeto pai
+  const { data: project } = useProject2(fc?.projectId)
+  const currency = project?.currency || 'BRL'
 
   const statusOptions = FORECAST_STATUSES.map(s => ({ value: s, label: FORECAST_STATUS_LABELS[s] }))
 
@@ -156,16 +156,16 @@ export function ForecastDetailPage() {
         <div className="grid grid-cols-3 gap-4 text-sm">
           <div>
             <div className="text-xs text-muted-foreground uppercase">Esperado</div>
-            <div className="text-lg font-semibold tabular-nums">{fmtMoney(totalExpected)}</div>
+            <div className="text-lg font-semibold tabular-nums">{formatCurrency(totalExpected, currency)}</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground uppercase">Realizado</div>
-            <div className="text-lg font-semibold tabular-nums">{fmtMoney(totalActual)}</div>
+            <div className="text-lg font-semibold tabular-nums">{formatCurrency(totalActual, currency)}</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground uppercase">Variação</div>
             <div className={`text-lg font-semibold tabular-nums ${totalActual > totalExpected ? 'text-emerald-700' : totalActual < totalExpected ? 'text-rose-700' : ''}`}>
-              {totalExpected ? `${(((totalActual - totalExpected) / totalExpected) * 100).toFixed(1)}%` : '—'}
+              {totalExpected ? formatPercent(((totalActual - totalExpected) / totalExpected) * 100) : '—'}
             </div>
           </div>
         </div>
@@ -193,10 +193,10 @@ export function ForecastDetailPage() {
                 <td className="px-3 py-2 text-xs">{(e.period || '').slice(0, 7)}</td>
                 <td className="px-3 py-2">{e.categoryKey}</td>
                 <td className="px-3 py-2 text-muted-foreground">{e.description || '—'}</td>
-                <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(e.expected)}</td>
+                <td className="px-3 py-2 text-right tabular-nums">{formatCurrency(e.expected, currency)}</td>
                 <td className="px-3 py-2 text-right">
                   {isFrozen ? (
-                    <span className="tabular-nums">{fmtMoney(e.actual)}</span>
+                    <span className="tabular-nums">{formatCurrency(e.actual, currency)}</span>
                   ) : (
                     <Input
                       type="number" step="0.01"

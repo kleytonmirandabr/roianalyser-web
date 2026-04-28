@@ -16,6 +16,7 @@ import {
   FLOW_TYPE_LABELS, ROI_STATUSES, ROI_STATUS_LABELS,
   type FlowType, type RoiStatus,
 } from '@/features/roi-analyses/types'
+import { formatCurrency, formatPercent } from '@/shared/lib/format'
 import { toastError, toastSaved } from '@/shared/lib/toasts'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
@@ -23,12 +24,6 @@ import { Card } from '@/shared/ui/card'
 import { Combobox } from '@/shared/ui/combobox'
 import { Input } from '@/shared/ui/input'
 import { Skeleton } from '@/shared/ui/skeleton'
-
-function fmtMoney(v: number | null): string {
-  if (v == null) return '—'
-  try { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 }).format(v) }
-  catch { return `R$ ${v.toFixed(2)}` }
-}
 
 export function RoiAnalysisDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -133,25 +128,25 @@ export function RoiAnalysisDetailPage() {
         <div className="grid grid-cols-3 gap-4 text-sm">
           <div>
             <div className="text-xs text-muted-foreground uppercase">Receita total</div>
-            <div className="text-lg font-semibold tabular-nums text-emerald-700">{fmtMoney(roi.totalRevenue)}</div>
+            <div className="text-lg font-semibold tabular-nums text-emerald-700">{formatCurrency(roi.totalRevenue, roi.currency)}</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground uppercase">Custo total</div>
-            <div className="text-lg font-semibold tabular-nums text-rose-700">{fmtMoney(roi.totalCost)}</div>
+            <div className="text-lg font-semibold tabular-nums text-rose-700">{formatCurrency(roi.totalCost, roi.currency)}</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground uppercase">Valor líquido</div>
             <div className={`text-lg font-semibold tabular-nums ${(roi.netValue || 0) >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
-              {fmtMoney(roi.netValue)}
+              {formatCurrency(roi.netValue, roi.currency)}
             </div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground uppercase">NPV</div>
-            <div className="text-lg font-semibold tabular-nums">{fmtMoney(roi.npv)}</div>
+            <div className="text-lg font-semibold tabular-nums">{formatCurrency(roi.npv, roi.currency)}</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground uppercase">IRR</div>
-            <div className="text-lg font-semibold tabular-nums">{roi.irr != null ? `${(roi.irr * 100).toFixed(2)}%` : '—'}</div>
+            <div className="text-lg font-semibold tabular-nums">{roi.irr != null ? formatPercent(roi.irr * 100, 2) : '—'}</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground uppercase">Payback</div>
@@ -186,7 +181,7 @@ export function RoiAnalysisDetailPage() {
                 <td className="px-3 py-2 text-xs">{(e.period || '').slice(0, 7)}</td>
                 <td className="px-3 py-2">{e.categoryKey}</td>
                 <td className="px-3 py-2 text-muted-foreground">{e.description || '—'}</td>
-                <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(e.amount)}</td>
+                <td className="px-3 py-2 text-right tabular-nums">{formatCurrency(e.amount, roi.currency)}</td>
                 <td className="px-3 py-2">
                   <span className={`inline-block rounded-full px-2 py-0.5 text-xs ${e.flowType === 'inflow' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
                     {FLOW_TYPE_LABELS[e.flowType]}

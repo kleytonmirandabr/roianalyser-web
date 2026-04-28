@@ -18,33 +18,12 @@ import {
   OPPORTUNITY_STATUS_LABELS,
   type OpportunityStatus,
 } from '@/features/opportunities/types'
+import { formatCurrencyShort, formatDate } from '@/shared/lib/format'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Combobox } from '@/shared/ui/combobox'
 import { Skeleton } from '@/shared/ui/skeleton'
-
-function formatCurrency(value: number | null, currency = 'BRL'): string {
-  if (value == null) return '—'
-  try {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 0,
-    }).format(value)
-  } catch {
-    return `${currency} ${value.toFixed(2)}`
-  }
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return '—'
-  try {
-    return new Date(iso).toLocaleDateString('pt-BR')
-  } catch {
-    return iso
-  }
-}
 
 function statusColor(status: OpportunityStatus): string {
   switch (status) {
@@ -183,7 +162,7 @@ export function OpportunitiesListPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums">
-                    {formatCurrency(opp.estimatedValue, opp.currency)}
+                    {formatCurrencyShort(opp.estimatedValue, opp.currency)}
                   </td>
                   <td className="px-4 py-3">{formatDate(opp.expectedCloseDate)}</td>
                   <td className="px-4 py-3 text-muted-foreground">

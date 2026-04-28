@@ -22,6 +22,7 @@ import { useUpdateOpportunity } from '@/features/opportunities/hooks/use-update-
 import { useCreateRoiAnalysis } from '@/features/roi-analyses/hooks/use-create-roi'
 import { useRoiAnalysesByOpportunity } from '@/features/roi-analyses/hooks/use-roi-analyses'
 import { ROI_STATUS_LABELS } from '@/features/roi-analyses/types'
+import { formatCurrencyShort } from '@/shared/lib/format'
 import {
   OPPORTUNITY_STATUSES,
   OPPORTUNITY_STATUS_LABELS,
@@ -306,9 +307,7 @@ export function OpportunityDetailPage() {
                   <div className="flex items-center gap-3 text-xs">
                     {roi.netValue != null && (
                       <span className="tabular-nums text-muted-foreground">
-                        {new Intl.NumberFormat('pt-BR', {
-                          style: 'currency', currency: roi.currency || 'BRL', maximumFractionDigits: 0,
-                        }).format(roi.netValue)}
+                        {formatCurrencyShort(roi.netValue, roi.currency)}
                       </span>
                     )}
                     <span className="text-muted-foreground">{ROI_STATUS_LABELS[roi.status]}</span>

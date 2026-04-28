@@ -17,33 +17,12 @@ import {
   CONTRACT_STATUS_LABELS,
   type ContractStatus,
 } from '@/features/contracts2/types'
+import { formatCurrencyShort, formatDate } from '@/shared/lib/format'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Combobox } from '@/shared/ui/combobox'
 import { Skeleton } from '@/shared/ui/skeleton'
-
-function formatCurrency(value: number, currency = 'BRL'): string {
-  if (value == null) return '—'
-  try {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 0,
-    }).format(value)
-  } catch {
-    return `${currency} ${value.toFixed(2)}`
-  }
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return '—'
-  try {
-    return new Date(iso).toLocaleDateString('pt-BR')
-  } catch {
-    return iso
-  }
-}
 
 function statusColor(status: ContractStatus): string {
   switch (status) {
@@ -198,7 +177,7 @@ export function ContractsListPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">
-                      {formatCurrency(c.totalValue, c.currency)}
+                      {formatCurrencyShort(c.totalValue, c.currency)}
                     </td>
                     <td className="px-4 py-3 text-xs">
                       {formatDate(c.startDate)} → {formatDate(c.endDate)}
