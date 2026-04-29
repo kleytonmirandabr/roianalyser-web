@@ -75,7 +75,7 @@ export function AdminTaskTemplatesPage() {
 
   async function handleSave() {
     if (!draft.name.trim()) return toastError(new Error('Informe o nome'))
-    if (!draft.id && !draft.key.trim()) return toastError(new Error('Informe a chave'))
+    // Chave eh auto-gerada via slugify(name) se vazia (Sprint #190 dropou o campo Chave da UI)
     const dur = draft.defaultDurationDays ? Number(draft.defaultDurationDays) : null
     try {
       if (draft.id) {
