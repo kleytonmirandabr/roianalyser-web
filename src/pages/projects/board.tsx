@@ -32,6 +32,9 @@ import { cn } from '@/shared/lib/cn'
 
 import { ProjectsTabs } from './components/projects-tabs'
 
+import { OpportunityViewSheet } from '@/features/opportunities/components/opportunity-view-sheet'
+import { OpportunityFormSheet } from '@/features/opportunities/components/opportunity-form-sheet'
+import { useOpportunities } from '@/features/opportunities/hooks/use-opportunities'
 type StatusColumn = {
   /** Nome do status (chave de agrupamento). Vazio = "Sem status". */
   name: string
@@ -65,6 +68,9 @@ export function ProjectsBoardPage({
 }) {
   const { t, i18n } = useTranslation()
   const projects = useOpportunitiesAsProjects()
+  const oppsRaw = useOpportunities()
+  const [viewingOpp, setViewingOpp] = useState<any>(null)
+  const [editingOpp, setEditingOpp] = useState<any>(null)
   const oppStatuses = useOpportunityStatuses()
   const statuses = { data: oppStatuses.data, isLoading: oppStatuses.isLoading, isError: oppStatuses.isError, isSuccess: oppStatuses.isSuccess }
 
@@ -320,8 +326,19 @@ export function ProjectsBoardPage({
       {projects.isLoading || statuses.isLoading ? (
         <BoardSkeleton />
       ) : (
-        <Board columns={columns} currency={tenantCurrency} locale={i18n.language} />
+        <Board columns={columns} currency={tenantCurrency} locale={i18n.language} scope={scope} onCardOpenView={(id) => { const o = (oppsRaw.data ?? []).find(x => String(x.id) === String(id)); if (o) setViewingOpp(o) }} />
       )}
+      <OpportunityViewSheet
+        open={!!viewingOpp}
+        opportunity={viewingOpp}
+        onClose={() => setViewingOpp(null)}
+        onEdit={(opp) => { setViewingOpp(null); setEditingOpp(opp) }}
+      />
+      <OpportunityFormSheet
+        open={!!editingOpp}
+        initial={editingOpp}
+        onClose={() => setEditingOpp(null)}
+      />
     </div>
   )
 }
@@ -344,10 +361,14 @@ function Board({
   columns,
   currency,
   locale,
+  scope,
+  onCardOpenView,
 }: {
   columns: StatusColumn[]
   currency: string
   locale: string
+  scope?: 'opportunities' | 'projects'
+  onCardOpenView?: (id: string) => void
 }) {
   const { t } = useTranslation()
   const move = useMoveProject()
@@ -432,6 +453,8 @@ function Board({
                   isDragging={draggingId === p.id}
                   onDragStart={() => setDraggingId(p.id)}
                   onDragEnd={() => setDraggingId(null)}
+                  scope={scope}
+                  onOpenView={onCardOpenView}
                 />
               ))}
             </div>
@@ -449,6 +472,8 @@ function BoardCard({
   isDragging,
   onDragStart,
   onDragEnd,
+  scope,
+  onOpenView,
 }: {
   project: EnrichedProject
   currency: string
@@ -456,6 +481,8 @@ function BoardCard({
   isDragging: boolean
   onDragStart: () => void
   onDragEnd: () => void
+  scope?: 'opportunities' | 'projects'
+  onOpenView?: (id: string) => void
 }) {
   const payload = (project.payload ?? {}) as Record<string, unknown>
   const endDate = typeof payload.endDate === 'string' ? payload.endDate : null
@@ -475,12 +502,24 @@ function BoardCard({
       {/* Sprint H.3 — atalho "+ tarefa" alinhado à direita do título.
           Vai pra aba Tarefas com `?new=1` que dispara o sheet de criar. */}
       <div className="flex items-start justify-between gap-2">
-        <Link
-          to={`/projects/${project.id}`}
-          className="block text-sm font-medium text-foreground hover:underline"
-        >
-          {project.name}
-        </Link>
+        {scope === 'opportunities' && onOpenView ? (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onOpenView(project.id) }}
+            onDragStart={(e) => e.preventDefault()}
+            draggable={false}
+            className="block text-left text-sm font-medium text-foreground hover:underline"
+          >
+            {project.name}
+          </button>
+        ) : (
+          <Link
+            to={scope === 'opportunities' ? `/opportunities/${project.id}` : `/projects/${project.id}`}
+            className="block text-sm font-medium text-foreground hover:underline"
+          >
+            {project.name}
+          </Link>
+        )}
         <Link
           to={`/projects/${project.id}/tasks?new=1`}
           onClick={(e) => e.stopPropagation()}
@@ -494,8 +533,14 @@ function BoardCard({
         </Link>
       </div>
 
+      {project.__responsibleName && (
+        <p className="mt-1 line-clamp-1 text-xs text-muted-foreground flex items-center gap-1">
+          <Users className="h-3 w-3" />
+          {project.__responsibleName}
+        </p>
+      )}
       {project.__clientLabel && (
-        <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+        <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
           {project.__clientLabel}
         </p>
       )}

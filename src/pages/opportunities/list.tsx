@@ -22,6 +22,7 @@ import { useOpportunities } from '@/features/opportunities/hooks/use-opportuniti
 import { useOpportunityStatuses } from '@/features/opportunity-statuses/hooks/use-opportunity-statuses'
 import { useAppState } from '@/features/admin/hooks/use-app-state'
 import { OpportunityFormSheet } from '@/features/opportunities/components/opportunity-form-sheet'
+import { OpportunityViewSheet } from '@/features/opportunities/components/opportunity-view-sheet'
 import { DeleteWithReasonDialog } from '@/features/opportunities/components/delete-with-reason-dialog'
 import type { Opportunity } from '@/features/opportunities/types'
 import { Button } from '@/shared/ui/button'
@@ -105,6 +106,7 @@ export function OpportunitiesListPage() {
   const [activeQuick, setActiveQuick] = useState<Set<QuickFilterId>>(new Set())
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editing, setEditing] = useState<Opportunity | null>(null)
+  const [viewing, setViewing] = useState<Opportunity | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [deletingOne, setDeletingOne] = useState<Opportunity | null>(null)
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
@@ -419,7 +421,7 @@ export function OpportunitiesListPage() {
                         let cell: any = '—'
                         switch (col.id) {
                           case 'name':
-                            cell = <Link to={`/opportunities/${op.id}`} className="text-primary hover:underline">{op.name}</Link>; break
+                            cell = <button type="button" onClick={() => setViewing(op)} className="text-primary hover:underline text-left">{op.name}</button>; break
                           case 'status':
                             cell = st ? (
                               <span className="inline-flex items-center gap-2 rounded-full px-2 py-0.5 text-xs"
@@ -487,6 +489,13 @@ export function OpportunitiesListPage() {
       </Card>
 
       <OpportunityFormSheet open={drawerOpen} onClose={() => { setDrawerOpen(false); setEditing(null) }} initial={editing} />
+
+      <OpportunityViewSheet
+        open={!!viewing}
+        opportunity={viewing}
+        onClose={() => setViewing(null)}
+        onEdit={(opp) => { setViewing(null); setEditing(opp); setDrawerOpen(true) }}
+      />
 
       <DeleteWithReasonDialog
         open={!!deletingOne}
