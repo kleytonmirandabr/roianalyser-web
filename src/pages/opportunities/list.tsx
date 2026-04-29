@@ -180,7 +180,7 @@ export function OpportunitiesListPage() {
       if (!currencyFilter) {
         // Top5 sem moeda → não filtra (UI mostra hint)
       } else {
-        arr = [...arr].sort((a, b) => (b.estimatedValue ?? 0) - (a.estimatedValue ?? 0)).slice(0, 5)
+        return [...arr].sort((a, b) => (b.estimatedValue ?? 0) - (a.estimatedValue ?? 0)).slice(0, 5)
       }
     }
     // Default ordering: updatedAt DESC
