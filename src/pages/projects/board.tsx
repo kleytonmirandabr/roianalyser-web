@@ -10,6 +10,7 @@ import {
   useAdvancedFilters,
 } from '@/features/projects/components/advanced-filters'
 import { useMoveProject } from '@/features/projects/hooks/use-move-project'
+import { useMoveOpportunity } from '@/features/opportunities/hooks/use-move-opportunity'
 import { useOpportunityStatuses } from '@/features/opportunity-statuses/hooks/use-opportunity-statuses'
 import { useOpportunitiesAsProjects } from '@/features/opportunities/hooks/use-opportunities-as-projects'
 import { formatCurrency } from '@/features/projects/lib/money'
@@ -371,7 +372,9 @@ function Board({
   onCardOpenView?: (id: string) => void
 }) {
   const { t } = useTranslation()
-  const move = useMoveProject()
+  const moveProject = useMoveProject()
+  const moveOpp = useMoveOpportunity()
+  const move = scope === 'opportunities' ? null : moveProject
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [hoverCol, setHoverCol] = useState<string | null>(null)
 
@@ -385,7 +388,11 @@ function Board({
       .find((p) => p.id === id)
     if (!project || project.status === targetStatus) return
     try {
-      await move.mutateAsync({ id, status: targetStatus || null })
+      if (scope === 'opportunities') {
+        await moveOpp.mutateAsync({ id, statusName: targetStatus || null })
+      } else if (move) {
+        await move.mutateAsync({ id, status: targetStatus || null })
+      }
       toastSaved(t('projects.board.moved'))
     } catch (err) {
       toastError(err, t('projects.board.moveError'))
