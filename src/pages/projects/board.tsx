@@ -108,7 +108,7 @@ export function ProjectsBoardPage({
             : ''
       return {
         ...p,
-        __revenue: summaryByProject.get(p.id)?.totalRevenue ?? 0,
+        __revenue: Number(summaryByProject.get(p.id)?.totalRevenue || p.estimatedValue || 0),
         __responsibleName: responsibleName,
         __clientLabel: clientLabel,
       }
@@ -187,7 +187,16 @@ export function ProjectsBoardPage({
   }, [filtered, statuses.data, t, includeLost, lostStatusNames])
 
   // Resumo geral em cima — total filtrado e valor consolidado.
-  const tenantCurrency = enrichedAll[0]?.currency ?? 'BRL'
+  const tenantCurrency = (() => {
+    const counts = new Map<string, number>()
+    for (const p of enrichedAll) {
+      const c = p.currency || 'BRL'
+      counts.set(c, (counts.get(c) ?? 0) + 1)
+    }
+    let best = 'BRL', bestN = 0
+    for (const [c, n] of counts) if (n > bestN) { best = c; bestN = n }
+    return best
+  })()
   const totalCount = filtered.length
   const totalRevenue = filtered.reduce((s, p) => s + p.__revenue, 0)
 

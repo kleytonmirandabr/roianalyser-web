@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
 import { useCatalog } from '@/features/catalogs/hooks/use-catalog'
+import { useOpportunityStatuses } from '@/features/opportunity-statuses/hooks/use-opportunity-statuses'
 import { financialSummaries } from '@/features/dashboard/lib/aggregations'
 import {
   AdvancedFilters,
@@ -57,7 +58,9 @@ type FunnelStage = {
 export function ProjectsFunnelPage({ scope = 'projects' }: { scope?: FunnelScope } = {}) {
   const { t } = useTranslation()
   const projects = useOpportunitiesAsProjects()
-  const statuses = useCatalog('projectStatuses')
+  const oppStatuses = useOpportunityStatuses()
+  const projectStatuses = useCatalog('projectStatuses')
+  const statuses = scope === 'opportunities' ? { data: oppStatuses.data, isLoading: oppStatuses.isLoading, isError: oppStatuses.isError, isSuccess: oppStatuses.isSuccess } : projectStatuses
 
   const [search, setSearch] = useState('')
   const [responsibleFilter, setResponsibleFilter] = useState('')
@@ -81,7 +84,7 @@ export function ProjectsFunnelPage({ scope = 'projects' }: { scope?: FunnelScope
         project: p,
         responsible,
         clientLabel,
-        revenue: byId.get(p.id)?.totalRevenue ?? 0,
+        revenue: Number(byId.get(p.id)?.totalRevenue || p.estimatedValue || 0),
       }
     })
   }, [projects.data])
@@ -165,7 +168,16 @@ export function ProjectsFunnelPage({ scope = 'projects' }: { scope?: FunnelScope
   const total = filtered.length
   const totalRevenue = filtered.reduce((s, e) => s + e.revenue, 0)
   const maxCount = stages.reduce((m, s) => Math.max(m, s.count), 0)
-  const tenantCurrency = enriched[0]?.project.currency ?? 'BRL'
+  const tenantCurrency = (() => {
+    const counts = new Map<string, number>()
+    for (const e of enriched) {
+      const c = e.project.currency || 'BRL'
+      counts.set(c, (counts.get(c) ?? 0) + 1)
+    }
+    let best = 'BRL', bestN = 0
+    for (const [c, n] of counts) if (n > bestN) { best = c; bestN = n }
+    return best
+  })()
 
   const filtersActive = !!search || !!responsibleFilter
 
