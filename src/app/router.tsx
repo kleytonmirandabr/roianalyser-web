@@ -167,6 +167,11 @@ const AdminTaskTemplatesPage = lazy(() =>
     default: m.AdminTaskTemplatesPage,
   })),
 )
+const TasksPage = lazy(() =>
+  import('@/pages/tasks').then((m) => ({
+    default: m.TasksPage,
+  })),
+)
 const AdminSectorsPage = lazy(() =>
   import('@/pages/admin/sectors').then((m) => ({
     default: m.AdminSectorsPage,
@@ -296,6 +301,14 @@ export function AppRouter() {
         <Route
           path="/opportunities"
           element={<OpportunitiesListPage />}
+        />
+        <Route
+          path="/tasks"
+          element={
+            <Lazy>
+              <TasksPage />
+            </Lazy>
+          }
         />
         <Route
           path="/opportunities/dashboard"

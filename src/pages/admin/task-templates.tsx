@@ -1,4 +1,4 @@
-/** Admin → Modelos de Tarefas (master only). */
+/** Admin → Tipos de Tarefa (master only). Usados pra classificar atividades em oportunidades/projetos. */
 import { Pencil, Plus, Save, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
@@ -100,9 +100,9 @@ export function AdminTaskTemplatesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Modelos de Tarefas</h1>
+          <h1 className="text-2xl font-bold">Tipos de Tarefa</h1>
           <p className="text-sm text-muted-foreground">
-            Tarefas pré-cadastradas (ligação, e-mail, reunião, etc) que podem ser instanciadas em projetos.
+            Catálogo de tipos de tarefa (Ligar, Reunião, Visita Comercial, Envio de Email...) usados ao registrar atividades em oportunidades e projetos.
           </p>
         </div>
         <div className="flex items-center gap-2">

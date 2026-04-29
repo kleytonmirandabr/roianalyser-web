@@ -6,9 +6,9 @@
  */
 import {
   Mail, Phone, MessageCircle, ExternalLink, Building2, UserCheck, Wallet,
-  History, Newspaper, Linkedin, Globe, Pencil, ArrowUpRight,
+  History, Newspaper, Linkedin, Globe, Pencil, ArrowUpRight, Plus,
 } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useAppState } from '@/features/admin/hooks/use-app-state'
@@ -22,6 +22,7 @@ import { formatCurrencyShort, formatDateTime, formatDate } from '@/shared/lib/fo
 import {
   Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle,
 } from '@/shared/ui/sheet'
+import { TaskFormSheet } from '@/features/tasks/components/task-form-sheet'
 import { useUserTimezone } from '@/shared/lib/use-user-timezone'
 
 interface Props {
@@ -59,6 +60,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export function OpportunityViewSheet({ open, onClose, opportunity, onEdit }: Props) {
   const tz = useUserTimezone()
+  const [taskOpen, setTaskOpen] = useState(false)
   const { data: companies = [] } = useCompanies()
   const { data: contacts = [] } = useContacts()
   const { data: opps = [] } = useOpportunities()
@@ -300,6 +302,9 @@ export function OpportunityViewSheet({ open, onClose, opportunity, onEdit }: Pro
 
         <SheetFooter>
           <Button variant="outline" type="button" onClick={onClose}>Fechar</Button>
+          <Button variant="outline" type="button" onClick={() => setTaskOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Tarefa
+          </Button>
           <Button asChild variant="outline">
             <Link to={`/opportunities/${opportunity.id}`} onClick={onClose}>
               <ArrowUpRight className="h-4 w-4 mr-1" /> Abrir página
@@ -312,6 +317,13 @@ export function OpportunityViewSheet({ open, onClose, opportunity, onEdit }: Pro
           )}
         </SheetFooter>
       </SheetContent>
+      <TaskFormSheet
+        open={taskOpen}
+        entityType="opportunity"
+        entityId={String(opportunity.id)}
+        lockEntity
+        onClose={() => setTaskOpen(false)}
+      />
     </Sheet>
   )
 }

@@ -1238,7 +1238,7 @@
     "forecast": "Forecast",
     "adminOpportunityStatuses": "Estados de Oportunidad",
     "adminOpportunityTypes": "Tipos de Oportunidad",
-    "adminTaskTemplates": "Modelos de Tareas",
+    "adminTaskTemplates": "Tipos de Tarea",
     "cadastrosCrm": "Configuración CRM",
     "cadastrosRoi": "Configuración ROI",
     "adminCompanies": "Empresas",
@@ -1251,6 +1251,7 @@
     "adminBillingUnits": "Unidades de Cobranza",
     "adminFinancialTypes": "Tipos Financieros",
     "adminUserGroups": "Grupos de Usuarios",
-    "adminOpportunityDeletionReasons": "Motivos de Exclusión"
+    "adminOpportunityDeletionReasons": "Motivos de Exclusión",
+    "tasks": "Tareas"
   }
 }

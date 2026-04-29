@@ -1238,7 +1238,7 @@
     "forecast": "Forecast",
     "adminOpportunityStatuses": "Opportunity Statuses",
     "adminOpportunityTypes": "Opportunity Types",
-    "adminTaskTemplates": "Task Templates",
+    "adminTaskTemplates": "Task Types",
     "cadastrosCrm": "CRM Setup",
     "cadastrosRoi": "ROI Setup",
     "adminCompanies": "Companies",
@@ -1251,6 +1251,7 @@
     "adminBillingUnits": "Billing Units",
     "adminFinancialTypes": "Financial Types",
     "adminUserGroups": "User Groups",
-    "adminOpportunityDeletionReasons": "Deletion Reasons"
+    "adminOpportunityDeletionReasons": "Deletion Reasons",
+    "tasks": "Tasks"
   }
 }

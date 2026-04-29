@@ -2,6 +2,7 @@ import {
   BarChart3,
   Briefcase,
   Calculator,
+  CheckSquare,
   FileText,
   LayoutDashboard,
   LineChart,
@@ -62,6 +63,16 @@ export const NAV_ITEMS: NavItem[] = [
     i18nKey: 'opportunities',
     to: '/opportunities',
     icon: Target,
+  },
+  {
+    /**
+     * Tarefas — Sprint #211. Calendário + lista de atividades (Ligar,
+     * Reunião, Visita...) vinculadas a oportunidades/projetos. Default
+     * filtra por usuário logado; toggle expande pra "Todas".
+     */
+    i18nKey: 'tasks',
+    to: '/tasks',
+    icon: CheckSquare,
   },
   {
     /**
