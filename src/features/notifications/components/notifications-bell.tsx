@@ -1,121 +1,117 @@
 import { Bell, CheckCheck } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 
-import { useAuth } from '@/features/auth/hooks/use-auth'
 import {
-  generateNotifications,
-  markAllRead,
-  markRead,
-  readReadIds,
-  type Notification,
-} from '@/features/notifications/lib/notifications'
-import { useProjects } from '@/features/projects/hooks/use-projects'
-import { cn } from '@/shared/lib/cn'
+  useServerNotifications, useMarkAllRead, useMarkNotificationRead,
+} from '@/features/notifications/hooks/use-server-notifications'
+import type { ServerNotification } from '@/features/notifications/api-types'
 import { Button } from '@/shared/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
 
-const TONE_DOT: Record<Notification['tone'], string> = {
-  bad: 'bg-destructive',
-  warn: 'bg-amber-500',
-  info: 'bg-blue-500',
+const KIND_TONE: Record<string, string> = {
+  task_created: 'bg-blue-500',
+  task_overdue: 'bg-red-500',
+  task_reminder: 'bg-amber-500',
+  digest_morning: 'bg-emerald-500',
+}
+
+function timeAgo(iso: string) {
+  const ms = Date.now() - new Date(iso).getTime()
+  const s = Math.floor(ms / 1000)
+  if (s < 60) return `${s}s`
+  const m = Math.floor(s / 60)
+  if (m < 60) return `${m}min`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h`
+  const d = Math.floor(h / 24)
+  return `${d}d`
 }
 
 export function NotificationsBell() {
-  const { t } = useTranslation()
-  const { user } = useAuth()
-  const projects = useProjects()
-  const [, forceRender] = useState(0)
+  const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
+  const query = useServerNotifications()
+  const markRead = useMarkNotificationRead()
+  const markAll = useMarkAllRead()
 
-  const allNotifs = useMemo(
-    () => generateNotifications(projects.data ?? [], user?.id),
-    [projects.data, user?.id],
-  )
+  const items: ServerNotification[] = query.data?.items ?? []
+  const unread = query.data?.unreadCount ?? 0
 
-  const readIds = readReadIds(user?.id)
-  const unread = allNotifs.filter((n) => !readIds.has(n.id))
-
-  function refresh() {
-    forceRender((v) => v + 1)
+  function handleClick(n: ServerNotification) {
+    if (!n.readAt) markRead.mutate(n.id)
+    if (n.link) {
+      setOpen(false)
+      navigate(n.link.startsWith('http') ? '/' : n.link)
+    }
   }
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
-          {unread.length > 0 && (
+          {unread > 0 && (
             <span className="absolute right-1 top-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
-              {unread.length > 99 ? '99+' : unread.length}
+              {unread > 99 ? '99+' : unread}
             </span>
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 p-0">
+      <DropdownMenuContent align="end" className="w-96 p-0">
         <div className="flex items-center justify-between border-b border-border px-3 py-2">
-          <span className="text-sm font-semibold">
-            {t('notifications.title')}
-          </span>
-          {unread.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => {
-                markAllRead(user?.id, allNotifs)
-                refresh()
-              }}
+          <span className="text-sm font-semibold">Notificações</span>
+          {unread > 0 && (
+            <button
+              type="button"
+              onClick={() => markAll.mutate()}
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
             >
-              <CheckCheck className="h-3 w-3" />
-              {t('notifications.markAllRead')}
-            </Button>
+              <CheckCheck className="h-3 w-3" /> Marcar tudo lido
+            </button>
           )}
         </div>
         <div className="max-h-96 overflow-y-auto">
-          {allNotifs.length === 0 ? (
+          {query.isLoading ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">Carregando...</div>
+          ) : items.length === 0 ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
-              {t('notifications.empty')}
+              Sem notificações por aqui. Vou avisar quando algo acontecer.
             </div>
           ) : (
-            allNotifs.slice(0, 30).map((n) => {
-              const isRead = readIds.has(n.id)
+            items.slice(0, 30).map(n => {
+              const isUnread = !n.readAt
               return (
-                <Link
+                <button
+                  type="button"
                   key={n.id}
-                  to={n.link ?? '#'}
-                  onClick={() => {
-                    markRead(user?.id, [n.id])
-                    refresh()
-                  }}
-                  className={cn(
-                    'block border-b border-border/50 px-3 py-2 text-sm hover:bg-accent',
-                    isRead && 'opacity-60',
-                  )}
+                  onClick={() => handleClick(n)}
+                  className={`flex w-full items-start gap-2 border-b border-border px-3 py-2.5 text-left hover:bg-muted/50 ${isUnread ? 'bg-blue-50/40 dark:bg-blue-950/10' : ''}`}
                 >
-                  <div className="flex items-start gap-2">
-                    <span
-                      className={cn(
-                        'mt-1.5 inline-block h-1.5 w-1.5 rounded-full shrink-0',
-                        isRead ? 'bg-muted-foreground/30' : TONE_DOT[n.tone],
-                      )}
-                    />
-                    <div className="flex-1 leading-snug">{n.message}</div>
+                  <span className={`mt-1.5 inline-block h-2 w-2 shrink-0 rounded-full ${KIND_TONE[n.kind] || 'bg-zinc-400'}`} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className={`text-sm ${isUnread ? 'font-semibold' : 'font-normal'}`}>{n.title}</span>
+                      <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">{timeAgo(n.createdAt)}</span>
+                    </div>
+                    {n.body && <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{n.body}</div>}
                   </div>
-                </Link>
+                </button>
               )
             })
           )}
         </div>
-        {allNotifs.length > 30 && (
-          <div className="border-t border-border px-3 py-2 text-center text-xs text-muted-foreground">
-            {t('notifications.showingFirst', { n: 30 })}
-          </div>
-        )}
+        <div className="border-t border-border p-2">
+          <Link
+            to="/me/notifications-prefs"
+            onClick={() => setOpen(false)}
+            className="block w-full rounded px-2 py-1.5 text-center text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          >
+            Configurar preferências de notificação
+          </Link>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   )

@@ -173,6 +173,12 @@ const AdminEmailLogPage = lazy(() =>
     default: m.AdminEmailLogPage,
   })),
 )
+
+const NotificationsPrefsPage = lazy(() =>
+  import('@/pages/me/notifications-prefs').then((m) => ({
+    default: m.NotificationsPrefsPage,
+  })),
+)
 const TasksPage = lazy(() =>
   import('@/pages/tasks').then((m) => ({
     default: m.TasksPage,
@@ -534,6 +540,14 @@ export function AppRouter() {
                 <AdminEmailLogPage />
               </Lazy>
             </RequireRole>
+          }
+        />
+        <Route
+          path="/me/notifications-prefs"
+          element={
+            <Lazy>
+              <NotificationsPrefsPage />
+            </Lazy>
           }
         />
         <Route
