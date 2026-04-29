@@ -11,8 +11,9 @@
 import { useMemo, useState } from 'react'
 import {
   Calendar as CalendarIcon, ListTodo, Plus, AlertTriangle, CheckCircle2,
-  ChevronLeft, ChevronRight, Filter,
+  ChevronLeft, ChevronRight, Filter, BarChart3,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { useAppState } from '@/features/admin/hooks/use-app-state'
@@ -203,6 +204,10 @@ export function TasksPage() {
               onClick={() => setView('list')}
               className={`inline-flex items-center gap-1.5 rounded px-2.5 py-1 ${view === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
             ><ListTodo className="h-3.5 w-3.5" /> Lista</button>
+            <Link
+              to="/tasks/dashboard"
+              className="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-muted-foreground hover:text-foreground"
+            ><BarChart3 className="h-3.5 w-3.5" /> Dashboard</Link>
           </div>
           <Button size="sm" onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4 mr-1" /> Criar tarefa
