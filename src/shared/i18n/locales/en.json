@@ -1250,6 +1250,7 @@
     "adminItemCategories": "Item Categories",
     "adminBillingUnits": "Billing Units",
     "adminFinancialTypes": "Financial Types",
-    "adminUserGroups": "User Groups"
+    "adminUserGroups": "User Groups",
+    "adminOpportunityDeletionReasons": "Deletion Reasons"
   }
 }

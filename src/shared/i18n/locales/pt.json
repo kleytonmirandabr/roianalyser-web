@@ -1250,6 +1250,7 @@
     "adminItemCategories": "Categorias de Item",
     "adminBillingUnits": "Unidades de Cobrança",
     "adminFinancialTypes": "Tipos Financeiros",
-    "adminUserGroups": "Grupos de Usuários"
+    "adminUserGroups": "Grupos de Usuários",
+    "adminOpportunityDeletionReasons": "Motivos de Exclusão"
   }
 }

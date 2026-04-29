@@ -178,6 +178,11 @@ const AdminLeadSourcesPage = lazy(() =>
     default: m.AdminLeadSourcesPage,
   })),
 )
+const AdminOpportunityDeletionReasonsPage = lazy(() =>
+  import('@/pages/admin/opportunity-deletion-reasons').then((m) => ({
+    default: m.AdminOpportunityDeletionReasonsPage,
+  })),
+)
 const AdminItemCategoriesPage = lazy(() =>
   import('@/pages/admin/item-categories').then((m) => ({
     default: m.AdminItemCategoriesPage,
@@ -510,6 +515,16 @@ export function AppRouter() {
             <RequireRole level="master">
               <Lazy>
                 <AdminLeadSourcesPage />
+              </Lazy>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/opportunity-deletion-reasons"
+          element={
+            <RequireRole level="master">
+              <Lazy>
+                <AdminOpportunityDeletionReasonsPage />
               </Lazy>
             </RequireRole>
           }

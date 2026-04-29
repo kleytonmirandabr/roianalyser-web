@@ -161,6 +161,7 @@ export const NAV_ITEMS: NavItem[] = [
       { i18nKey: 'adminOpportunityTypes', to: '/admin/opportunity-types', requiresLevel: 'master' },
       { i18nKey: 'adminOpportunityStatuses', to: '/admin/opportunity-statuses', requiresLevel: 'master' },
       { i18nKey: 'adminSalesGoals', to: '/admin/sales-goals', requiresLevel: 'master' },
+      { i18nKey: 'adminOpportunityDeletionReasons', to: '/admin/opportunity-deletion-reasons', requiresLevel: 'master' },
     ],
   },
   // ─── Cadastros ROI / Operação ──────────────────────────────────
