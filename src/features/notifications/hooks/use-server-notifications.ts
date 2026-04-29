@@ -1,11 +1,16 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useInfiniteQuery, useMutation, useQuery, useQueryClient,
+} from '@tanstack/react-query'
+
 import { notificationsApi } from '../api'
-import type { NotificationPrefs } from '../api-types'
+import type { NotificationPrefs, SnoozeRequest } from '../api-types'
 
 export function useServerNotifications() {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['notifications', 'list'],
-    queryFn: () => notificationsApi.list(),
+    queryFn: ({ pageParam }) => notificationsApi.list({ cursor: pageParam ?? undefined, limit: 30 }),
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    initialPageParam: undefined as string | undefined,
     refetchInterval: 60_000,
     staleTime: 30_000,
   })
@@ -23,6 +28,23 @@ export function useMarkAllRead() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: () => notificationsApi.readAll(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications', 'list'] }),
+  })
+}
+
+export function useSnoozeNotification() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: SnoozeRequest }) =>
+      notificationsApi.snooze(id, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications', 'list'] }),
+  })
+}
+
+export function useUnsnoozeNotification() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => notificationsApi.unsnooze(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications', 'list'] }),
   })
 }

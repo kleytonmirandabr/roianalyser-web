@@ -7,6 +7,7 @@ export interface ServerNotification {
   entityType: string | null
   entityId: string | null
   readAt: string | null
+  snoozedUntil: string | null
   createdAt: string
 }
 
@@ -20,4 +21,10 @@ export interface NotificationPrefs {
 export interface NotificationsListResponse {
   items: ServerNotification[]
   unreadCount: number
+  nextCursor: string | null
+}
+
+export interface SnoozeRequest {
+  minutes?: number
+  until?: string
 }
