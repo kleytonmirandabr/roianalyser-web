@@ -60,7 +60,7 @@ const QUICK_FILTERS = [
   { id: 'thisweek',     label: 'Fecha esta semana' },
   { id: 'stale30',      label: 'Aberta > 30 dias' },
   { id: 'highprob',     label: 'Alta probabilidade (≥70%)' },
-  { id: 'top5',         label: 'Top 5 maiores (precisa moeda)' },
+  { id: 'top5',         label: 'Top 5 maiores' },
 ] as const
 type QuickFilterId = typeof QUICK_FILTERS[number]['id']
 
@@ -285,7 +285,7 @@ export function OpportunitiesListPage() {
             <Filter className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Rápidos:</span>
           </div>
-          <div className="w-32">
+          <div className="w-44">
             <Combobox options={CURRENCIES_FILTER} value={currencyFilter} onChange={setCurrencyFilter} />
           </div>
           {QUICK_FILTERS.map(qf => (
