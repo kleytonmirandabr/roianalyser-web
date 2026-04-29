@@ -23,6 +23,7 @@ import { useOpportunities } from '@/features/opportunities/hooks/use-opportuniti
 import { useTasks } from '@/features/tasks/hooks/use-tasks'
 import type { Task } from '@/features/tasks/types'
 import { Card } from '@/shared/ui/card'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 import { Skeleton } from '@/shared/ui/skeleton'
 
 const PERIOD_OPTIONS: Array<{ value: string; label: string }> = [
@@ -542,20 +543,29 @@ export function TasksDashboardPage() {
           {isLoading ? <Skeleton className="h-40" /> : (
             <div className="flex items-end gap-px h-40 border-b border-border pl-1">
               {throughput.map(d => (
-                <div
-                  key={d.key}
-                  className="flex-1 flex items-end gap-px h-full"
-                  title={`${new Date(d.key + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}: ${d.created} criadas / ${d.done} concluídas`}
-                >
-                  <div
-                    className="flex-1 rounded-t-sm bg-blue-500/80 hover:bg-blue-500 transition-all"
-                    style={{ height: `${(d.created / throughputMax) * 100}%` }}
-                  />
-                  <div
-                    className="flex-1 rounded-t-sm bg-emerald-500/80 hover:bg-emerald-500 transition-all"
-                    style={{ height: `${(d.done / throughputMax) * 100}%` }}
-                  />
-                </div>
+                <Tooltip key={d.key}>
+                  <TooltipTrigger asChild>
+                    <div className="flex-1 flex items-end gap-px h-full cursor-default">
+                      <div
+                        className="flex-1 rounded-t-sm bg-blue-500/80 hover:bg-blue-500 transition-all"
+                        style={{ height: `${(d.created / throughputMax) * 100}%` }}
+                      />
+                      <div
+                        className="flex-1 rounded-t-sm bg-emerald-500/80 hover:bg-emerald-500 transition-all"
+                        style={{ height: `${(d.done / throughputMax) * 100}%` }}
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <div className="space-y-0.5 text-xs">
+                      <div className="font-semibold">
+                        {new Date(d.key + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                      </div>
+                      <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-blue-500" /> {d.created} criada{d.created === 1 ? '' : 's'}</div>
+                      <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-emerald-500" /> {d.done} concluída{d.done === 1 ? '' : 's'}</div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
               ))}
             </div>
           )}
@@ -578,13 +588,13 @@ export function TasksDashboardPage() {
               {byStatus.map(s => {
                 const pct = (s.count / kpis.total) * 100
                 return (
-                  <button
-                    key={s.status}
-                    type="button"
-                    onClick={() => goToTasks({ status: s.status })}
-                    className="w-full text-left group"
-                    title={`${s.label}: ${s.count} (${pct.toFixed(1)}%) — clique pra filtrar`}
-                  >
+                  <Tooltip key={s.status}>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => goToTasks({ status: s.status })}
+                        className="w-full text-left group"
+                      >
                     <div className="mb-1 flex items-center justify-between text-sm">
                       <span className="font-medium group-hover:text-foreground">{s.label}</span>
                       <span className="tabular-nums text-xs text-muted-foreground">
@@ -593,8 +603,13 @@ export function TasksDashboardPage() {
                     </div>
                     <div className="h-2 w-full rounded bg-muted/30">
                       <div className="h-2 rounded transition-all group-hover:opacity-80" style={{ width: `${pct}%`, backgroundColor: s.color }} />
-                    </div>
-                  </button>
+                        </div>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      {s.label}: <span className="font-semibold">{s.count}</span> ({pct.toFixed(1)}%) · clique para filtrar
+                    </TooltipContent>
+                  </Tooltip>
                 )
               })}
             </div>
@@ -688,13 +703,13 @@ export function TasksDashboardPage() {
                 const overduePct = r.overdue / respMax * 100
                 const donePct = r.done / respMax * 100
                 return (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => goToTasks({ responsibleId: r.id })}
-                    className="group w-full text-left"
-                    title={`${r.name}: ${r.open - r.overdue} em aberto, ${r.overdue} atrasadas, ${r.done} concluídas`}
-                  >
+                  <Tooltip key={r.id}>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => goToTasks({ responsibleId: r.id })}
+                        className="group w-full text-left"
+                      >
                     <div className="mb-1 flex items-center justify-between text-sm">
                       <span className="font-medium group-hover:text-foreground">{r.name}</span>
                       <span className="inline-flex items-center gap-2 tabular-nums text-xs text-muted-foreground">
@@ -710,8 +725,18 @@ export function TasksDashboardPage() {
                       <div className="h-full bg-blue-500/80" style={{ width: `${openPct}%` }} />
                       <div className="h-full bg-red-500/80" style={{ width: `${overduePct}%` }} />
                       <div className="h-full bg-emerald-500/80" style={{ width: `${donePct}%` }} />
-                    </div>
-                  </button>
+                        </div>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      <div className="space-y-0.5 text-xs">
+                        <div className="font-semibold">{r.name}</div>
+                        <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-blue-500" /> {r.open - r.overdue} em aberto</div>
+                        <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-red-500" /> {r.overdue} atrasada{r.overdue === 1 ? '' : 's'}</div>
+                        <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-emerald-500" /> {r.done} concluída{r.done === 1 ? '' : 's'}</div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
                 )
               })}
             </div>
@@ -731,15 +756,22 @@ export function TasksDashboardPage() {
           {isLoading ? <Skeleton className="h-40" /> : (
             <div className="space-y-2">
               {byPriority.map(p => (
-                <div key={p.priority} title={`${p.label}: ${p.count}`}>
-                  <div className="mb-0.5 flex items-center justify-between text-sm">
-                    <span style={{ color: p.color }} className="font-medium">{p.label}</span>
-                    <span className="tabular-nums text-xs text-muted-foreground">{p.count}</span>
-                  </div>
-                  <div className="h-2 w-full rounded bg-muted/30">
-                    <div className="h-2 rounded transition-all" style={{ width: `${(p.count / priorityMax) * 100}%`, backgroundColor: p.color }} />
-                  </div>
-                </div>
+                <Tooltip key={p.priority}>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <div className="mb-0.5 flex items-center justify-between text-sm">
+                        <span style={{ color: p.color }} className="font-medium">{p.label}</span>
+                        <span className="tabular-nums text-xs text-muted-foreground">{p.count}</span>
+                      </div>
+                      <div className="h-2 w-full rounded bg-muted/30">
+                        <div className="h-2 rounded transition-all" style={{ width: `${(p.count / priorityMax) * 100}%`, backgroundColor: p.color }} />
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">
+                    <span className="font-semibold">{p.label}</span>: {p.count} tarefa{p.count === 1 ? '' : 's'}
+                  </TooltipContent>
+                </Tooltip>
               ))}
             </div>
           )}
@@ -760,21 +792,29 @@ export function TasksDashboardPage() {
         ) : (
           <div className="space-y-2">
             {byOpp.map(o => (
-              <button
-                key={o.id}
-                type="button"
-                onClick={() => navigate(`/opportunities/${o.id}`)}
-                className="w-full text-left group"
-                title={`${o.name}: ${o.count} tarefas — clique pra abrir oportunidade`}
-              >
+              <Tooltip key={o.id}>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/opportunities/${o.id}`)}
+                    className="w-full text-left group"
+                  >
                 <div className="mb-0.5 flex items-center justify-between text-sm">
                   <span className="line-clamp-1 font-medium group-hover:text-foreground">{o.name}</span>
                   <span className="tabular-nums text-xs text-muted-foreground">{o.count}</span>
                 </div>
-                <div className="h-2 w-full rounded bg-muted/30">
-                  <div className="h-2 rounded bg-indigo-500/80 transition-all group-hover:bg-indigo-500" style={{ width: `${(o.count / oppMax) * 100}%` }} />
-                </div>
-              </button>
+                    <div className="h-2 w-full rounded bg-muted/30">
+                      <div className="h-2 rounded bg-indigo-500/80 transition-all group-hover:bg-indigo-500" style={{ width: `${(o.count / oppMax) * 100}%` }} />
+                    </div>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <div className="space-y-0.5 text-xs">
+                    <div className="font-semibold">{o.name}</div>
+                    <div>{o.count} tarefa{o.count === 1 ? '' : 's'} · clique para abrir</div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
             ))}
           </div>
         )}
@@ -931,15 +971,22 @@ function BarBuckets(props: { buckets: Array<{ key: string; label: string; count:
   return (
     <div className="space-y-2">
       {props.buckets.map(b => (
-        <div key={b.key} title={`${b.label}: ${b.count}`}>
-          <div className="mb-0.5 flex items-center justify-between text-sm">
-            <span className="font-medium">{b.label}</span>
-            <span className="tabular-nums text-xs text-muted-foreground">{b.count}</span>
-          </div>
-          <div className="h-2 w-full rounded bg-muted/30">
-            <div className="h-2 rounded transition-all" style={{ width: `${(b.count / props.max) * 100}%`, backgroundColor: b.color }} />
-          </div>
-        </div>
+        <Tooltip key={b.key}>
+          <TooltipTrigger asChild>
+            <div>
+              <div className="mb-0.5 flex items-center justify-between text-sm">
+                <span className="font-medium">{b.label}</span>
+                <span className="tabular-nums text-xs text-muted-foreground">{b.count}</span>
+              </div>
+              <div className="h-2 w-full rounded bg-muted/30">
+                <div className="h-2 rounded transition-all" style={{ width: `${(b.count / props.max) * 100}%`, backgroundColor: b.color }} />
+              </div>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="left">
+            <span className="font-semibold">{b.label}</span>: {b.count}
+          </TooltipContent>
+        </Tooltip>
       ))}
     </div>
   )
