@@ -114,7 +114,7 @@ export function AdminUserGroupsPage() {
                   {columns.map(col => (
                     <DataTableHeaderCell key={col.key} column={col} state={dt} />
                   ))}
-                  <TableHead className="w-32 text-right">Ações</TableHead>
+                  <TableHead className="w-32 text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -123,7 +123,7 @@ export function AdminUserGroupsPage() {
                   return (
                     <TableRow key={String(it.id)}>
                       <TableCell className="font-medium">{String(it.name)}</TableCell>
-                      <TableCell className="text-right space-x-1">
+                      <TableCell className="text-center space-x-1">
                         <Button size="icon" variant="ghost" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => handleDelete(t)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
                       </TableCell>

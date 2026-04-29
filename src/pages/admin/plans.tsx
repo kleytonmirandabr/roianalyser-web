@@ -161,7 +161,7 @@ export function AdminPlansPage() {
                 <TableCell className="text-muted-foreground tabular-nums">
                   {p.functionalityIds?.length ?? 0}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-center">
                   <div className="flex justify-end gap-1">
                     <IconTooltip label={t('catalogs.detail.edit')}>
                       <Button variant="ghost" size="icon" onClick={() => setEditing(p)}>

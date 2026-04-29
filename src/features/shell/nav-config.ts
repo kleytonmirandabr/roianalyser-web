@@ -62,12 +62,6 @@ export const NAV_ITEMS: NavItem[] = [
     i18nKey: 'opportunities',
     to: '/opportunities',
     icon: Target,
-    children: [
-      { i18nKey: 'opportunitiesList', to: '/opportunities' },
-      { i18nKey: 'opportunitiesBoard', to: '/opportunities/board' },
-      { i18nKey: 'opportunitiesFunnel', to: '/opportunities/funnel' },
-      { i18nKey: 'opportunitiesLost', to: '/opportunities/lost' },
-    ],
   },
   {
     /**

@@ -267,7 +267,7 @@ export function AdminFormFieldsPage() {
                 <th className="px-4 py-2">Chave</th>
                 <th className="px-4 py-2">Tipo</th>
                 <th className="px-4 py-2">Obrigatório</th>
-                <th className="px-4 py-2 w-32 text-right">Ações</th>
+                <th className="px-4 py-2 w-32 text-center">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -281,7 +281,7 @@ export function AdminFormFieldsPage() {
                   </td>
                   <td className="px-4 py-2">{TYPE_LABELS[f.fieldType]}</td>
                   <td className="px-4 py-2">{f.required ? 'Sim' : 'Não'}</td>
-                  <td className="px-4 py-2 text-right space-x-1">
+                  <td className="px-4 py-2 text-center space-x-1">
                     <Button size="icon" variant="ghost" onClick={() => openEdit(f)}>
                       <Pencil className="h-4 w-4" />
                     </Button>

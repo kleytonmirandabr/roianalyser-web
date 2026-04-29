@@ -147,7 +147,7 @@ export function AdminContactsPage() {
                   {columns.map(col => (
                     <DataTableHeaderCell key={col.key} column={col} state={dt} />
                   ))}
-                  <TableHead className="w-32 text-right">Ações</TableHead>
+                  <TableHead className="w-32 text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -160,7 +160,7 @@ export function AdminContactsPage() {
                       <TableCell className="text-xs">{o.companyId ? (companyById.get(String(o.companyId)) || '—') : <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell className="text-xs">{asStr(o.email) || <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell className="text-xs">{asStr(o.phone) || <span className="text-muted-foreground">—</span>}</TableCell>
-                      <TableCell className="text-right space-x-1">
+                      <TableCell className="text-center space-x-1">
                         <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => handleDelete(c)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
                       </TableCell>

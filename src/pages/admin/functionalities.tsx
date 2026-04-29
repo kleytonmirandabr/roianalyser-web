@@ -169,7 +169,7 @@ export function AdminFunctionalitiesPage() {
                   {f.category ?? '—'}
                 </TableCell>
                 <TableCell className="text-muted-foreground">{f.plan ?? '—'}</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-center">
                   <div className="flex justify-end gap-1">
                     <IconTooltip label={t('catalogs.detail.edit')}>
                       <Button variant="ghost" size="icon" onClick={() => setEditing(f)}>

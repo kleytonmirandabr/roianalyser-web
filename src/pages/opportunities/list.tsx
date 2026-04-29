@@ -29,7 +29,9 @@ import { Card } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Combobox } from '@/shared/ui/combobox'
 import { Input } from '@/shared/ui/input'
+import { ProjectsTabs } from '@/pages/projects/components/projects-tabs'
 import { CsvExportButton } from '@/shared/ui/csv-export-button'
+import { Pagination, usePagination } from '@/shared/ui/pagination'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { formatCurrencyShort, formatDateTime, formatDate } from '@/shared/lib/format'
 import { toastError, toastSaved } from '@/shared/lib/toasts'
@@ -188,15 +190,19 @@ export function OpportunitiesListPage() {
     return [...arr].sort((a, b) => (new Date(b.updatedAt).getTime()) - (new Date(a.updatedAt).getTime()))
   }, [items, search, responsibleFilter, companyFilter, currencyFilter, activeQuick, user])
 
-  const allChecked = filtered.length > 0 && filtered.every(o => selected.has(o.id))
-  const someChecked = filtered.some(o => selected.has(o.id))
+  // Paginação em cima do filtered
+  const pag = usePagination(filtered, 25)
+  const visibleRows = pag.paginated
+
+  const allChecked = visibleRows.length > 0 && visibleRows.every(o => selected.has(o.id))
+  const someChecked = visibleRows.some(o => selected.has(o.id))
 
   function toggleAll() {
     const next = new Set(selected)
     if (allChecked) {
-      for (const o of filtered) next.delete(o.id)
+      for (const o of visibleRows) next.delete(o.id)
     } else {
-      for (const o of filtered) next.add(o.id)
+      for (const o of visibleRows) next.add(o.id)
     }
     setSelected(next)
   }
@@ -267,6 +273,8 @@ export function OpportunitiesListPage() {
           <Button onClick={() => { setEditing(null); setDrawerOpen(true) }}><Plus className="h-4 w-4 mr-2" /> Nova oportunidade</Button>
         </div>
       </div>
+
+      <ProjectsTabs />
 
       {/* Linha 1: busca + filtros principais */}
       <Card className="p-3 space-y-3">
@@ -400,7 +408,7 @@ export function OpportunitiesListPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((op) => {
+                {visibleRows.map((op) => {
                   const st = op.statusId ? statusById.get(op.statusId) : null
                   return (
                     <tr key={op.id} className="border-t hover:bg-muted/20">
@@ -469,6 +477,11 @@ export function OpportunitiesListPage() {
                 </tfoot>
               )}
             </table>
+          </div>
+        )}
+        {filtered.length > 25 && (
+          <div className="border-t p-2">
+            <Pagination state={pag} />
           </div>
         )}
       </Card>

@@ -181,7 +181,7 @@ export function AdminCatalogItemsPage() {
                   {columns.map(col => (
                     <DataTableHeaderCell key={col.key} column={col} state={dt} />
                   ))}
-                  <TableHead className="w-32 text-right">Ações</TableHead>
+                  <TableHead className="w-32 text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -194,7 +194,7 @@ export function AdminCatalogItemsPage() {
                       <TableCell className="text-xs">{asStr(o.cat) || <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell className="text-xs">{o.categoryId ? (categoryById.get(String(o.categoryId)) || '—') : <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell className="text-xs">{asStr(o.unit) || <span className="text-muted-foreground">—</span>}</TableCell>
-                      <TableCell className="text-right space-x-1">
+                      <TableCell className="text-center space-x-1">
                         <Button size="icon" variant="ghost" onClick={() => openEdit(i)}><Pencil className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => handleDelete(i)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
                       </TableCell>

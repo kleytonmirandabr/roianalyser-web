@@ -1,5 +1,4 @@
 import { lazy, Suspense } from 'react'
-import { useTranslation } from 'react-i18next'
 import { Navigate, Route, Routes } from 'react-router-dom'
 
 import { RequireRole } from '@/features/auth/components/require-role'
@@ -244,10 +243,19 @@ const ImportOpportunitiesPage = lazy(() =>
 )
 
 function RouteFallback() {
-  const { t } = useTranslation()
   return (
-    <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-      {t('app.loading')}
+    <div className="space-y-4 p-6">
+      <div className="space-y-2">
+        <div className="h-7 w-48 rounded bg-muted animate-pulse" />
+        <div className="h-4 w-72 rounded bg-muted/60 animate-pulse" />
+      </div>
+      <div className="rounded-lg border bg-card p-4 space-y-3">
+        <div className="h-5 w-full rounded bg-muted/50 animate-pulse" />
+        <div className="h-5 w-full rounded bg-muted/50 animate-pulse" />
+        <div className="h-5 w-3/4 rounded bg-muted/50 animate-pulse" />
+        <div className="h-5 w-5/6 rounded bg-muted/50 animate-pulse" />
+        <div className="h-5 w-2/3 rounded bg-muted/50 animate-pulse" />
+      </div>
     </div>
   )
 }

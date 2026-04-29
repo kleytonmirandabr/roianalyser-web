@@ -28,7 +28,7 @@ interface Props<T> {
 }
 
 export function CsvExportButton<T>({
-  filename, columns, rows, size = 'sm', variant = 'outline', disabled, className,
+  filename, columns, rows, size = 'default', variant = 'outline', disabled, className,
 }: Props<T>) {
   const { t, i18n } = useTranslation()
   const label = t('common.exportCsv', 'Exportar CSV')

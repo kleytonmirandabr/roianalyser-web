@@ -136,7 +136,7 @@ export function AdminSalesGoalsPage() {
                   {columns.map(col => (
                     <DataTableHeaderCell key={col.key} column={col} state={dt} />
                   ))}
-                  <TableHead className="w-32 text-right">Ações</TableHead>
+                  <TableHead className="w-32 text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -148,7 +148,7 @@ export function AdminSalesGoalsPage() {
                       <TableCell className="tabular-nums">{it.target != null ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(it.target)) : '—'}</TableCell>
                       <TableCell className="text-xs">{it.periodStart ? new Date(String(it.periodStart)).toLocaleDateString('pt-BR') : '—'}</TableCell>
                       <TableCell className="text-xs">{it.periodEnd ? new Date(String(it.periodEnd)).toLocaleDateString('pt-BR') : '—'}</TableCell>
-                      <TableCell className="text-right space-x-1">
+                      <TableCell className="text-center space-x-1">
                         <Button size="icon" variant="ghost" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => handleDelete(t)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
                       </TableCell>

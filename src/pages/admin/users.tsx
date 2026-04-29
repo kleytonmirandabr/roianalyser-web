@@ -298,7 +298,7 @@ export function AdminUsersPage() {
                 <TableCell className="text-muted-foreground">
                   {profileLabel(u.profileId)}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-center">
                   <div className="flex justify-end gap-1">
                     <IconTooltip label="Reenviar link de senha por e-mail">
                       <Button
