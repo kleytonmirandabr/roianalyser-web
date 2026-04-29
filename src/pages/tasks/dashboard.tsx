@@ -1,19 +1,19 @@
 /**
- * Dashboard de Tarefas (Sprint #221 + refino #222).
+ * Dashboard de Tarefas — refino #5 (Sprint #223).
  *
- * Refino:
- *   - bucket "<1 dia" em "Atrasadas por tempo" (cobre dueAt no passado mas <24h)
- *   - sparklines de 14 dias em cada KPI card
- *   - comparativo "Δ vs período anterior" em cada KPI numerico
- *   - cumulative flow / burndown — open tasks por dia (volume do backlog)
- *   - tooltips nativos em todas as barras
- *   - sem emoji — tudo lucide-react
+ * Adicionado em cima do baseline:
+ *   - ETA pra zerar backlog (footer do Cumulative Flow)
+ *   - Higiene: cards "Sem prazo" / "Sem responsável" (clique abre lista filtrada)
+ *   - Cycle time mediana + média + p90 (substitui "Tempo médio")
+ *   - Date range customizado (inputs date além dos pills)
+ *   - Heatmap responsável × prioridade × atrasadas
  */
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import {
   BarChart3, Filter, X, AlertTriangle, CheckCircle2,
   Clock, Hourglass, Users, Flame, Briefcase, TrendingUp,
   ArrowUp, ArrowDown, Minus, PartyPopper, Activity,
+  CalendarRange, Target, AlertCircle, UserX,
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -23,8 +23,8 @@ import { useOpportunities } from '@/features/opportunities/hooks/use-opportuniti
 import { useTasks } from '@/features/tasks/hooks/use-tasks'
 import type { Task } from '@/features/tasks/types'
 import { Card } from '@/shared/ui/card'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 
 const PERIOD_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'all',  label: 'Sempre' },
@@ -32,30 +32,46 @@ const PERIOD_OPTIONS: Array<{ value: string; label: string }> = [
   { value: '30d',  label: '30 dias' },
   { value: '90d',  label: '90 dias' },
   { value: '1y',   label: '1 ano' },
+  { value: 'custom', label: 'Custom' },
 ]
 
-function periodCutoff(p: string): Date | null {
+interface Window { start: Date | null; end: Date | null }
+
+function periodWindow(p: string, customStart: string, customEnd: string): Window {
+  if (p === 'custom') {
+    return {
+      start: customStart ? new Date(customStart + 'T00:00:00') : null,
+      end: customEnd ? new Date(customEnd + 'T23:59:59') : null,
+    }
+  }
   const now = Date.now()
   switch (p) {
-    case '7d':  return new Date(now - 7 * 86400000)
-    case '30d': return new Date(now - 30 * 86400000)
-    case '90d': return new Date(now - 90 * 86400000)
-    case '1y':  return new Date(now - 365 * 86400000)
-    default: return null
+    case '7d':  return { start: new Date(now - 7 * 86400000), end: null }
+    case '30d': return { start: new Date(now - 30 * 86400000), end: null }
+    case '90d': return { start: new Date(now - 90 * 86400000), end: null }
+    case '1y':  return { start: new Date(now - 365 * 86400000), end: null }
+    default:    return { start: null, end: null }
   }
 }
 
-function previousPeriodWindow(p: string): { start: Date; end: Date } | null {
-  const now = new Date()
-  const days = periodDays(p)
+function previousPeriodWindow(p: string, w: Window): Window | null {
   if (p === 'all') return null
+  if (!w.start) return null
+  const end = w.end ?? new Date()
+  const len = end.getTime() - w.start.getTime()
   return {
-    end: new Date(now.getTime() - days * 86400000),
-    start: new Date(now.getTime() - days * 2 * 86400000),
+    start: new Date(w.start.getTime() - len),
+    end: new Date(w.start.getTime()),
   }
 }
 
-function periodDays(p: string): number {
+function periodDays(p: string, w: Window): number {
+  if (w.start && w.end) {
+    return Math.max(1, Math.ceil((w.end.getTime() - w.start.getTime()) / 86400000))
+  }
+  if (w.start) {
+    return Math.ceil((Date.now() - w.start.getTime()) / 86400000)
+  }
   switch (p) {
     case '7d':  return 7
     case '30d': return 30
@@ -65,6 +81,7 @@ function periodDays(p: string): number {
   }
 }
 
+const PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const
 const PRIORITY_LABEL: Record<string, string> = {
   low: 'Baixa', medium: 'Média', high: 'Alta', urgent: 'Urgente',
 }
@@ -72,27 +89,17 @@ const PRIORITY_COLOR: Record<string, string> = {
   low: '#94a3b8', medium: '#3b82f6', high: '#f97316', urgent: '#ef4444',
 }
 const STATUS_COLOR: Record<string, string> = {
-  pending: '#3b82f6',
-  in_progress: '#a855f7',
-  todo: '#3b82f6',
-  completed: '#10b981',
-  cancelled: '#94a3b8',
+  pending: '#3b82f6', in_progress: '#a855f7', todo: '#3b82f6',
+  completed: '#10b981', cancelled: '#94a3b8',
 }
 const STATUS_LABEL: Record<string, string> = {
-  pending: 'Pendente',
-  todo: 'A fazer',
-  in_progress: 'Em andamento',
-  completed: 'Concluída',
-  cancelled: 'Cancelada',
+  pending: 'Pendente', todo: 'A fazer', in_progress: 'Em andamento',
+  completed: 'Concluída', cancelled: 'Cancelada',
 }
 
-function dayKey(iso: string): string {
-  return new Date(iso).toISOString().slice(0, 10)
-}
-
-function daysBetween(a: Date, b: Date): number {
-  return Math.floor((b.getTime() - a.getTime()) / 86400000)
-}
+function dayKey(iso: string): string { return new Date(iso).toISOString().slice(0, 10) }
+function dayKeyFromDate(d: Date): string { return d.toISOString().slice(0, 10) }
+function daysBetween(a: Date, b: Date): number { return Math.floor((b.getTime() - a.getTime()) / 86400000) }
 
 function formatDuration(days: number): string {
   if (days < 1) return 'menos de 1 dia'
@@ -101,24 +108,32 @@ function formatDuration(days: number): string {
   return `${(days / 365).toFixed(1)} anos`
 }
 
-function dayKeyFromDate(d: Date): string {
-  return d.toISOString().slice(0, 10)
-}
-
-/** Retorna lista de yyyy-mm-dd cobrindo `days` dias terminando hoje. */
-function dayRange(days: number): string[] {
+function dayRange(days: number, end: Date = new Date()): string[] {
   const out: string[] = []
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const last = new Date(end)
+  last.setHours(0, 0, 0, 0)
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today)
-    d.setDate(today.getDate() - i)
+    const d = new Date(last)
+    d.setDate(last.getDate() - i)
     out.push(dayKeyFromDate(d))
   }
   return out
 }
 
-/** Computa KPIs num conjunto de tasks (reutilizado pra comparar período atual vs anterior). */
+function median(arr: number[]): number | null {
+  if (arr.length === 0) return null
+  const s = [...arr].sort((a, b) => a - b)
+  const m = Math.floor(s.length / 2)
+  return s.length % 2 === 0 ? (s[m - 1] + s[m]) / 2 : s[m]
+}
+
+function percentile(arr: number[], p: number): number | null {
+  if (arr.length === 0) return null
+  const s = [...arr].sort((a, b) => a - b)
+  const idx = Math.ceil(p * s.length) - 1
+  return s[Math.max(0, Math.min(s.length - 1, idx))]
+}
+
 function computeKpis(items: Task[]) {
   const total = items.length
   const completed = items.filter(t => t.status === 'completed')
@@ -128,15 +143,22 @@ function computeKpis(items: Task[]) {
   const completedWithDue = completed.filter(t => t.dueAt && t.completedAt)
   const onTime = completedWithDue.filter(t => new Date(t.completedAt!) <= new Date(t.dueAt!))
   const onTimeRate = completedWithDue.length === 0 ? null : onTime.length / completedWithDue.length
+
   const completionDurations = completed
     .filter(t => t.completedAt && t.createdAt)
     .map(t => (new Date(t.completedAt!).getTime() - new Date(t.createdAt).getTime()) / 86400000)
-  const avgCompletionDays = completionDurations.length === 0
-    ? null
-    : completionDurations.reduce((a, b) => a + b, 0) / completionDurations.length
+  const avgDays = completionDurations.length === 0 ? null : completionDurations.reduce((a, b) => a + b, 0) / completionDurations.length
+  const medianDays = median(completionDurations)
+  const p90Days = percentile(completionDurations, 0.9)
+
+  const noDueOpen = open.filter(t => !t.dueAt).length
+  const noResp = items.filter(t => !((t.responsibleIds || []).length)).length
+
   return {
     total, completedCount: completed.length, openCount: open.length,
-    overdueOpenCount: overdueOpen.length, onTimeRate, avgCompletionDays,
+    overdueOpenCount: overdueOpen.length, onTimeRate,
+    avgCompletionDays: avgDays, medianCompletionDays: medianDays, p90CompletionDays: p90Days,
+    noDueOpen, noResp,
   }
 }
 
@@ -149,8 +171,12 @@ export function TasksDashboardPage() {
   const isMaster = user?.isMaster === true
 
   const [period, setPeriod] = useState<string>('30d')
-  const [responsibleId, setResponsibleId] = useState<string>(isMaster ? '' : String(user?.id || ''))
-  const [oppId, setOppId] = useState<string>('')
+  const [customStart, setCustomStart] = useState<string>('')
+  const [customEnd, setCustomEnd] = useState<string>('')
+  const [responsibleIds, setResponsibleIds] = useState<string[]>(
+    isMaster ? [] : (user?.id ? [String(user.id)] : []),
+  )
+  const [oppIds, setOppIds] = useState<string[]>([])
 
   const { data: items = [], isLoading } = useTasks()
 
@@ -168,38 +194,42 @@ export function TasksDashboardPage() {
     return m
   }, [opps])
 
-  /** Filtragem global (período + responsável + opp). */
-  function applyFilters(list: Task[], cutoff: Date | null): Task[] {
-    return list.filter(t => {
-      if (cutoff && new Date(t.createdAt) < cutoff) return false
-      if (responsibleId && !(t.responsibleIds || []).includes(responsibleId)) return false
-      if (oppId && !(t.entityType === 'opportunity' && String(t.entityId) === oppId)) return false
-      return true
-    })
+  const win = useMemo(() => periodWindow(period, customStart, customEnd), [period, customStart, customEnd])
+
+  function inWindow(t: Task, w: Window): boolean {
+    const c = new Date(t.createdAt)
+    if (w.start && c < w.start) return false
+    if (w.end && c > w.end) return false
+    return true
+  }
+  function passesUserOpp(t: Task): boolean {
+    /* Multi-escolha: se nada selecionado, passa todos. Se há seleção, a task
+       precisa ter ao menos um responsável/opp casando. */
+    if (responsibleIds.length > 0) {
+      const taskResp = t.responsibleIds || []
+      if (!taskResp.some(id => responsibleIds.includes(String(id)))) return false
+    }
+    if (oppIds.length > 0) {
+      if (t.entityType !== 'opportunity' || !oppIds.includes(String(t.entityId))) return false
+    }
+    return true
   }
 
   const filtered: Task[] = useMemo(
-    () => applyFilters(items, periodCutoff(period)),
-    [items, period, responsibleId, oppId],
+    () => items.filter(t => inWindow(t, win) && passesUserOpp(t)),
+    [items, win, responsibleIds, oppIds],
   )
 
-  /** Janela do período anterior (mesma duração) — pra calcular Δ. */
   const previous: Task[] | null = useMemo(() => {
-    const w = previousPeriodWindow(period)
-    if (!w) return null
-    return items.filter(t => {
-      const c = new Date(t.createdAt)
-      if (c < w.start || c >= w.end) return false
-      if (responsibleId && !(t.responsibleIds || []).includes(responsibleId)) return false
-      if (oppId && !(t.entityType === 'opportunity' && String(t.entityId) === oppId)) return false
-      return true
-    })
-  }, [items, period, responsibleId, oppId])
+    const prev = previousPeriodWindow(period, win)
+    if (!prev) return null
+    return items.filter(t => inWindow(t, prev) && passesUserOpp(t))
+  }, [items, period, win, responsibleIds, oppIds])
 
   const kpis = useMemo(() => computeKpis(filtered), [filtered])
   const kpisPrev = useMemo(() => previous ? computeKpis(previous) : null, [previous])
 
-  /** Sparklines: série de 14 dias com criadas/concluídas/atrasadas/throughput. */
+  /* Sparklines: 14 dias atrás. */
   const sparkSeries = useMemo(() => {
     const days = dayRange(14)
     const created = new Map(days.map(d => [d, 0]))
@@ -213,7 +243,6 @@ export function TasksDashboardPage() {
         if (done.has(dk)) done.set(dk, done.get(dk)! + 1)
       }
     }
-    /* Atrasadas/dia: pra cada dia D, conta tasks com dueAt no dia D que não foram completadas até final de D. */
     for (const t of filtered) {
       if (!t.dueAt) continue
       const dk = dayKey(t.dueAt)
@@ -228,10 +257,23 @@ export function TasksDashboardPage() {
     }
   }, [filtered])
 
-  /** Throughput diário (visualização principal — até 60 buckets dependendo do período). */
+  /* ETA pra zerar backlog: throughput médio dos últimos 7 dias × backlog atual. */
+  const eta = useMemo(() => {
+    const last7Done = sparkSeries.done.slice(-7)
+    const sum = last7Done.reduce((a, b) => a + b, 0)
+    if (sum === 0) return null
+    const ratePerDay = sum / 7
+    /* Backlog: tasks abertas no momento (ignorando filtro de período pra ser realista — backlog é estado, não fluxo). */
+    const backlogNow = items.filter(t => t.status !== 'completed' && t.status !== 'cancelled' && passesUserOpp(t)).length
+    if (backlogNow === 0) return { ratePerDay, backlogNow, etaDays: 0 }
+    return { ratePerDay, backlogNow, etaDays: backlogNow / ratePerDay }
+  }, [sparkSeries.done, items, responsibleIds, oppIds])
+
+  /* Throughput diário (visualização principal). */
   const throughput = useMemo(() => {
-    const days = Math.min(periodDays(period), 60)
-    const keys = dayRange(days)
+    const days = Math.min(periodDays(period, win), 60)
+    const endDate = win.end ?? new Date()
+    const keys = dayRange(days, endDate)
     const created = new Map<string, number>(keys.map(k => [k, 0]))
     const done = new Map<string, number>(keys.map(k => [k, 0]))
     for (const t of filtered) {
@@ -243,18 +285,15 @@ export function TasksDashboardPage() {
       }
     }
     return keys.map(k => ({ key: k, created: created.get(k) || 0, done: done.get(k) || 0 }))
-  }, [filtered, period])
+  }, [filtered, period, win])
 
   const throughputMax = Math.max(1, ...throughput.flatMap(r => [r.created, r.done]))
 
-  /**
-   * Cumulative Flow / Burndown: pra cada dia D, conta quantas tasks
-   * estavam abertas no fim do dia. Aberta = createdAt <= D e (completedAt > D
-   * OU completedAt null e status não cancelado).
-   */
+  /* Cumulative Flow / Burndown. */
   const flow = useMemo(() => {
-    const days = Math.min(periodDays(period), 60)
-    const keys = dayRange(days)
+    const days = Math.min(periodDays(period, win), 60)
+    const endDate = win.end ?? new Date()
+    const keys = dayRange(days, endDate)
     return keys.map(k => {
       const endOfDay = new Date(k + 'T23:59:59Z').getTime()
       let open = 0
@@ -266,19 +305,16 @@ export function TasksDashboardPage() {
         createdCum++
         const completed = t.completedAt ? new Date(t.completedAt).getTime() : null
         if (t.status === 'cancelled') continue
-        if (completed !== null && completed <= endOfDay) {
-          doneCum++
-        } else {
-          open++
-        }
+        if (completed !== null && completed <= endOfDay) doneCum++
+        else open++
       }
       return { key: k, open, createdCum, doneCum }
     })
-  }, [filtered, period])
+  }, [filtered, period, win])
 
   const flowMax = Math.max(1, ...flow.map(f => Math.max(f.createdCum, f.open)))
 
-  /** Status. */
+  /* Status. */
   const byStatus = useMemo(() => {
     const m = new Map<string, number>()
     for (const t of filtered) m.set(t.status, (m.get(t.status) || 0) + 1)
@@ -287,7 +323,7 @@ export function TasksDashboardPage() {
       .sort((a, b) => b.count - a.count)
   }, [filtered])
 
-  /** Aging do backlog. */
+  /* Aging. */
   const aging = useMemo(() => {
     const now = new Date()
     const buckets = [
@@ -305,10 +341,9 @@ export function TasksDashboardPage() {
     }
     return buckets.map(b => ({ ...b, count: counts.get(b.key) || 0 }))
   }, [filtered])
-
   const agingMax = Math.max(1, ...aging.map(a => a.count))
 
-  /** Atrasadas por tempo (com bucket <24h). */
+  /* Atrasadas. */
   const overdueByLateness = useMemo(() => {
     const now = new Date()
     const buckets = [
@@ -323,18 +358,17 @@ export function TasksDashboardPage() {
       if (t.status === 'completed' || t.status === 'cancelled') continue
       if (!t.dueAt) continue
       const dueMs = new Date(t.dueAt).getTime()
-      if (dueMs >= now.getTime()) continue /* não venceu ainda */
+      if (dueMs >= now.getTime()) continue
       const d = Math.floor((now.getTime() - dueMs) / 86400000)
       const b = buckets.find(x => d >= x.min && d <= x.max)!
       counts.set(b.key, (counts.get(b.key) || 0) + 1)
     }
     return buckets.map(b => ({ ...b, count: counts.get(b.key) || 0 }))
   }, [filtered])
-
   const overdueMax = Math.max(1, ...overdueByLateness.map(a => a.count))
   const totalOverdue = overdueByLateness.reduce((a, b) => a + b.count, 0)
 
-  /** Top responsáveis. */
+  /* Top responsáveis. */
   const byResponsible = useMemo(() => {
     const now = new Date()
     const m = new Map<string, { id: string; name: string; total: number; open: number; done: number; overdue: number }>()
@@ -353,20 +387,42 @@ export function TasksDashboardPage() {
     }
     return Array.from(m.values()).sort((a, b) => b.total - a.total).slice(0, 10)
   }, [filtered, userById])
-
   const respMax = Math.max(1, ...byResponsible.map(r => r.total))
 
-  /** Prioridade. */
+  /* Heatmap responsável × prioridade × atrasadas. */
+  const heatmap = useMemo(() => {
+    const now = new Date()
+    const respIds = byResponsible.slice(0, 8).map(r => r.id)
+    if (respIds.length === 0) return null
+    const matrix: number[][] = respIds.map(() => PRIORITIES.map(() => 0))
+    for (const t of filtered) {
+      if (t.status === 'completed' || t.status === 'cancelled') continue
+      if (!t.dueAt || new Date(t.dueAt) >= now) continue
+      const id = (t.responsibleIds || [])[0]
+      if (!id) continue
+      const r = respIds.indexOf(id)
+      if (r < 0) continue
+      const p = PRIORITIES.indexOf((t.priority || 'medium') as typeof PRIORITIES[number])
+      if (p < 0) continue
+      matrix[r][p]++
+    }
+    const max = Math.max(1, ...matrix.flat())
+    const respMeta = respIds.map(id => ({
+      id, name: userById.get(String(id)) || '—',
+      total: matrix[respIds.indexOf(id)].reduce((a, b) => a + b, 0),
+    }))
+    return { respIds, respMeta, matrix, max }
+  }, [filtered, byResponsible, userById])
+
+  /* Prioridade. */
   const byPriority = useMemo(() => {
     const m = new Map<string, number>()
     for (const t of filtered) m.set(t.priority || 'medium', (m.get(t.priority || 'medium') || 0) + 1)
-    return ['low', 'medium', 'high', 'urgent']
-      .map(p => ({ priority: p, label: PRIORITY_LABEL[p], color: PRIORITY_COLOR[p], count: m.get(p) || 0 }))
+    return PRIORITIES.map(p => ({ priority: p, label: PRIORITY_LABEL[p], color: PRIORITY_COLOR[p], count: m.get(p) || 0 }))
   }, [filtered])
-
   const priorityMax = Math.max(1, ...byPriority.map(p => p.count))
 
-  /** Top oportunidades. */
+  /* Top oportunidades. */
   const byOpp = useMemo(() => {
     const m = new Map<string, number>()
     for (const t of filtered) {
@@ -379,15 +435,14 @@ export function TasksDashboardPage() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 10)
   }, [filtered, oppById])
-
   const oppMax = Math.max(1, ...byOpp.map(o => o.count))
 
   function goToTasks(qs: Record<string, string>) {
-    /* Drill-down do dashboard sempre cai na lista — calendário é mais
-       útil pra planejar; quem clica num KPI quer ver linhas. */
     const p = new URLSearchParams({ view: 'list', ...qs })
     navigate(`/tasks?${p.toString()}`)
   }
+
+  const hasActiveFilter = responsibleIds.length > 0 || oppIds.length > 0 || period !== 'all'
 
   return (
     <div className="w-full space-y-4 p-4">
@@ -401,10 +456,7 @@ export function TasksDashboardPage() {
             Insights operacionais sobre criação, conclusão e backlog. Os filtros abaixo afetam todos os gráficos.
           </p>
         </div>
-        <Link
-          to="/tasks"
-          className="text-sm text-muted-foreground underline-offset-2 hover:underline"
-        >
+        <Link to="/tasks" className="text-sm text-muted-foreground underline-offset-2 hover:underline">
           ← Voltar pra lista
         </Link>
       </div>
@@ -429,38 +481,44 @@ export function TasksDashboardPage() {
               {p.label}
             </button>
           ))}
+          {period === 'custom' && (
+            <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+              <CalendarRange className="h-3 w-3" />
+              <input
+                type="date"
+                value={customStart}
+                onChange={e => setCustomStart(e.target.value)}
+                className="rounded border border-input bg-background px-1.5 py-0.5 text-xs"
+              />
+              <span>até</span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={e => setCustomEnd(e.target.value)}
+                className="rounded border border-input bg-background px-1.5 py-0.5 text-xs"
+              />
+            </span>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-3 border-t pt-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Responsável:</span>
-            <select
-              value={responsibleId}
-              onChange={e => setResponsibleId(e.target.value)}
-              className="rounded-md border border-input bg-background px-2 py-1 text-xs"
-            >
-              <option value="">Todos</option>
-              {tenantUsers.map(u => (
-                <option key={u.id} value={String(u.id)}>{u.name || u.email}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Oportunidade:</span>
-            <select
-              value={oppId}
-              onChange={e => setOppId(e.target.value)}
-              className="rounded-md border border-input bg-background px-2 py-1 text-xs max-w-[280px]"
-            >
-              <option value="">Todas</option>
-              {(opps as any[]).map(o => (
-                <option key={o.id} value={String(o.id)}>{o.name}</option>
-              ))}
-            </select>
-          </div>
-          {(responsibleId || oppId || period !== 'all') && (
+          <MultiPickChips
+            label="Responsáveis"
+            placeholder="Todos"
+            options={tenantUsers.filter(u => u.id).map(u => ({ value: String(u.id), label: u.name || u.email || String(u.id) }))}
+            values={responsibleIds}
+            onChange={setResponsibleIds}
+          />
+          <MultiPickChips
+            label="Oportunidades"
+            placeholder="Todas"
+            options={(opps as any[]).map(o => ({ value: String(o.id), label: o.name }))}
+            values={oppIds}
+            onChange={setOppIds}
+          />
+          {hasActiveFilter && (
             <button
               type="button"
-              onClick={() => { setResponsibleId(''); setOppId(''); setPeriod('all') }}
+              onClick={() => { setResponsibleIds([]); setOppIds([]); setPeriod('all'); setCustomStart(''); setCustomEnd('') }}
               className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
             >
               <X className="h-3 w-3" /> Limpar filtros
@@ -513,12 +571,16 @@ export function TasksDashboardPage() {
           />
           <KpiCard
             icon={<Hourglass className="h-4 w-4" />}
-            label="Tempo médio até concluir"
-            value={kpis.avgCompletionDays === null ? 'n/d' : formatDuration(kpis.avgCompletionDays)}
-            sub={kpis.avgCompletionDays === null ? 'sem concluídas' : 'média histórica'}
+            label="Mediana até concluir"
+            value={kpis.medianCompletionDays === null ? 'n/d' : formatDuration(kpis.medianCompletionDays)}
+            sub={
+              kpis.medianCompletionDays === null
+                ? 'sem concluídas'
+                : `média ${kpis.avgCompletionDays != null ? formatDuration(kpis.avgCompletionDays) : 'n/d'} · p90 ${kpis.p90CompletionDays != null ? formatDuration(kpis.p90CompletionDays) : 'n/d'}`
+            }
             tone="amber"
-            prev={kpisPrev?.avgCompletionDays ?? null}
-            current={kpis.avgCompletionDays}
+            prev={kpisPrev?.medianCompletionDays ?? null}
+            current={kpis.medianCompletionDays}
             higherIsBetter={false}
           />
           <KpiCard
@@ -535,6 +597,44 @@ export function TasksDashboardPage() {
         </div>
       )}
 
+      {/* Higiene */}
+      {!isLoading && (kpis.noDueOpen > 0 || kpis.noResp > 0) && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {kpis.noDueOpen > 0 && (
+            <button
+              type="button"
+              onClick={() => goToTasks({ noDue: '1', status: 'open' })}
+              className="flex items-center justify-between gap-3 rounded-lg border border-amber-200/60 bg-amber-50 px-4 py-2.5 text-left transition hover:bg-amber-100/60 dark:border-amber-900/50 dark:bg-amber-950/30 dark:hover:bg-amber-950/50"
+            >
+              <div className="flex items-center gap-2.5 text-amber-800 dark:text-amber-300">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <div>
+                  <div className="text-sm font-semibold">{kpis.noDueOpen} tarefa{kpis.noDueOpen === 1 ? '' : 's'} sem prazo</div>
+                  <div className="text-xs opacity-80">Sem dueAt — não entra em SLA nem aging.</div>
+                </div>
+              </div>
+              <span className="text-xs text-amber-700 dark:text-amber-400">Ver lista →</span>
+            </button>
+          )}
+          {kpis.noResp > 0 && (
+            <button
+              type="button"
+              onClick={() => goToTasks({ noResp: '1' })}
+              className="flex items-center justify-between gap-3 rounded-lg border border-rose-200/60 bg-rose-50 px-4 py-2.5 text-left transition hover:bg-rose-100/60 dark:border-rose-900/50 dark:bg-rose-950/30 dark:hover:bg-rose-950/50"
+            >
+              <div className="flex items-center gap-2.5 text-rose-800 dark:text-rose-300">
+                <UserX className="h-4 w-4 shrink-0" />
+                <div>
+                  <div className="text-sm font-semibold">{kpis.noResp} tarefa{kpis.noResp === 1 ? '' : 's'} sem responsável</div>
+                  <div className="text-xs opacity-80">Não há quem atender — atribua antes de seguir.</div>
+                </div>
+              </div>
+              <span className="text-xs text-rose-700 dark:text-rose-400">Ver lista →</span>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Linha 2 — Throughput + Status */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="space-y-3 p-4">
@@ -548,14 +648,8 @@ export function TasksDashboardPage() {
                 <Tooltip key={d.key}>
                   <TooltipTrigger asChild>
                     <div className="flex-1 flex items-end gap-px h-full cursor-default">
-                      <div
-                        className="flex-1 rounded-t-sm bg-blue-500/80 hover:bg-blue-500 transition-all"
-                        style={{ height: `${(d.created / throughputMax) * 100}%` }}
-                      />
-                      <div
-                        className="flex-1 rounded-t-sm bg-emerald-500/80 hover:bg-emerald-500 transition-all"
-                        style={{ height: `${(d.done / throughputMax) * 100}%` }}
-                      />
+                      <div className="flex-1 rounded-t-sm bg-blue-500/80 hover:bg-blue-500 transition-all" style={{ height: `${(d.created / throughputMax) * 100}%` }} />
+                      <div className="flex-1 rounded-t-sm bg-emerald-500/80 hover:bg-emerald-500 transition-all" style={{ height: `${(d.done / throughputMax) * 100}%` }} />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="top">
@@ -592,19 +686,15 @@ export function TasksDashboardPage() {
                 return (
                   <Tooltip key={s.status}>
                     <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={() => goToTasks({ status: s.status })}
-                        className="w-full text-left group"
-                      >
-                    <div className="mb-1 flex items-center justify-between text-sm">
-                      <span className="font-medium group-hover:text-foreground">{s.label}</span>
-                      <span className="tabular-nums text-xs text-muted-foreground">
-                        <span className="font-semibold text-foreground">{s.count}</span> · {pct.toFixed(0)}%
-                      </span>
-                    </div>
-                    <div className="h-2 w-full rounded bg-muted/30">
-                      <div className="h-2 rounded transition-all group-hover:opacity-80" style={{ width: `${pct}%`, backgroundColor: s.color }} />
+                      <button type="button" onClick={() => goToTasks({ status: s.status })} className="w-full text-left group">
+                        <div className="mb-1 flex items-center justify-between text-sm">
+                          <span className="font-medium group-hover:text-foreground">{s.label}</span>
+                          <span className="tabular-nums text-xs text-muted-foreground">
+                            <span className="font-semibold text-foreground">{s.count}</span> · {pct.toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="h-2 w-full rounded bg-muted/30">
+                          <div className="h-2 rounded transition-all group-hover:opacity-80" style={{ width: `${pct}%`, backgroundColor: s.color }} />
                         </div>
                       </button>
                     </TooltipTrigger>
@@ -619,7 +709,7 @@ export function TasksDashboardPage() {
         </Card>
       </div>
 
-      {/* Linha 3 — Cumulative Flow */}
+      {/* Linha 3 — Cumulative Flow + ETA */}
       <Card className="space-y-3 p-4">
         <div className="flex items-center justify-between">
           <div>
@@ -633,6 +723,26 @@ export function TasksDashboardPage() {
         </div>
         {isLoading ? <Skeleton className="h-48" /> : (
           <CumulativeFlowChart flow={flow} max={flowMax} />
+        )}
+        {/* ETA */}
+        {!isLoading && eta && (
+          <div className="flex items-center gap-2 rounded-md border border-blue-200/60 bg-blue-50/60 px-3 py-2 text-xs dark:border-blue-900/50 dark:bg-blue-950/20">
+            <Target className="h-4 w-4 shrink-0 text-blue-700 dark:text-blue-400" />
+            {eta.backlogNow === 0 ? (
+              <span><strong>Backlog zerado.</strong> Sem tarefas em aberto pra esses filtros.</span>
+            ) : (
+              <span>
+                Ao ritmo de <strong>{eta.ratePerDay.toFixed(1)} tarefa{eta.ratePerDay >= 2 ? 's' : ''}/dia</strong> (média dos últimos 7 dias),
+                o backlog atual de <strong>{eta.backlogNow}</strong> zera em <strong>{formatDuration(eta.etaDays)}</strong>.
+              </span>
+            )}
+          </div>
+        )}
+        {!isLoading && !eta && (
+          <div className="flex items-center gap-2 rounded-md border border-amber-200/60 bg-amber-50/60 px-3 py-2 text-xs dark:border-amber-900/50 dark:bg-amber-950/20">
+            <Target className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
+            <span>Throughput zero nos últimos 7 dias — backlog não está sendo drenado.</span>
+          </div>
         )}
       </Card>
 
@@ -686,7 +796,29 @@ export function TasksDashboardPage() {
         </Card>
       </div>
 
-      {/* Linha 5 — Responsáveis + Prioridade */}
+      {/* Linha 5 — Heatmap responsável × prioridade × atrasadas */}
+      {heatmap && totalOverdue > 0 && (
+        <Card className="space-y-3 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold">Atrasadas por responsável e prioridade</h3>
+              <p className="text-xs text-muted-foreground">
+                Onde investir atenção primeiro. Intensidade = volume; números à direita são totais.
+              </p>
+            </div>
+            <Flame className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <Heatmap
+            respMeta={heatmap.respMeta}
+            priorities={[...PRIORITIES] as string[]}
+            matrix={heatmap.matrix}
+            max={heatmap.max}
+            onClickCell={(respId, _priority) => goToTasks({ status: 'open', overdue: '1', responsibleId: respId })}
+          />
+        </Card>
+      )}
+
+      {/* Linha 6 — Responsáveis + Prioridade */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="space-y-3 p-4 lg:col-span-2">
           <div className="flex items-center justify-between">
@@ -707,26 +839,22 @@ export function TasksDashboardPage() {
                 return (
                   <Tooltip key={r.id}>
                     <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={() => goToTasks({ responsibleId: r.id })}
-                        className="group w-full text-left"
-                      >
-                    <div className="mb-1 flex items-center justify-between text-sm">
-                      <span className="font-medium group-hover:text-foreground">{r.name}</span>
-                      <span className="inline-flex items-center gap-2 tabular-nums text-xs text-muted-foreground">
-                        <span className="font-semibold text-foreground">{r.total}</span>
-                        {r.overdue > 0 && (
-                          <span className="inline-flex items-center gap-0.5 text-red-600 dark:text-red-400">
-                            <AlertTriangle className="h-3 w-3" /> {r.overdue}
+                      <button type="button" onClick={() => goToTasks({ responsibleId: r.id })} className="group w-full text-left">
+                        <div className="mb-1 flex items-center justify-between text-sm">
+                          <span className="font-medium group-hover:text-foreground">{r.name}</span>
+                          <span className="inline-flex items-center gap-2 tabular-nums text-xs text-muted-foreground">
+                            <span className="font-semibold text-foreground">{r.total}</span>
+                            {r.overdue > 0 && (
+                              <span className="inline-flex items-center gap-0.5 text-red-600 dark:text-red-400">
+                                <AlertTriangle className="h-3 w-3" /> {r.overdue}
+                              </span>
+                            )}
                           </span>
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex h-2.5 w-full overflow-hidden rounded bg-muted/30">
-                      <div className="h-full bg-blue-500/80" style={{ width: `${openPct}%` }} />
-                      <div className="h-full bg-red-500/80" style={{ width: `${overduePct}%` }} />
-                      <div className="h-full bg-emerald-500/80" style={{ width: `${donePct}%` }} />
+                        </div>
+                        <div className="flex h-2.5 w-full overflow-hidden rounded bg-muted/30">
+                          <div className="h-full bg-blue-500/80" style={{ width: `${openPct}%` }} />
+                          <div className="h-full bg-red-500/80" style={{ width: `${overduePct}%` }} />
+                          <div className="h-full bg-emerald-500/80" style={{ width: `${donePct}%` }} />
                         </div>
                       </button>
                     </TooltipTrigger>
@@ -780,7 +908,7 @@ export function TasksDashboardPage() {
         </Card>
       </div>
 
-      {/* Linha 6 — Top oportunidades */}
+      {/* Linha 7 — Top oportunidades */}
       <Card className="space-y-3 p-4">
         <div className="flex items-center justify-between">
           <div>
@@ -796,15 +924,11 @@ export function TasksDashboardPage() {
             {byOpp.map(o => (
               <Tooltip key={o.id}>
                 <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/opportunities/${o.id}`)}
-                    className="w-full text-left group"
-                  >
-                <div className="mb-0.5 flex items-center justify-between text-sm">
-                  <span className="line-clamp-1 font-medium group-hover:text-foreground">{o.name}</span>
-                  <span className="tabular-nums text-xs text-muted-foreground">{o.count}</span>
-                </div>
+                  <button type="button" onClick={() => navigate(`/opportunities/${o.id}`)} className="w-full text-left group">
+                    <div className="mb-0.5 flex items-center justify-between text-sm">
+                      <span className="line-clamp-1 font-medium group-hover:text-foreground">{o.name}</span>
+                      <span className="tabular-nums text-xs text-muted-foreground">{o.count}</span>
+                    </div>
                     <div className="h-2 w-full rounded bg-muted/30">
                       <div className="h-2 rounded bg-indigo-500/80 transition-all group-hover:bg-indigo-500" style={{ width: `${(o.count / oppMax) * 100}%` }} />
                     </div>
@@ -857,17 +981,15 @@ function KpiCard(props: KpiCardProps) {
     if (props.prev === 0) return { dir: 'up' as const, label: 'novo' }
     const diff = props.current - props.prev
     if (Math.abs(diff) < 1e-6) return { dir: 'flat' as const, label: '0%' }
-    const pct = (diff / Math.abs(props.prev)) * 100
     const dir = diff > 0 ? 'up' : 'down'
-    /* Em valores percentuais (taxa), mostra ponto-percentual em vez de %% relativo */
     if (props.asPercent) {
       const pp = (props.current - props.prev) * 100
       return { dir, label: `${pp >= 0 ? '+' : ''}${pp.toFixed(0)}pp` }
     }
+    const pct = (diff / Math.abs(props.prev)) * 100
     return { dir, label: `${pct >= 0 ? '+' : ''}${pct.toFixed(0)}%` }
   }, [props.prev, props.current, props.asPercent])
 
-  /* Se higherIsBetter=false (e.g. atrasadas), inverte interpretação visual. */
   const deltaTone =
     delta == null ? 'text-muted-foreground'
     : delta.dir === 'flat' ? 'text-muted-foreground'
@@ -924,7 +1046,6 @@ function CumulativeFlowChart({ flow, max }: { flow: Array<{ key: string; open: n
   const path = (key: 'open' | 'createdCum' | 'doneCum') =>
     flow.map((d, i) => `${i === 0 ? 'M' : 'L'}${(i * step).toFixed(2)},${yScale(d[key]).toFixed(2)}`).join(' ')
 
-  /* Área entre createdCum e doneCum = WIP / backlog ao longo do tempo. */
   const area = [
     flow.map((d, i) => `${i === 0 ? 'M' : 'L'}${(i * step).toFixed(2)},${yScale(d.createdCum).toFixed(2)}`).join(' '),
     flow.slice().reverse().map((d, i) => `L${((flow.length - 1 - i) * step).toFixed(2)},${yScale(d.doneCum).toFixed(2)}`).join(' '),
@@ -936,24 +1057,19 @@ function CumulativeFlowChart({ flow, max }: { flow: Array<{ key: string; open: n
   return (
     <div className="space-y-2">
       <svg viewBox={`0 0 ${w} ${h + 16}`} className="w-full h-48">
-        {/* Grid */}
         {[0.25, 0.5, 0.75, 1].map(p => (
           <line key={p} x1={0} x2={w} y1={h * (1 - p)} y2={h * (1 - p)} stroke="currentColor" className="text-muted-foreground/10" strokeWidth={1} />
         ))}
-        {/* Área (backlog) */}
         <path d={area} fill="#3b82f6" fillOpacity={0.12} />
-        {/* Lines */}
         <path d={path('createdCum')} fill="none" stroke="#6366f1" strokeWidth={1.5} strokeLinecap="round" />
         <path d={path('doneCum')} fill="none" stroke="#10b981" strokeWidth={1.5} strokeLinecap="round" />
         <path d={path('open')} fill="none" stroke="#3b82f6" strokeWidth={2} strokeLinecap="round" />
-        {/* Hover dots invisíveis (tooltips) */}
         {flow.map((d, i) => (
           <g key={d.key}>
             <circle cx={i * step} cy={yScale(d.open)} r={3} fill="#3b82f6" className="opacity-0 hover:opacity-100" />
             <title>{`${new Date(d.key + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}: ${d.open} em aberto · ${d.createdCum} criadas acumulado · ${d.doneCum} concluídas acumulado`}</title>
           </g>
         ))}
-        {/* Eixo X simplificado */}
         {labels.map((l, i) => (
           <text key={i} x={(i * w) / 2} y={h + 12} textAnchor={i === 0 ? 'start' : i === 2 ? 'end' : 'middle'} className="fill-muted-foreground text-[10px]">
             {new Date(l.key + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
@@ -990,6 +1106,122 @@ function BarBuckets(props: { buckets: Array<{ key: string; label: string; count:
           </TooltipContent>
         </Tooltip>
       ))}
+    </div>
+  )
+}
+
+interface HeatmapProps {
+  respMeta: Array<{ id: string; name: string; total: number }>
+  priorities: string[]
+  matrix: number[][]
+  max: number
+  onClickCell?: (respId: string, priority: string) => void
+}
+
+function Heatmap({ respMeta, priorities, matrix, max, onClickCell }: HeatmapProps) {
+  return (
+    <div
+      className="grid gap-1 text-xs"
+      style={{ gridTemplateColumns: `minmax(140px, auto) repeat(${priorities.length}, minmax(56px, 1fr)) auto` }}
+    >
+      <div />
+      {priorities.map(p => (
+        <div key={p} className="px-2 py-1 text-center font-medium uppercase tracking-wide text-[10px] text-muted-foreground">
+          {PRIORITY_LABEL[p] || p}
+        </div>
+      ))}
+      <div className="px-2 py-1 text-right text-[10px] uppercase tracking-wide text-muted-foreground">Total</div>
+      {respMeta.map((r, i) => (
+        <Fragment key={r.id}>
+          <div className="truncate px-2 py-1.5 font-medium text-foreground">{r.name}</div>
+          {priorities.map((p, j) => {
+            const v = matrix[i][j]
+            const intensity = v / max
+            return (
+              <Tooltip key={p}>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => v > 0 && onClickCell?.(r.id, p)}
+                    disabled={v === 0}
+                    className="rounded-sm px-2 py-1.5 text-center font-semibold tabular-nums transition hover:scale-105 disabled:cursor-default"
+                    style={{
+                      background: v === 0 ? 'transparent' : `rgba(220, 38, 38, ${0.15 + intensity * 0.65})`,
+                      color: intensity > 0.55 ? 'white' : undefined,
+                    }}
+                  >
+                    {v || '·'}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <div className="space-y-0.5 text-xs">
+                    <div className="font-semibold">{r.name}</div>
+                    <div>{PRIORITY_LABEL[p]}: {v} atrasada{v === 1 ? '' : 's'}</div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            )
+          })}
+          <div className="px-2 py-1.5 text-right tabular-nums font-semibold text-muted-foreground">{r.total}</div>
+        </Fragment>
+      ))}
+    </div>
+  )
+}
+
+/* ── MultiPickChips: filtro multi-escolha (chips + dropdown pra adicionar) ──
+   Inline pra não criar dependência shared antes de validar UX. */
+interface MultiPickProps {
+  label: string
+  placeholder: string
+  options: Array<{ value: string; label: string }>
+  values: string[]
+  onChange: (next: string[]) => void
+}
+
+function MultiPickChips({ label, placeholder, options, values, onChange }: MultiPickProps) {
+  const labelByValue = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const o of options) m.set(o.value, o.label)
+    return m
+  }, [options])
+  const available = useMemo(() => options.filter(o => !values.includes(o.value)), [options, values])
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="text-xs text-muted-foreground">{label}:</span>
+      {values.length === 0 ? (
+        <span className="text-xs text-muted-foreground italic">{placeholder}</span>
+      ) : (
+        values.map(v => (
+          <span key={v} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+            {labelByValue.get(v) ?? v}
+            <button
+              type="button"
+              onClick={() => onChange(values.filter(x => x !== v))}
+              className="hover:text-primary/70"
+              aria-label={`Remover ${labelByValue.get(v) ?? v}`}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        ))
+      )}
+      {available.length > 0 && (
+        <select
+          value=""
+          onChange={e => {
+            const v = e.target.value
+            if (v) onChange([...values, v])
+          }}
+          className="rounded-md border border-input bg-background px-2 py-1 text-xs text-muted-foreground"
+        >
+          <option value="">+ adicionar</option>
+          {available.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      )}
     </div>
   )
 }

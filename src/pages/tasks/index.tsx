@@ -118,6 +118,19 @@ export function TasksPage() {
 
   const allTasks = (tasksQ.data ?? []) as Task[]
 
+  /* Filtros vindos da URL (drill-down do dashboard): noDue=1 / noResp=1
+     filtram client-side em cima de allTasks. */
+  const noDueFilter = searchParams.get('noDue') === '1'
+  const noRespFilter = searchParams.get('noResp') === '1'
+  const displayedTasks = useMemo(() => {
+    if (!noDueFilter && !noRespFilter) return allTasks
+    return allTasks.filter(t => {
+      if (noDueFilter && t.dueAt) return false
+      if (noRespFilter && (t.responsibleIds || []).length > 0) return false
+      return true
+    })
+  }, [allTasks, noDueFilter, noRespFilter])
+
   const userById = useMemo(() => {
     const m = new Map<string, string>()
     for (const u of tenantUsers) {
@@ -285,7 +298,7 @@ export function TasksPage() {
         </div>
       ) : view === 'list' ? (
         <TaskList
-          tasks={allTasks}
+          tasks={displayedTasks}
           tz={tz}
           oppById={oppById}
           userById={userById}
@@ -297,7 +310,7 @@ export function TasksPage() {
         />
       ) : (
         <CalendarView
-          tasks={allTasks}
+          tasks={displayedTasks}
           month={calMonth}
           userById={userById}
           tplById={tplById}
