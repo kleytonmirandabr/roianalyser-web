@@ -10,16 +10,17 @@
  * Quando `entityType`+`entityId` são passados, pré-preenche o vínculo
  * (botão do card kanban → entityType='opportunity', entityId=oppId).
  */
-import { Save, Calendar, ListTodo, Repeat, Bell, Tag, Briefcase } from 'lucide-react'
+import { Save, Trash2, Calendar, ListTodo, Repeat, Bell, Tag, Briefcase } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { useAppState } from '@/features/admin/hooks/use-app-state'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { useTaskTemplates } from '@/features/task-templates/hooks/use-task-templates'
 import { useOpportunities } from '@/features/opportunities/hooks/use-opportunities'
-import { useCreateTask, useUpdateTask } from '../hooks/use-tasks'
+import { useCreateTask, useUpdateTask, useDeleteTask } from '../hooks/use-tasks'
 import type { Task, TaskPriority, TaskStatus } from '../types'
-import { toastError, toastSaved } from '@/shared/lib/toasts'
+import { toastError, toastSaved, toastDeleted } from '@/shared/lib/toasts'
+import { confirm } from '@/shared/ui/confirm-dialog'
 import { Button } from '@/shared/ui/button'
 import { Combobox } from '@/shared/ui/combobox'
 import { Input } from '@/shared/ui/input'
@@ -100,6 +101,7 @@ export function TaskFormSheet({
   const { user } = useAuth()
   const create = useCreateTask()
   const update = useUpdateTask(initial?.id ?? null)
+  const del = useDeleteTask()
   const { data: templates = [] } = useTaskTemplates()
   const { data: opps = [] } = useOpportunities()
   const appState = useAppState()
@@ -252,7 +254,30 @@ export function TaskFormSheet({
     }
   }
 
-  const saving = create.isPending || update.isPending
+  async function handleDelete() {
+    if (!isEditing || !initial?.id) return
+    const ok = await confirm({
+      title: 'Excluir tarefa?',
+      description: 'Quem foi notificado vai receber um cancelamento de calendário. Essa ação não pode ser desfeita.',
+      confirmLabel: 'Excluir',
+      destructive: true,
+    })
+    if (!ok) return
+    try {
+      await del.mutateAsync(initial.id)
+      toastDeleted('Tarefa excluída')
+      onClose()
+    } catch (err: any) {
+      toastError(err?.message || 'Falha ao excluir tarefa.')
+    }
+  }
+
+  const canDelete = isEditing && (
+    user?.isMaster === true ||
+    (initial?.createdBy && String(initial.createdBy) === String(user?.id || ''))
+  )
+
+  const saving = create.isPending || update.isPending || del.isPending
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -427,14 +452,22 @@ export function TaskFormSheet({
           )}
         </SheetBody>
 
-        <SheetFooter>
-          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
-            Cancelar
-          </Button>
-          <Button type="button" onClick={handleSave} disabled={saving}>
-            <Save className="h-4 w-4 mr-1" />
-            {saving ? 'Salvando...' : 'Salvar'}
-          </Button>
+        <SheetFooter className="sm:justify-between">
+          {canDelete ? (
+            <Button type="button" variant="destructive" onClick={handleDelete} disabled={saving}>
+              <Trash2 className="h-4 w-4 mr-1" />
+              {del.isPending ? 'Excluindo...' : 'Excluir'}
+            </Button>
+          ) : <span />}
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button type="button" onClick={handleSave} disabled={saving}>
+              <Save className="h-4 w-4 mr-1" />
+              {saving ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </div>
         </SheetFooter>
       </SheetContent>
     </Sheet>
