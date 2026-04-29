@@ -10,12 +10,13 @@
  * Quando `entityType`+`entityId` são passados, pré-preenche o vínculo
  * (botão do card kanban → entityType='opportunity', entityId=oppId).
  */
-import { Save, Calendar, ListTodo, Repeat, Bell, Tag } from 'lucide-react'
+import { Save, Calendar, ListTodo, Repeat, Bell, Tag, Briefcase } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { useAppState } from '@/features/admin/hooks/use-app-state'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { useTaskTemplates } from '@/features/task-templates/hooks/use-task-templates'
+import { useOpportunities } from '@/features/opportunities/hooks/use-opportunities'
 import { useCreateTask, useUpdateTask } from '../hooks/use-tasks'
 import type { Task, TaskPriority, TaskStatus } from '../types'
 import { toastError, toastSaved } from '@/shared/lib/toasts'
@@ -100,6 +101,7 @@ export function TaskFormSheet({
   const create = useCreateTask()
   const update = useUpdateTask(initial?.id ?? null)
   const { data: templates = [] } = useTaskTemplates()
+  const { data: opps = [] } = useOpportunities()
   const appState = useAppState()
   const tenantUsers = (appState.data?.users ?? []) as Array<{ id?: string; name?: string; email?: string }>
 
@@ -184,6 +186,16 @@ export function TaskFormSheet({
     )
   }, [templates])
 
+  const oppOptions = useMemo(() => {
+    return (opps || [])
+      .filter(o => !o.deletedAt)
+      .map(o => ({
+        value: String(o.id),
+        label: o.name || `#${o.id}`,
+        hint: `#${o.id}`,
+      }))
+  }, [opps])
+
   function buildRecurrenceRule(): string | null {
     if (recurrenceUnit === 'NONE') return null
     const n = parseInt(recurrenceCount, 10)
@@ -197,7 +209,7 @@ export function TaskFormSheet({
       return
     }
     if (!boundEntityId) {
-      toastError('Vincule a tarefa a uma entidade (oportunidade, projeto...).')
+      toastError('Selecione uma oportunidade.')
       return
     }
     const rule = buildRecurrenceRule()
@@ -390,16 +402,21 @@ export function TaskFormSheet({
           </Section>
 
           {!lockEntity && (
-            <Section icon={ListTodo} title="Vínculo">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Tipo de entidade</Label>
-                  <Input value={boundEntityType} onChange={(e) => setBoundEntityType(e.target.value)} />
-                </div>
-                <div>
-                  <Label>ID da entidade</Label>
-                  <Input value={boundEntityId} onChange={(e) => setBoundEntityId(e.target.value)} />
-                </div>
+            <Section icon={Briefcase} title="Vínculo *">
+              <div className="space-y-2">
+                <Label htmlFor="task-opp">Oportunidade *</Label>
+                <Combobox
+                  id="task-opp"
+                  options={oppOptions}
+                  value={boundEntityType === 'opportunity' ? boundEntityId : ''}
+                  onChange={(v) => { setBoundEntityType('opportunity'); setBoundEntityId(v) }}
+                  placeholder={oppOptions.length ? 'Selecione uma oportunidade...' : 'Nenhuma oportunidade disponível'}
+                  emptyText="Nenhuma oportunidade encontrada"
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  A tarefa precisa estar vinculada a uma oportunidade (cliente, valor, status).
+                </p>
               </div>
             </Section>
           )}

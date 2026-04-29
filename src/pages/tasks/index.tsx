@@ -291,6 +291,9 @@ export function TasksPage() {
         <CalendarView
           tasks={allTasks}
           month={calMonth}
+          userById={userById}
+          tplById={tplById}
+          oppById={oppById}
           onPrev={() => setCalMonth(d => { const x = new Date(d); x.setMonth(x.getMonth()-1); return x })}
           onNext={() => setCalMonth(d => { const x = new Date(d); x.setMonth(x.getMonth()+1); return x })}
           onToday={() => setCalMonth(startOfDay(new Date()))}
@@ -409,13 +412,16 @@ function TaskList({ tasks, tz, oppById, userById, tplById, selectedIds, onToggle
 interface CalendarProps {
   tasks: Task[]
   month: Date
+  userById: Map<string, string>
+  tplById: Map<string, string>
+  oppById: Map<string, string>
   onPrev: () => void
   onNext: () => void
   onToday: () => void
   onOpen: (t: Task) => void
 }
 
-function CalendarView({ tasks, month, onPrev, onNext, onToday, onOpen }: CalendarProps) {
+function CalendarView({ tasks, month, userById, tplById, oppById, onPrev, onNext, onToday, onOpen }: CalendarProps) {
   const monthLabel = month.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
   const firstOfMonth = new Date(month.getFullYear(), month.getMonth(), 1)
   const startWeekday = firstOfMonth.getDay() // 0=domingo
@@ -466,19 +472,48 @@ function CalendarView({ tasks, month, onPrev, onNext, onToday, onOpen }: Calenda
                 <div className="space-y-0.5">
                   {dayTasks.slice(0, 3).map(t => {
                     const overdue = isOverdue(t)
+                    const time = t.dueAt ? new Date(t.dueAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''
+                    const respName = t.responsibleIds?.[0] ? userById.get(String(t.responsibleIds[0])) : null
+                    const tplName = t.taskTemplateId ? tplById.get(String(t.taskTemplateId)) : null
+                    const oppName = t.entityType === 'opportunity' ? oppById.get(String(t.entityId)) : null
+                    const cls =
+                      t.status === 'completed' ? 'bg-emerald-100 text-emerald-900 hover:bg-emerald-200' :
+                      overdue ? 'bg-red-100 text-red-900 hover:bg-red-200' :
+                      t.priority === 'urgent' ? 'bg-orange-100 text-orange-900 hover:bg-orange-200' :
+                      t.priority === 'high' ? 'bg-amber-100 text-amber-900 hover:bg-amber-200' :
+                      'bg-blue-100 text-blue-900 hover:bg-blue-200'
+                    const tooltip = [
+                      t.title,
+                      time && `Hora: ${time}`,
+                      tplName && `Tipo: ${tplName}`,
+                      respName && `Resp: ${respName}`,
+                      oppName && `Opp: ${oppName}`,
+                      `Prioridade: ${t.priority}`,
+                      overdue && 'ATRASADA',
+                    ].filter(Boolean).join('\n')
                     return (
                       <button
                         type="button"
                         key={t.id}
                         onClick={() => onOpen(t)}
-                        className={`block w-full truncate rounded px-1.5 py-0.5 text-left text-[10px] hover:opacity-80 ${
-                          t.status === 'completed' ? 'bg-emerald-100 text-emerald-800' :
-                          overdue ? 'bg-red-100 text-red-800' :
-                          'bg-blue-100 text-blue-800'
-                        }`}
-                        title={t.title}
+                        className={`block w-full rounded px-1.5 py-1 text-left text-[10px] leading-tight transition-colors ${cls}`}
+                        title={tooltip}
                       >
-                        {t.title}
+                        <div className="flex items-baseline gap-1">
+                          {time && <span className="font-semibold tabular-nums">{time}</span>}
+                          {(t.priority === 'urgent' || overdue) && <span className="text-[8px] font-bold uppercase">{overdue ? 'ATRASADA' : 'URGENTE'}</span>}
+                        </div>
+                        <div className="truncate font-medium">{t.title}</div>
+                        {(respName || tplName) && (
+                          <div className="truncate text-[9px] opacity-80">
+                            {respName && `👤 ${respName}`}
+                            {respName && tplName && ' · '}
+                            {tplName && tplName}
+                          </div>
+                        )}
+                        {oppName && (
+                          <div className="truncate text-[9px] opacity-70">🎯 {oppName}</div>
+                        )}
                       </button>
                     )
                   })}
