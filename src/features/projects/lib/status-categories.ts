@@ -31,6 +31,11 @@ export type StatusCategory =
   | 'done'
   | 'warranty'
   | 'cancelled'
+  // Simplified taxonomy — DB-canonical buckets used em prod
+  | 'in_progress'
+  | 'gain'
+  | 'loss'
+  | 'qualified'
 
 export const STATUS_CATEGORIES: StatusCategory[] = [
   'negotiation',
@@ -43,6 +48,10 @@ export const STATUS_CATEGORIES: StatusCategory[] = [
   'done',
   'warranty',
   'cancelled',
+  'in_progress',
+  'gain',
+  'loss',
+  'qualified',
 ]
 
 /** Rótulo PT-BR pra exibir no Combobox do admin de status. */
@@ -57,6 +66,10 @@ export const STATUS_CATEGORY_LABELS: Record<StatusCategory, string> = {
   done: 'Concluído',
   warranty: 'Garantia',
   cancelled: 'Cancelado',
+  in_progress: 'Em andamento',
+  gain: 'Ganho',
+  loss: 'Perda',
+  qualified: 'Qualificada',
 }
 
 /**
@@ -74,6 +87,10 @@ export const STATUS_CATEGORY_DEFAULT_COLORS: Record<StatusCategory, string> = {
   done: '#22c55e', // verde claro
   warranty: '#84cc16', // verde lima
   cancelled: '#9ca3af', // cinza médio
+  in_progress: '#6366f1', // indigo
+  gain: '#10b981', // verde
+  loss: '#ef4444', // vermelho
+  qualified: '#06b6d4', // ciano
 }
 
 /**
@@ -104,6 +121,9 @@ export const OPPORTUNITY_CATEGORIES: StatusCategory[] = [
   'contract',
   'lost',
   'cancelled',
+  'in_progress',
+  'qualified',
+  'loss',
 ]
 
 export const PROJECT_CATEGORIES: StatusCategory[] = [
@@ -112,6 +132,7 @@ export const PROJECT_CATEGORIES: StatusCategory[] = [
   'invoicing',
   'done',
   'warranty',
+  'gain',
 ]
 
 export type FunnelScope = 'opportunities' | 'projects'
@@ -220,6 +241,11 @@ const LEGACY_KEYWORDS: Record<StatusCategory, string[]> = {
   evaluation: ['aval', 'evaluat', 'evaluation', 'analise', 'análise', 'roi review'],
   // Contrato cobre "Em elaboração", "Aguardando assinatura", "Proposta"
   contract: ['contrato', 'contract', 'proposta', 'proposal', 'assinatur', 'signing', 'sign'],
+  // Simplified taxonomy — DB-canonical buckets
+  in_progress: ['em andamento', 'in progress', 'oportunidade', 'avaliac', 'avaliaç', 'proposta'],
+  gain: ['ganho', 'gain', 'won'],
+  loss: ['perda', 'loss', 'lost'],
+  qualified: ['qualif', 'qualified'],
 }
 
 export function statusInCategory(
