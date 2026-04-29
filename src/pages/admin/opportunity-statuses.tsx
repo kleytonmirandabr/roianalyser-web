@@ -8,6 +8,7 @@
  */
 
 import { Pencil, Plus, Save, ShieldAlert, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 
@@ -61,6 +62,7 @@ function fromRow(s: OpportunityStatus): Draft {
 }
 
 export function AdminOpportunityStatusesPage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<Draft>(EMPTY)
@@ -124,7 +126,7 @@ export function AdminOpportunityStatusesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Status de Oportunidade</h1>
+          <h1 className="text-2xl font-bold">{t('nav.adminOpportunityStatuses')}</h1>
           <p className="text-sm text-muted-foreground">
             Workflow de status do funil. Categoria liga o status a automações (ganho/perda/etc).
           </p>

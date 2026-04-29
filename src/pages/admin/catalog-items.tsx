@@ -1,5 +1,6 @@
 /** Admin → Itens do Catálogo (master only) — 25+ campos do motor financeiro. */
 import { Pencil, Plus, Save, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 
@@ -58,6 +59,7 @@ function asNumStr(v: unknown): string {
 }
 
 export function AdminCatalogItemsPage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<Draft>(EMPTY)
@@ -147,7 +149,7 @@ export function AdminCatalogItemsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Itens do Catálogo</h1>
+          <h1 className="text-2xl font-bold">{t('nav.adminCatalogItems')}</h1>
           <p className="text-sm text-muted-foreground">HW, software, mob, capex, cogs, serviços — usados nas Entradas Dinâmicas.</p>
         </div>
         <div className="flex items-center gap-2">

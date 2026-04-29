@@ -6,6 +6,7 @@ import { HelpButton } from '@/features/help/help-button'
 import { NotificationsBell } from '@/features/notifications/components/notifications-bell'
 import { Button } from '@/shared/ui/button'
 
+import { AdminMenu } from './admin-menu'
 import { LanguageSwitcher } from './language-switcher'
 import { TenantSwitcher } from './tenant-switcher'
 import { UserMenu } from './user-menu'
@@ -25,6 +26,7 @@ export function Header() {
           </Link>
         </Button>
         <HelpButton />
+        <AdminMenu />
         <LanguageSwitcher />
         <NotificationsBell />
         <UserMenu />

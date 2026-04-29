@@ -1,5 +1,6 @@
 /** Admin → Meta de Vendas (master only). */
 import { Pencil, Plus, Save, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 
@@ -45,6 +46,7 @@ const EMPTY: Draft = {
 }
 
 export function AdminSalesGoalsPage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const appState = useAppState()
   const users = (appState.data?.users ?? []) as Array<{ id?: string; name?: string; email?: string }>
@@ -104,7 +106,7 @@ export function AdminSalesGoalsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Meta de Vendas</h1>
+          <h1 className="text-2xl font-bold">{t('nav.adminSalesGoals')}</h1>
           <p className="text-sm text-muted-foreground">Catálogo configurável.</p>
         </div>
         <div className="flex items-center gap-2">

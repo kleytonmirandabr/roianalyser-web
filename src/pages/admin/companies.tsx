@@ -1,5 +1,6 @@
 /** Admin → Empresas (master only) — formulário rico (cnpj, setor, endereço, redes). */
 import { Pencil, Plus, Save, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 
@@ -49,6 +50,7 @@ const EMPTY: Draft = {
 function asStr(v: unknown): string { return v == null ? '' : String(v) }
 
 export function AdminCompaniesPage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<Draft>(EMPTY)
@@ -145,7 +147,7 @@ export function AdminCompaniesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Empresas</h1>
+          <h1 className="text-2xl font-bold">{t('nav.adminCompanies')}</h1>
           <p className="text-sm text-muted-foreground">Clientes e parceiros — endereço, setor e redes.</p>
         </div>
         <div className="flex items-center gap-2">

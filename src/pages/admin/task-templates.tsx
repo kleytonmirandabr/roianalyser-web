@@ -1,5 +1,6 @@
 /** Admin → Tipos de Tarefa (master only). Usados pra classificar atividades em oportunidades/projetos. */
 import { Pencil, Plus, Save, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 
@@ -38,6 +39,7 @@ const EMPTY: Draft = {
 }
 
 export function AdminTaskTemplatesPage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<Draft>(EMPTY)
@@ -99,7 +101,7 @@ export function AdminTaskTemplatesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Tipos de Tarefa</h1>
+          <h1 className="text-2xl font-bold">{t('nav.adminTaskTemplates')}</h1>
           <p className="text-sm text-muted-foreground">
             Catálogo de tipos de tarefa (Ligar, Reunião, Visita Comercial, Envio de Email...) usados ao registrar atividades em oportunidades e projetos.
           </p>

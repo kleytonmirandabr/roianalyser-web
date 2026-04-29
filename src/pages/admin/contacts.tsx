@@ -1,5 +1,6 @@
 /** Admin → Contatos (master only) — formulário rico (FK empresa + email + telefone). */
 import { Pencil, Plus, Save, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 
@@ -44,6 +45,7 @@ const EMPTY: Draft = {
 function asStr(v: unknown): string { return v == null ? '' : String(v) }
 
 export function AdminContactsPage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<Draft>(EMPTY)
@@ -110,7 +112,7 @@ export function AdminContactsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Contatos</h1>
+          <h1 className="text-2xl font-bold">{t('nav.adminContacts')}</h1>
           <p className="text-sm text-muted-foreground">Pessoas vinculadas a empresas — comercial, técnico, etc.</p>
         </div>
         <div className="flex items-center gap-2">

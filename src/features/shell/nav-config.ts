@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   LineChart,
   ScrollText,
-  Shield,
   Tags,
   Target,
   Upload,
@@ -182,24 +181,6 @@ export const NAV_ITEMS: NavItem[] = [
       { i18nKey: 'adminFinancialTypes', to: '/admin/financial-types', requiresLevel: 'master' },
       { i18nKey: 'adminTaskTemplates', to: '/admin/task-templates', requiresLevel: 'master' },
       { i18nKey: 'adminFormFields', to: '/admin/form-fields', requiresLevel: 'master' },
-    ],
-  },
-  // ─── Administração (sistema) ───────────────────────────────────
-  {
-    i18nKey: 'admin',
-    to: '/admin',
-    icon: Shield,
-    requiresLevel: 'admin',
-    children: [
-      { i18nKey: 'adminUsers', to: '/admin', requiresLevel: 'admin' },
-      { i18nKey: 'adminProfiles', to: '/admin/profiles', requiresLevel: 'admin' },
-      { i18nKey: 'adminUserGroups', to: '/admin/user-groups', requiresLevel: 'master' },
-      { i18nKey: 'adminPlans', to: '/admin/plans', requiresLevel: 'master' },
-      { i18nKey: 'adminFunctionalities', to: '/admin/functionalities', requiresLevel: 'master' },
-      { i18nKey: 'adminClients', to: '/admin/clients', requiresLevel: 'master' },
-      { i18nKey: 'adminWorkflow', to: '/admin/workflow-rules', requiresLevel: 'master' },
-      { i18nKey: 'adminBranding', to: '/admin/branding', requiresLevel: 'master' },
-      { i18nKey: 'adminEmailLog', to: '/admin/email-log', requiresLevel: 'admin' },
     ],
   },
 ]

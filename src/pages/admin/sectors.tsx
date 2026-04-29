@@ -1,5 +1,6 @@
 /** Admin → Setor (master only). */
 import { Pencil, Plus, Save, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 
@@ -34,6 +35,7 @@ interface Draft {
 const EMPTY: Draft = { key: '', name: '', displayOrder: 0, active: true }
 
 export function AdminSectorsPage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<Draft>(EMPTY)
@@ -82,7 +84,7 @@ export function AdminSectorsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Setor</h1>
+          <h1 className="text-2xl font-bold">{t('nav.adminSectors')}</h1>
           <p className="text-sm text-muted-foreground">Catálogo configurável.</p>
         </div>
         <div className="flex items-center gap-2">
