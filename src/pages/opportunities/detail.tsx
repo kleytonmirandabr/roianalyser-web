@@ -16,6 +16,7 @@ import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
+import { DeleteWithReasonDialog } from '@/features/opportunities/components/delete-with-reason-dialog'
 import { useDeleteOpportunity } from '@/features/opportunities/hooks/use-delete-opportunity'
 import { useOpportunity } from '@/features/opportunities/hooks/use-opportunity'
 import { useUpdateOpportunity } from '@/features/opportunities/hooks/use-update-opportunity'
@@ -32,7 +33,6 @@ import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Combobox } from '@/shared/ui/combobox'
-import { confirm } from '@/shared/ui/confirm-dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -96,18 +96,14 @@ export function OpportunityDetailPage() {
     }
   }
 
-  async function handleDelete() {
+    const [deleteOpen, setDeleteOpen] = useState(false)
+  function handleDelete() { setDeleteOpen(true) }
+  async function confirmDelete(input: { reasonId: string; note: string | null }) {
     if (!opp) return
-    const ok = await confirm({
-      title: 'Excluir oportunidade?',
-      description: `"${opp.name}" será excluída (soft delete). Não afeta contratos ou projetos derivados.`,
-      confirmLabel: 'Excluir',
-      destructive: true,
-    })
-    if (!ok) return
     try {
-      await remove.mutateAsync(opp.id)
-      toastDeleted('Oportunidade excluída')
+      await remove.mutateAsync({ id: opp.id, ...input })
+      toastDeleted('Oportunidade excluida')
+      setDeleteOpen(false)
       navigate('/opportunities')
     } catch (err) {
       toastError(`Erro ao excluir: ${(err as Error).message}`)
@@ -391,6 +387,7 @@ export function OpportunityDetailPage() {
       )}
 
       <CustomFieldsCard scope="opportunity" entityType="opportunity" entityId={id} />
+      <DeleteWithReasonDialog open={deleteOpen} onClose={() => setDeleteOpen(false)} count={1} onConfirm={confirmDelete} pending={remove.isPending} />
     </div>
   )
 }

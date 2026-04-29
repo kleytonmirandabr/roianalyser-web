@@ -39,6 +39,9 @@ export type Opportunity = {
   updatedAt: string
   deletedAt: string | null
   deletedBy: string | null
+  contractDurationMonths: number | null
+  deletionReasonId: string | null
+  deletionNote: string | null
 }
 
 export type CreateOpportunityInput = {
@@ -57,6 +60,7 @@ export type CreateOpportunityInput = {
   contactId?: string | null
   probability?: number | null
   tenantId?: string  // só master pode setar
+  contractDurationMonths?: number | null
 }
 
 export type UpdateOpportunityInput = Partial<
@@ -77,6 +81,7 @@ export type UpdateOpportunityInput = Partial<
     | 'expectedCloseDate'
     | 'description'
     | 'lostReasonKey'
+    | 'contractDurationMonths'
   >
 >
 

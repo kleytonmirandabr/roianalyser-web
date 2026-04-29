@@ -82,3 +82,25 @@ export function formatDate(value: string | Date | null | undefined): string {
     return '—'
   }
 }
+
+/**
+ * Formata data+hora ISO/Date pra dd/mm/yyyy HH:mm (pt-BR), respeitando timezone.
+ *
+ * - timezone: IANA TZ (ex: 'America/Sao_Paulo'). Se omitido usa o do navegador.
+ * - retorna '—' se valor inválido.
+ */
+export function formatDateTime(value: string | Date | null | undefined, timezone?: string | null): string {
+  if (!value) return '—'
+  try {
+    const d = value instanceof Date ? value : new Date(value)
+    if (isNaN(d.getTime())) return '—'
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+      timeZone: timezone || undefined,
+    }).format(d)
+  } catch {
+    return '—'
+  }
+}
+

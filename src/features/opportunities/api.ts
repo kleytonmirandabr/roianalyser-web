@@ -39,6 +39,11 @@ export const opportunitiesApi = {
       .patch<{ item: Opportunity }>(`/opportunities/${encodeURIComponent(id)}`, input)
       .then((response) => response.item),
 
-  delete: (id: string) =>
-    api.delete<void>(`/opportunities/${encodeURIComponent(id)}`),
+  delete: (id: string, payload?: { reasonId: string; note?: string | null }) =>
+    api.delete<void>(`/opportunities/${encodeURIComponent(id)}`, payload as any),
+
+  bulkDelete: (input: { ids: string[]; reasonId: string; note?: string | null }) =>
+    api.post<{ deleted: number; skipped: Array<{ id: string; reason: string }> }>(
+      '/opportunities/bulk-delete', input,
+    ),
 }
