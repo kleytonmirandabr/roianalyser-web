@@ -75,7 +75,9 @@ export function TasksPage() {
   const { data: opps = [] } = useOpportunities()
 
   const [view, setView] = useState<ViewMode>('calendar')
-  const [scope, setScope] = useState<'me' | 'all'>('me')
+  /* Default 'all' pra master (ve tudo do tenant), 'me' pra usuario comum.
+     Evita confusao ao criar tarefa pra outro user e parecer "nao salvou". */
+  const [scope, setScope] = useState<'me' | 'all'>(user?.isMaster ? 'all' : 'me')
   const [quickRange, setQuickRange] = useState<QuickRange>('all')
   const [statusFilter, setStatusFilter] = useState<'open' | 'all' | 'completed'>('open')
   const [calMonth, setCalMonth] = useState(() => startOfDay(new Date()))

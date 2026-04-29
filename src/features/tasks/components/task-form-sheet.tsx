@@ -234,10 +234,15 @@ export function TaskFormSheet({
         onSaved?.(t)
       } else {
         const r = await create.mutateAsync(payload)
+        const respUser = tenantUsers.find(u => String(u.id) === String(responsibleId))
+        const respLabel = respUser?.name || respUser?.email
+        const isSelf = responsibleId === String(user?.id || '')
         if (r.recurrenceCount && r.recurrenceCount > 1) {
-          toastSaved(`Tarefa criada (${r.recurrenceCount} ocorrências)`)
+          toastSaved(`Tarefa criada (${r.recurrenceCount} ocorrencias)`)
+        } else if (respLabel && !isSelf) {
+          toastSaved(`Tarefa criada para ${respLabel} - email enviado`)
         } else {
-          toastSaved()
+          toastSaved('Tarefa criada')
         }
         onSaved?.(r.item)
       }
