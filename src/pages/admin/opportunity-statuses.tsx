@@ -171,7 +171,7 @@ export function AdminOpportunityStatusesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dt.rows.map((row) => {
+                {dt.paginatedRows.map((row) => {
                   const r = row as OpportunityStatus
                   return (
                     <TableRow key={r.id}>

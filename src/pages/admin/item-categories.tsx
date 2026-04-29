@@ -118,7 +118,7 @@ export function AdminItemCategoriesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dt.rows.map((t) => {
+                {dt.paginatedRows.map((t) => {
                   const it = t as unknown as Record<string, unknown>
                   return (
                     <TableRow key={String(it.id)}>

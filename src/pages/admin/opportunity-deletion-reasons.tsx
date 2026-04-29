@@ -127,7 +127,7 @@ export function AdminOpportunityDeletionReasonsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dt.rows.map((t) => (
+                {dt.paginatedRows.map((t) => (
                   <TableRow key={String(t.id)}>
                     <TableCell className="font-medium">{t.name}</TableCell>
                     <TableCell>

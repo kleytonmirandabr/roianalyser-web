@@ -139,7 +139,7 @@ export function AdminTaskTemplatesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dt.rows.map((row) => {
+                {dt.paginatedRows.map((row) => {
                   const t = row as TaskTemplate
                   return (
                     <TableRow key={t.id}>

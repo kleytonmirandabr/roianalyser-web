@@ -151,7 +151,7 @@ export function AdminContactsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dt.rows.map((c) => {
+                {dt.paginatedRows.map((c) => {
                   const o = c as unknown as Record<string, unknown>
                   return (
                     <TableRow key={String(o.id)}>

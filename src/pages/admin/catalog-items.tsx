@@ -185,7 +185,7 @@ export function AdminCatalogItemsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dt.rows.map((i) => {
+                {dt.paginatedRows.map((i) => {
                   const o = i as unknown as Record<string, unknown>
                   return (
                     <TableRow key={String(o.id)}>

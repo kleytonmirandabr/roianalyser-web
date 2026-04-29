@@ -128,7 +128,7 @@ export function AdminOpportunityTypesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dt.rows.map((row) => {
+                {dt.paginatedRows.map((row) => {
                   const t = row as OpportunityType
                   return (
                     <TableRow key={t.id}>
