@@ -1252,6 +1252,7 @@
     "adminFinancialTypes": "Tipos Financeiros",
     "adminUserGroups": "Grupos de Usuários",
     "adminOpportunityDeletionReasons": "Motivos de Exclusão",
-    "tasks": "Tarefas"
+    "tasks": "Tarefas",
+    "adminEmailLog": "Logs de Email"
   }
 }

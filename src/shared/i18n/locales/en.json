@@ -1252,6 +1252,7 @@
     "adminFinancialTypes": "Financial Types",
     "adminUserGroups": "User Groups",
     "adminOpportunityDeletionReasons": "Deletion Reasons",
-    "tasks": "Tasks"
+    "tasks": "Tasks",
+    "adminEmailLog": "Email Logs"
   }
 }
