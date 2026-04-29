@@ -19,12 +19,19 @@ export function RequireAuth({ children }: RequireAuthProps) {
   const location = useLocation()
 
   if (status === 'loading') {
+    // Bootstrap inicial: tela neutra. Em navegações subsequentes (revalidação),
+    // não bloquear — children continuam visíveis pra evitar flash branco.
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div
-          className="h-8 w-8 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent"
-          aria-label="Carregando"
-        />
+      <div className="flex min-h-screen items-start justify-center bg-background pt-20">
+        <div className="space-y-4 w-full max-w-2xl px-6">
+          <div className="h-7 w-48 rounded bg-muted animate-pulse" />
+          <div className="h-4 w-72 rounded bg-muted/60 animate-pulse" />
+          <div className="rounded-lg border bg-card p-4 space-y-3">
+            <div className="h-5 w-full rounded bg-muted/50 animate-pulse" />
+            <div className="h-5 w-full rounded bg-muted/50 animate-pulse" />
+            <div className="h-5 w-3/4 rounded bg-muted/50 animate-pulse" />
+          </div>
+        </div>
       </div>
     )
   }
