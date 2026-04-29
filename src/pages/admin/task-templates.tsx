@@ -50,8 +50,7 @@ export function AdminTaskTemplatesPage() {
   const items = (data ?? []) as TaskTemplate[]
   const columns = useMemo<DataTableColumn<TaskTemplate>[]>(() => [
     { key: 'name', label: 'Nome', getValue: (r: any) => r.name },
-    { key: 'category', label: 'Categoria', getValue: (r: any) => r.category ?? '' },
-    { key: 'defaultDurationDays', label: 'Duração (dias)', getValue: (r: any) => r.defaultDurationDays ?? 0 },
+    { key: 'description', label: 'Descrição', getValue: (r: any) => r.description ?? '' },
   ], [])
   const dt = useDataTable(items, columns)
 
@@ -68,9 +67,9 @@ export function AdminTaskTemplatesPage() {
   }
 
   async function handleDelete(t: TaskTemplate) {
-    const ok = await confirm({ title: `Excluir modelo "${t.name}"?`, destructive: true })
+    const ok = await confirm({ title: `Excluir tipo "${t.name}"?`, destructive: true })
     if (!ok) return
-    try { await del.mutateAsync(t.id); toastDeleted('Modelo removido') } catch (e) { toastError(e) }
+    try { await del.mutateAsync(t.id); toastDeleted('Tipo removido') } catch (e) { toastError(e) }
   }
 
   async function handleSave() {
@@ -92,7 +91,7 @@ export function AdminTaskTemplatesPage() {
           displayOrder: draft.displayOrder, active: draft.active,
         })
       }
-      toastSaved('Modelo salvo'); setOpen(false)
+      toastSaved('Tipo salvo'); setOpen(false)
     } catch (e) { toastError(e) }
   }
 
@@ -107,7 +106,7 @@ export function AdminTaskTemplatesPage() {
         </div>
         <div className="flex items-center gap-2">
           <CsvExportButton
-            filename="modelos-de-tarefa"
+            filename="tipos-de-tarefa"
             rows={(dt.rows as any[])}
             columns={[
               { key: 'id', label: 'ID', getValue: (r) => (r as any).id },
@@ -117,7 +116,7 @@ export function AdminTaskTemplatesPage() {
               { key: 'updatedAt', label: 'Atualizado em', getValue: (r) => (r as any).updatedAt },
             ]}
           />
-          <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Novo modelo</Button>
+          <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Novo tipo</Button>
         </div>
       </div>
 
@@ -125,7 +124,7 @@ export function AdminTaskTemplatesPage() {
         {isLoading ? (
           <div className="p-6"><Skeleton className="h-5 w-1/2" /></div>
         ) : items.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">Nenhum modelo configurado.</div>
+          <div className="p-8 text-center text-sm text-muted-foreground">Nenhum tipo de tarefa configurado.</div>
         ) : (
           <>
             <DataTableActiveFilters state={dt} columns={columns} />
@@ -144,9 +143,8 @@ export function AdminTaskTemplatesPage() {
                   return (
                     <TableRow key={t.id}>
                       <TableCell className="font-medium">{t.name}</TableCell>
-                      <TableCell className="text-xs">{t.category || <span className="text-muted-foreground">—</span>}</TableCell>
-                      <TableCell className="tabular-nums text-xs">
-                        {t.defaultDurationDays != null ? t.defaultDurationDays : <span className="text-muted-foreground">—</span>}
+                      <TableCell className="text-xs text-muted-foreground">
+                        {t.description ? <span className="line-clamp-1">{t.description}</span> : <span>—</span>}
                       </TableCell>
                       <TableCell className="text-center space-x-1">
                         <Button size="icon" variant="ghost" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
@@ -164,7 +162,7 @@ export function AdminTaskTemplatesPage() {
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="sm:max-w-lg">
-          <SheetHeader><SheetTitle>{draft.id ? 'Editar modelo' : 'Novo modelo'}</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{draft.id ? 'Editar tipo' : 'Novo tipo'}</SheetTitle></SheetHeader>
           <SheetBody className="space-y-4">
             <div className="space-y-1"><Label>Nome</Label>
               <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Ex: Reunião de alinhamento" />
@@ -172,16 +170,7 @@ export function AdminTaskTemplatesPage() {
             <div className="space-y-1"><Label>Descrição</Label>
               <Input value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label>Duração (dias)</Label>
-                <Input type="number" value={draft.defaultDurationDays}
-                  onChange={(e) => setDraft({ ...draft, defaultDurationDays: e.target.value })} placeholder="0" />
-              </div>
-              <div className="space-y-1"><Label>Categoria</Label>
-                <Input value={draft.category}
-                  onChange={(e) => setDraft({ ...draft, category: e.target.value })} placeholder="discovery, kickoff..." />
-              </div>
-            </div>
+            
             <div className="flex items-center gap-2">
               <Checkbox checked={draft.active} onCheckedChange={(c) => setDraft({ ...draft, active: c === true })} />
               <Label>Ativo</Label>
