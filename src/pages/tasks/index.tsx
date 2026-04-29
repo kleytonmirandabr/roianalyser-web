@@ -13,7 +13,7 @@ import {
   Calendar as CalendarIcon, ListTodo, Plus, AlertTriangle, CheckCircle2,
   ChevronLeft, ChevronRight, Filter, BarChart3,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { useAppState } from '@/features/admin/hooks/use-app-state'
@@ -75,7 +75,8 @@ export function TasksPage() {
   const { data: templates = [] } = useTaskTemplates()
   const { data: opps = [] } = useOpportunities()
 
-  const [view, setView] = useState<ViewMode>('calendar')
+  const [searchParams] = useSearchParams()
+  const [view, setView] = useState<ViewMode>(() => (searchParams.get('view') === 'list' ? 'list' : 'calendar'))
   /* Default 'all' pra master (ve tudo do tenant), 'me' pra usuario comum.
      Evita confusao ao criar tarefa pra outro user e parecer "nao salvou". */
   const [scope, setScope] = useState<'me' | 'all'>(user?.isMaster ? 'all' : 'me')

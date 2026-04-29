@@ -383,8 +383,10 @@ export function TasksDashboardPage() {
   const oppMax = Math.max(1, ...byOpp.map(o => o.count))
 
   function goToTasks(qs: Record<string, string>) {
-    const p = new URLSearchParams(qs)
-    navigate(`/tasks${p.toString() ? '?' + p.toString() : ''}`)
+    /* Drill-down do dashboard sempre cai na lista — calendário é mais
+       útil pra planejar; quem clica num KPI quer ver linhas. */
+    const p = new URLSearchParams({ view: 'list', ...qs })
+    navigate(`/tasks?${p.toString()}`)
   }
 
   return (
