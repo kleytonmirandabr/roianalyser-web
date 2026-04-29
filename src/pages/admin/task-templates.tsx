@@ -26,6 +26,7 @@ import { AuditInfoFooter } from '@/shared/ui/audit-info-footer'
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
+import { CsvExportButton } from '@/shared/ui/csv-export-button'
 interface Draft {
   id?: string; key: string; name: string; description: string;
   defaultDurationDays: string; category: string;
@@ -104,7 +105,20 @@ export function AdminTaskTemplatesPage() {
             Tarefas pré-cadastradas (ligação, e-mail, reunião, etc) que podem ser instanciadas em projetos.
           </p>
         </div>
-        <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Novo modelo</Button>
+        <div className="flex items-center gap-2">
+          <CsvExportButton
+            filename="modelos-de-tarefa"
+            rows={(dt.rows as any[])}
+            columns={[
+              { key: 'id', label: 'ID', getValue: (r) => (r as any).id },
+              { key: 'name', label: 'Nome', getValue: (r) => (r as any).name },
+              { key: 'active', label: 'Ativo', getValue: (r) => (r as any).active !== false },
+              { key: 'createdAt', label: 'Criado em', getValue: (r) => (r as any).createdAt },
+              { key: 'updatedAt', label: 'Atualizado em', getValue: (r) => (r as any).updatedAt },
+            ]}
+          />
+          <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Novo modelo</Button>
+        </div>
       </div>
 
       <Card className="p-0 overflow-hidden">

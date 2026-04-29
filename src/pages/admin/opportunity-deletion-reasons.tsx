@@ -27,6 +27,7 @@ import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } 
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
+import { CsvExportButton } from '@/shared/ui/csv-export-button'
 interface Draft {
   id?: string
   name: string
@@ -93,7 +94,20 @@ export function AdminOpportunityDeletionReasonsPage() {
             Toda exclusão grava o motivo em auditoria.
           </p>
         </div>
-        <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Novo motivo</Button>
+        <div className="flex items-center gap-2">
+          <CsvExportButton
+            filename="motivos-exclusao"
+            rows={(dt.rows as any[])}
+            columns={[
+              { key: 'id', label: 'ID', getValue: (r) => (r as any).id },
+              { key: 'name', label: 'Nome', getValue: (r) => (r as any).name },
+              { key: 'active', label: 'Ativo', getValue: (r) => (r as any).active !== false },
+              { key: 'createdAt', label: 'Criado em', getValue: (r) => (r as any).createdAt },
+              { key: 'updatedAt', label: 'Atualizado em', getValue: (r) => (r as any).updatedAt },
+            ]}
+          />
+          <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Novo motivo</Button>
+        </div>
       </div>
       <Card className="p-0 overflow-hidden">
         {isLoading ? (

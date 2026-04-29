@@ -41,6 +41,7 @@ import {
 
 import { AdminTabs } from './components/admin-tabs'
 
+import { CsvExportButton } from '@/shared/ui/csv-export-button'
 export function AdminProfilesPage() {
   const { t } = useTranslation()
   const appState = useAppState()
@@ -197,6 +198,17 @@ export function AdminProfilesPage() {
             <Wand2 className="h-4 w-4" />
             <span>{t('admin.profiles.applyDefaults')}</span>
           </Button>
+          <CsvExportButton
+            filename="perfis"
+            rows={(profiles as any[])}
+            columns={[
+              { key: 'id', label: 'ID', getValue: (r) => (r as any).id },
+              { key: 'name', label: 'Nome', getValue: (r) => (r as any).name },
+              { key: 'description', label: 'Descrição', getValue: (r) => (r as any).description ?? '' },
+              { key: 'createdAt', label: 'Criado em', getValue: (r) => (r as any).createdAt },
+              { key: 'updatedAt', label: 'Atualizado em', getValue: (r) => (r as any).updatedAt },
+            ]}
+          />
           <Button onClick={() => setEditing({ id: `prof_${Date.now()}`, name: '', functionalityIds: [] })}>
             <Plus className="h-4 w-4" />
             <span>{t('admin.profiles.new')}</span>

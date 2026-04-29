@@ -29,6 +29,7 @@ import { AuditInfoFooter } from '@/shared/ui/audit-info-footer'
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
+import { CsvExportButton } from '@/shared/ui/csv-export-button'
 interface Draft {
   id?: string; key: string; name: string
   code: string; description: string; cat: string; unit: string; groupKey: string
@@ -149,7 +150,21 @@ export function AdminCatalogItemsPage() {
           <h1 className="text-2xl font-bold">Itens do Catálogo</h1>
           <p className="text-sm text-muted-foreground">HW, software, mob, capex, cogs, serviços — usados nas Entradas Dinâmicas.</p>
         </div>
-        <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Novo item</Button>
+        <div className="flex items-center gap-2">
+          <CsvExportButton
+            filename="itens-catalogo"
+            rows={(dt.rows as any[])}
+            columns={[
+              { key: 'id', label: 'ID', getValue: (r) => (r as any).id },
+              { key: 'name', label: 'Nome', getValue: (r) => (r as any).name },
+              { key: 'itemCategoryName', label: 'Categoria', getValue: (r) => (r as any).itemCategoryName ?? "" },
+              { key: 'active', label: 'Ativo', getValue: (r) => (r as any).active !== false },
+              { key: 'createdAt', label: 'Criado em', getValue: (r) => (r as any).createdAt },
+              { key: 'updatedAt', label: 'Atualizado em', getValue: (r) => (r as any).updatedAt },
+            ]}
+          />
+          <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Novo item</Button>
+        </div>
       </div>
 
       <Card className="p-0 overflow-hidden">

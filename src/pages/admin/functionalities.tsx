@@ -39,6 +39,7 @@ import {
 
 import { AdminTabs } from './components/admin-tabs'
 
+import { CsvExportButton } from '@/shared/ui/csv-export-button'
 export function AdminFunctionalitiesPage() {
   const { t } = useTranslation()
   const appState = useAppState()
@@ -118,7 +119,17 @@ export function AdminFunctionalitiesPage() {
         <p className="text-sm text-muted-foreground">
           {t('admin.functionalities.subtitle', { count: functionalities.length })}
         </p>
-        <Button
+<CsvExportButton
+            filename="funcionalidades"
+            rows={(functionalities as any[])}
+            columns={[
+              { key: 'id', label: 'ID', getValue: (r) => (r as any).id },
+              { key: 'name', label: 'Nome', getValue: (r) => (r as any).name },
+              { key: 'key', label: 'Chave', getValue: (r) => (r as any).key ?? '' },
+              { key: 'category', label: 'Categoria', getValue: (r) => (r as any).category ?? '' },
+            ]}
+          />
+                <Button
           onClick={() =>
             setEditing({ id: `func_${Date.now()}`, name: '', category: '' })
           }

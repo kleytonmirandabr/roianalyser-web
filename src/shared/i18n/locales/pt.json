@@ -8,7 +8,8 @@
     "back": "Voltar",
     "cancel": "Cancelar",
     "submit": "Enviar",
-    "tryAgain": "Tentar novamente"
+    "tryAgain": "Tentar novamente",
+    "exportCsv": "Exportar CSV"
   },
   "entryTable": {
     "item": "Item",
@@ -119,7 +120,6 @@
     "createError": "Não foi possível criar o projeto. Tente novamente.",
     "create": "Criar",
     "creating": "Criando...",
-    "exportCsv": "Exportar CSV",
     "loadError": "Não foi possível carregar a lista de projetos. Tente recarregar a página.",
     "th": {
       "name": "Nome",

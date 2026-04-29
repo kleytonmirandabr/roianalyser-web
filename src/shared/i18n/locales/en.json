@@ -8,7 +8,8 @@
     "back": "Back",
     "cancel": "Cancel",
     "submit": "Submit",
-    "tryAgain": "Try again"
+    "tryAgain": "Try again",
+    "exportCsv": "Export CSV"
   },
   "entryTable": {
     "item": "Item",
@@ -119,7 +120,6 @@
     "createError": "Could not create the project. Try again.",
     "create": "Create",
     "creating": "Creating...",
-    "exportCsv": "Export CSV",
     "loadError": "Could not load the project list. Try reloading the page.",
     "th": {
       "name": "Name",

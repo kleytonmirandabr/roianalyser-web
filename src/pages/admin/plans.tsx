@@ -39,6 +39,7 @@ import {
 
 import { AdminTabs } from './components/admin-tabs'
 
+import { CsvExportButton } from '@/shared/ui/csv-export-button'
 export function AdminPlansPage() {
   const { t } = useTranslation()
   const appState = useAppState()
@@ -115,7 +116,18 @@ export function AdminPlansPage() {
         <p className="text-sm text-muted-foreground">
           {t('admin.plans.subtitle', { count: plans.length })}
         </p>
-        <Button onClick={() => setEditing({ id: `plan_${Date.now()}`, name: '', functionalityIds: [] })}>
+        <CsvExportButton
+            filename="planos"
+            rows={(plans as any[])}
+            columns={[
+              { key: 'id', label: 'ID', getValue: (r) => (r as any).id },
+              { key: 'name', label: 'Nome', getValue: (r) => (r as any).name },
+              { key: 'description', label: 'Descrição', getValue: (r) => (r as any).description ?? '' },
+              { key: 'createdAt', label: 'Criado em', getValue: (r) => (r as any).createdAt },
+              { key: 'updatedAt', label: 'Atualizado em', getValue: (r) => (r as any).updatedAt },
+            ]}
+          />
+          <Button onClick={() => setEditing({ id: `plan_${Date.now()}`, name: '', functionalityIds: [] })}>
           <Plus className="h-4 w-4" />
           <span>{t('admin.plans.new')}</span>
         </Button>

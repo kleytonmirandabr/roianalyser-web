@@ -28,6 +28,7 @@ import { AuditInfoFooter } from '@/shared/ui/audit-info-footer'
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
+import { CsvExportButton } from '@/shared/ui/csv-export-button'
 interface Draft {
   id?: string
   key: string; name: string; cnpj: string; sectorId: string
@@ -147,7 +148,25 @@ export function AdminCompaniesPage() {
           <h1 className="text-2xl font-bold">Empresas</h1>
           <p className="text-sm text-muted-foreground">Clientes e parceiros — endereço, setor e redes.</p>
         </div>
-        <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Nova empresa</Button>
+        <div className="flex items-center gap-2">
+          <CsvExportButton
+            filename="empresas"
+            rows={(dt.rows as any[])}
+            columns={[
+              { key: 'id', label: 'ID', getValue: (r) => (r as any).id },
+              { key: 'name', label: 'Nome', getValue: (r) => (r as any).name },
+              { key: 'cnpj', label: 'CNPJ', getValue: (r) => (r as any).cnpj ?? "" },
+              { key: 'email', label: 'Email', getValue: (r) => (r as any).email ?? "" },
+              { key: 'phone', label: 'Telefone', getValue: (r) => (r as any).phone ?? "" },
+              { key: 'city', label: 'Cidade', getValue: (r) => (r as any).city ?? "" },
+              { key: 'state', label: 'UF', getValue: (r) => (r as any).state ?? "" },
+              { key: 'active', label: 'Ativo', getValue: (r) => (r as any).active !== false },
+              { key: 'createdAt', label: 'Criada em', getValue: (r) => (r as any).createdAt },
+              { key: 'updatedAt', label: 'Atualizada em', getValue: (r) => (r as any).updatedAt },
+            ]}
+          />
+          <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Nova empresa</Button>
+        </div>
       </div>
 
       <Card className="p-0 overflow-hidden">

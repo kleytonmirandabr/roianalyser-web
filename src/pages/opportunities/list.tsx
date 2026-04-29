@@ -29,6 +29,7 @@ import { Card } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Combobox } from '@/shared/ui/combobox'
 import { Input } from '@/shared/ui/input'
+import { CsvExportButton } from '@/shared/ui/csv-export-button'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { formatCurrencyShort, formatDateTime, formatDate } from '@/shared/lib/format'
 import { toastError, toastSaved } from '@/shared/lib/toasts'
@@ -321,6 +322,29 @@ export function OpportunitiesListPage() {
             </Button>
           )}
         </div>
+        <div className="flex items-center gap-2">
+          <CsvExportButton
+            filename="oportunidades"
+            rows={filtered}
+            columns={[
+              { key: 'id', label: 'ID', getValue: (r) => r.id },
+              { key: 'name', label: 'Nome', getValue: (r) => r.name },
+              { key: 'status', label: 'Status', getValue: (r) => (r.statusId ? statusById.get(r.statusId)?.name ?? '' : '') },
+              { key: 'company', label: 'Empresa', getValue: (r) => (r.companyId ? companyById.get(String(r.companyId)) ?? '' : '') },
+              { key: 'responsible', label: 'Responsável', getValue: (r) => userById.get(String(r.responsibleId)) ?? '' },
+              { key: 'currency', label: 'Moeda', getValue: (r) => r.currency },
+              { key: 'estimatedValue', label: 'Valor estimado', getValue: (r) => r.estimatedValue ?? '' },
+              { key: 'probability', label: 'Probabilidade (%)', getValue: (r) => r.probability ?? '' },
+              { key: 'contractDurationMonths', label: 'Tempo (meses)', getValue: (r) => r.contractDurationMonths ?? '' },
+              { key: 'expectedCloseDate', label: 'Fechamento previsto', getValue: (r) => r.expectedCloseDate ?? '' },
+              { key: 'createdAt', label: 'Criada em', getValue: (r) => r.createdAt },
+              { key: 'updatedAt', label: 'Atualizada em', getValue: (r) => r.updatedAt },
+              { key: 'createdBy', label: 'Criada por', getValue: (r) => userById.get(String(r.createdBy)) ?? '' },
+              { key: 'wonAt', label: 'Ganha em', getValue: (r) => r.wonAt ?? '' },
+              { key: 'lostAt', label: 'Perdida em', getValue: (r) => r.lostAt ?? '' },
+              { key: 'description', label: 'Descrição', getValue: (r) => r.description ?? '' },
+            ]}
+          />
         <div className="relative">
           <Button size="sm" variant="outline" onClick={() => setColsOpen(v => !v)}>
             <Settings2 className="h-4 w-4 mr-1" /> Colunas
@@ -348,6 +372,7 @@ export function OpportunitiesListPage() {
               </div>
             </div>
           )}
+        </div>
         </div>
       </div>
 

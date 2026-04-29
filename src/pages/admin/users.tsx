@@ -44,6 +44,7 @@ import {
 
 import { AdminTabs } from './components/admin-tabs'
 
+import { CsvExportButton } from '@/shared/ui/csv-export-button'
 export function AdminUsersPage() {
   const { t } = useTranslation()
   const appState = useAppState()
@@ -205,7 +206,22 @@ export function AdminUsersPage() {
         <p className="text-sm text-muted-foreground">
           {t('admin.users.subtitle', { count: users.length })}
         </p>
-        <Button onClick={() => setEditing(makeEmptyUser(clients[0]?.id))}>
+        <CsvExportButton
+            filename="usuarios"
+            rows={(users as any[])}
+            columns={[
+              { key: 'id', label: 'ID', getValue: (r) => (r as any).id },
+              { key: 'name', label: 'Nome', getValue: (r) => (r as any).name },
+              { key: 'email', label: 'Email', getValue: (r) => (r as any).email },
+              { key: 'username', label: 'Login', getValue: (r) => (r as any).username ?? '' },
+              { key: 'isMaster', label: 'Master', getValue: (r) => (r as any).isMaster === true },
+              { key: 'active', label: 'Ativo', getValue: (r) => (r as any).active !== false },
+              { key: 'lastLoginAt', label: 'Último login', getValue: (r) => (r as any).lastLoginAt ?? '' },
+              { key: 'createdAt', label: 'Criado em', getValue: (r) => (r as any).createdAt },
+              { key: 'updatedAt', label: 'Atualizado em', getValue: (r) => (r as any).updatedAt },
+            ]}
+          />
+          <Button onClick={() => setEditing(makeEmptyUser(clients[0]?.id))}>
           <Plus className="h-4 w-4" />
           <span>{t('admin.users.new')}</span>
         </Button>

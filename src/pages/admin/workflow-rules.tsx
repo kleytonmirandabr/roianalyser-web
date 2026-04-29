@@ -51,6 +51,7 @@ import {
 
 import { AdminTabs } from './components/admin-tabs'
 
+import { CsvExportButton } from '@/shared/ui/csv-export-button'
 export function AdminWorkflowRulesPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
@@ -183,6 +184,15 @@ export function AdminWorkflowRulesPage() {
             <Sparkles className="h-4 w-4" />
             <span>Aplicar sugeridas</span>
           </Button>
+          <CsvExportButton
+            filename="regras-workflow"
+            rows={(rules as any[])}
+            columns={[
+              { key: 'id', label: 'ID', getValue: (r) => (r as any).id },
+              { key: 'name', label: 'Nome', getValue: (r) => (r as any).name },
+              { key: 'active', label: 'Ativa', getValue: (r) => (r as any).active !== false },
+            ]}
+          />
           <Button onClick={() => setEditing(makeEmptyRule())}>
             <Plus className="h-4 w-4" />
             <span>{t('admin.workflow.new')}</span>
