@@ -10,7 +10,7 @@
  * - Seletor de colunas visíveis (persistido em localStorage por user)
  * - Seleção múltipla com bulk-delete (dialog de motivo obrigatório)
  */
-import { Plus, BarChart3, Settings2, Trash2, Search, Filter, X } from 'lucide-react'
+import { Plus, BarChart3, Settings2, Trash2, Pencil, Search, Filter, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
@@ -406,7 +406,7 @@ export function OpportunitiesListPage() {
                   {visCols.map(col => (
                     <th key={col.id} className="px-3 py-2 whitespace-nowrap">{col.label}</th>
                   ))}
-                  <th className="px-3 py-2 w-10"></th>
+                  <th className="px-3 py-2 w-20 text-center">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -451,14 +451,24 @@ export function OpportunitiesListPage() {
                         return <td key={col.id} className="px-3 py-2 whitespace-nowrap">{cell}</td>
                       })}
                       <td className="px-3 py-2">
-                        <button
-                          type="button"
-                          onClick={() => setDeletingOne(op)}
-                          className="text-muted-foreground hover:text-destructive transition-colors"
-                          title="Excluir"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { setEditing(op); setDrawerOpen(true) }}
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                            title="Editar"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeletingOne(op)}
+                            className="text-muted-foreground hover:text-destructive transition-colors"
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
