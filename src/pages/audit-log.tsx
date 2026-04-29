@@ -31,8 +31,9 @@ function formatTimestamp(value: string | null): string {
 export function AuditLogPage() {
   const { t } = useTranslation()
   const [filter, setFilter] = useState('')
+  const [entityType, setEntityType] = useState('')
   const [limit, setLimit] = useState(200)
-  const audit = useAuditLog({ limit })
+  const audit = useAuditLog({ limit, entityType: entityType || undefined })
 
   const filtered = (audit.data ?? []).filter((event) => {
     if (!filter) return true
@@ -71,6 +72,26 @@ export function AuditLogPage() {
             onChange={(e) => setFilter(e.target.value)}
             placeholder={t('audit.filterPlaceholder')}
           />
+        </div>
+        <div className="space-y-1.5 min-w-[180px]">
+          <Label htmlFor="audit-entity-type">Tipo de entidade</Label>
+          <select
+            id="audit-entity-type"
+            value={entityType}
+            onChange={(e) => setEntityType(e.target.value)}
+            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="">Todos</option>
+            <option value="opportunity">Oportunidade</option>
+            <option value="contract_legacy">Contrato (legado)</option>
+            <option value="contract">Contrato</option>
+            <option value="project">Projeto</option>
+            <option value="roi_analysis">Análise ROI</option>
+            <option value="forecast">Forecast</option>
+            <option value="task">Tarefa</option>
+            <option value="user">Usuário</option>
+            <option value="client">Cliente</option>
+          </select>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="audit-limit">{t('audit.limit')}</Label>

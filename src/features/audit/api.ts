@@ -6,6 +6,7 @@ export type AuditQuery = {
   limit?: number
   offset?: number
   clientId?: string
+  entityType?: string
 }
 
 export const auditApi = {
@@ -14,6 +15,7 @@ export const auditApi = {
     if (params.limit) search.set('limit', String(params.limit))
     if (params.offset) search.set('offset', String(params.offset))
     if (params.clientId) search.set('clientId', params.clientId)
+    if (params.entityType) search.set('entityType', params.entityType)
     const qs = search.toString()
     const path = qs ? `/audit-log?${qs}` : '/audit-log'
     return api

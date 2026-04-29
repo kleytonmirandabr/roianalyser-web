@@ -179,6 +179,11 @@ const NotificationsPrefsPage = lazy(() =>
     default: m.NotificationsPrefsPage,
   })),
 )
+const NotificationsListPage = lazy(() =>
+  import('@/pages/me/notifications').then((m) => ({
+    default: m.NotificationsListPage,
+  })),
+)
 const TasksPage = lazy(() =>
   import('@/pages/tasks').then((m) => ({
     default: m.TasksPage,
@@ -547,6 +552,14 @@ export function AppRouter() {
           element={
             <Lazy>
               <NotificationsPrefsPage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="/me/notifications"
+          element={
+            <Lazy>
+              <NotificationsListPage />
             </Lazy>
           }
         />

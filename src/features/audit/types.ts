@@ -6,6 +6,7 @@ export type AuditEvent = {
   message: string
   entityId: string
   entityName: string
+  entityType: string | null
   clientId: string
   clientName: string
   user: string

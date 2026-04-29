@@ -182,13 +182,20 @@ export function NotificationsBell() {
             </>
           )}
         </div>
-        <div className="border-t border-border p-2">
+        <div className="grid grid-cols-2 gap-1 border-t border-border p-2">
+          <Link
+            to="/me/notifications"
+            onClick={() => setOpen(false)}
+            className="block w-full rounded px-2 py-1.5 text-center text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          >
+            Ver todas
+          </Link>
           <Link
             to="/me/notifications-prefs"
             onClick={() => setOpen(false)}
             className="block w-full rounded px-2 py-1.5 text-center text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
           >
-            Configurar preferências de notificação
+            Preferências
           </Link>
         </div>
       </DropdownMenuContent>
