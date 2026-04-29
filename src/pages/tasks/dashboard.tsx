@@ -32,7 +32,6 @@ import { useAppState } from '@/features/admin/hooks/use-app-state'
 import { useOpportunities } from '@/features/opportunities/hooks/use-opportunities'
 import { useTasks } from '@/features/tasks/hooks/use-tasks'
 import type { Task } from '@/features/tasks/types'
-import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 
