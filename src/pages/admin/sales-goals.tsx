@@ -165,9 +165,9 @@ export function AdminSalesGoalsPage() {
       </Card>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="sm:max-w-lg">
-          <SheetHeader><SheetTitle>{draft.id ? 'Editar' : 'Novo'}</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{draft.id ? t('admin.salesGoals.titleEdit') : t('admin.salesGoals.titleNew')}</SheetTitle></SheetHeader>
           <SheetBody className="space-y-4">
-            <div className="space-y-1"><Label>Nome *</Label>
+            <div className="space-y-1"><Label><span>{t('common.fields.name')} *</span></Label>
               <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Ex: Meta Q1 2026 - SP" autoFocus />
             </div>
             <div className="space-y-1"><Label>{t('common.fields.description')}</Label>

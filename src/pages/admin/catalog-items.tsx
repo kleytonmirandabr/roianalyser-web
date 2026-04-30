@@ -165,7 +165,7 @@ export function AdminCatalogItemsPage() {
               { key: 'updatedAt', label: 'Atualizado em', getValue: (r) => (r as any).updatedAt },
             ]}
           />
-          <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Novo item</Button>
+          <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> {t('admin.catalogItems.newButton')}</Button>
         </div>
       </div>
 
@@ -212,10 +212,10 @@ export function AdminCatalogItemsPage() {
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="sm:max-w-2xl">
-          <SheetHeader><SheetTitle>{draft.id ? 'Editar item' : 'Novo item do catálogo'}</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{draft.id ? t('admin.catalogItems.titleEdit') : t('admin.catalogItems.titleNew')}</SheetTitle></SheetHeader>
           <SheetBody className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1 col-span-2"><Label>Nome *</Label>
+              <div className="space-y-1 col-span-2"><Label><span>{t('common.fields.name')} *</span></Label>
                 <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
               </div>
               <div className="space-y-1"><Label>{t('common.fields.code')}</Label>

@@ -140,7 +140,7 @@ export function AdminSectorsPage() {
       </Card>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="sm:max-w-lg">
-          <SheetHeader><SheetTitle>{draft.id ? 'Editar' : 'Novo'}</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{draft.id ? t('admin.sectors.titleEdit') : t('admin.sectors.titleNew')}</SheetTitle></SheetHeader>
           <SheetBody className="space-y-4">
             <div className="space-y-1"><Label>{t('common.fields.name')}</Label>
               <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />

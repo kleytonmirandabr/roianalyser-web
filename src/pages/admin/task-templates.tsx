@@ -118,7 +118,7 @@ export function AdminTaskTemplatesPage() {
               { key: 'updatedAt', label: 'Atualizado em', getValue: (r) => (r as any).updatedAt },
             ]}
           />
-          <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Novo tipo</Button>
+          <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> {t('admin.taskTemplates.titleNew')}</Button>
         </div>
       </div>
 
@@ -164,7 +164,7 @@ export function AdminTaskTemplatesPage() {
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="sm:max-w-lg">
-          <SheetHeader><SheetTitle>{draft.id ? 'Editar tipo' : 'Novo tipo'}</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{draft.id ? t('admin.taskTemplates.titleEdit') : t('admin.taskTemplates.titleNew')}</SheetTitle></SheetHeader>
           <SheetBody className="space-y-4">
             <div className="space-y-1"><Label>{t('common.fields.name')}</Label>
               <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Ex: Reunião de alinhamento" />

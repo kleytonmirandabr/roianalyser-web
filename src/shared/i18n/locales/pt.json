@@ -72,7 +72,8 @@
       "applySuggested": "Aplicar sugeridas",
       "linkedin": "LinkedIn",
       "instagram": "Instagram",
-      "address": "Endereço"
+      "address": "Endereço",
+      "addressUf": "UF"
     },
     "table": {
       "actions": "Ações"
@@ -92,7 +93,7 @@
   },
   "portfolio": {
     "title": "Portfólio",
-    "subtitle": "Vista executiva consolidada de todos os projetos do tenant.",
+    "subtitle": "Visão consolidada de oportunidades, contratos e projetos.",
     "loadError": "Não foi possível carregar os projetos.",
     "filterStatus": "Status",
     "filterClient": "Cliente",
@@ -1042,6 +1043,68 @@
         "timezoneHint": "Fuso aplicado a datas/horas exibidas pra todos os usuários desse cliente (a menos que o usuário tenha fuso próprio).",
         "logo": "Logo do cliente"
       }
+    },
+    "companies": {
+      "titleEdit": "Editar empresa",
+      "titleNew": "Nova empresa",
+      "newButton": "Nova empresa"
+    },
+    "contacts": {
+      "titleEdit": "Editar contato",
+      "titleNew": "Novo contato",
+      "newButton": "Novo contato"
+    },
+    "sectors": {
+      "titleEdit": "Editar setor",
+      "titleNew": "Novo setor"
+    },
+    "leadSources": {
+      "titleEdit": "Editar fonte de lead",
+      "titleNew": "Nova fonte de lead"
+    },
+    "opportunityTypes": {
+      "titleEdit": "Editar tipo",
+      "titleNew": "Novo tipo",
+      "newButton": "Novo tipo"
+    },
+    "opportunityStatuses": {
+      "titleEdit": "Editar status",
+      "titleNew": "Novo status",
+      "newButton": "Novo status"
+    },
+    "salesGoals": {
+      "titleEdit": "Editar meta",
+      "titleNew": "Nova meta"
+    },
+    "opportunityDeletionReasons": {
+      "titleEdit": "Editar motivo",
+      "titleNew": "Novo motivo",
+      "newButton": "Novo motivo"
+    },
+    "catalogItems": {
+      "titleEdit": "Editar item",
+      "titleNew": "Novo item do catálogo",
+      "newButton": "Novo item"
+    },
+    "itemCategories": {
+      "titleEdit": "Editar categoria",
+      "titleNew": "Nova categoria"
+    },
+    "billingUnits": {
+      "titleEdit": "Editar unidade",
+      "titleNew": "Nova unidade"
+    },
+    "financialTypes": {
+      "titleEdit": "Editar tipo financeiro",
+      "titleNew": "Novo tipo financeiro"
+    },
+    "taskTemplates": {
+      "titleEdit": "Editar tipo de tarefa",
+      "titleNew": "Novo tipo de tarefa"
+    },
+    "userGroups": {
+      "titleEdit": "Editar grupo",
+      "titleNew": "Novo grupo"
     }
   },
   "imports": {

@@ -146,7 +146,7 @@ export function AdminOpportunityStatusesPage() {
               { key: 'updatedAt', label: 'Atualizado em', getValue: (r) => (r as any).updatedAt },
             ]}
           />
-          <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Novo status</Button>
+          <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> {t('admin.opportunityStatuses.newButton')}</Button>
         </div>
       </div>
 
@@ -205,7 +205,7 @@ export function AdminOpportunityStatusesPage() {
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="sm:max-w-lg">
-          <SheetHeader><SheetTitle>{draft.id ? 'Editar status' : 'Novo status'}</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{draft.id ? t('admin.opportunityStatuses.titleEdit') : t('admin.opportunityStatuses.titleNew')}</SheetTitle></SheetHeader>
           <SheetBody className="space-y-4">
             <div className="space-y-1">
               <Label>{t('common.fields.name')}</Label>

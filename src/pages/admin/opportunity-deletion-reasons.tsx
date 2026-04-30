@@ -108,7 +108,7 @@ export function AdminOpportunityDeletionReasonsPage() {
               { key: 'updatedAt', label: 'Atualizado em', getValue: (r) => (r as any).updatedAt },
             ]}
           />
-          <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Novo motivo</Button>
+          <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> {t('admin.opportunityDeletionReasons.newButton')}</Button>
         </div>
       </div>
       <Card className="p-0 overflow-hidden">
@@ -151,7 +151,7 @@ export function AdminOpportunityDeletionReasonsPage() {
       </Card>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="sm:max-w-lg">
-          <SheetHeader><SheetTitle>{draft.id ? 'Editar motivo' : 'Novo motivo'}</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{draft.id ? t('admin.opportunityDeletionReasons.titleEdit') : t('admin.opportunityDeletionReasons.titleNew')}</SheetTitle></SheetHeader>
           <SheetBody className="space-y-4">
             <div className="space-y-1">
               <Label>{t('common.fields.name')}</Label>
