@@ -283,7 +283,7 @@ export function OpportunityDetailPage() {
   }
 
   return (
-    <div className="space-y-4 p-6 max-w-5xl mx-auto">
+    <div className="space-y-4 p-6 max-w-7xl mx-auto">
       <Link to="/opportunities" className="inline-flex items-center text-sm text-muted-foreground hover:underline">
         <ArrowLeft className="h-4 w-4 mr-1" /> Oportunidades
       </Link>
@@ -302,7 +302,9 @@ export function OpportunityDetailPage() {
         </Button>
       </div>
 
-      {/* Card principal — 5 seções espelhando o drawer */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="space-y-4 lg:col-span-2">
+          {/* Card principal — 5 seções espelhando o drawer */}
       <Card className="p-6 space-y-6">
         <Section icon={UserCheck} title="Identificação">
           <div className="space-y-1">
@@ -439,7 +441,10 @@ export function OpportunityDetailPage() {
         </div>
       </Card>
 
-      {/* Análise de ROI */}
+        </div>
+
+        <aside className="space-y-4">
+          {/* Análise de ROI */}
       <Card className="p-6 space-y-3">
         <div className="flex items-center justify-between">
           <div>
@@ -523,6 +528,9 @@ export function OpportunityDetailPage() {
       )}
 
       <CustomFieldsCard scope="opportunity" entityType="opportunity" entityId={id} />
+        </aside>
+      </div>
+
       <DeleteWithReasonDialog open={deleteOpen} onClose={() => setDeleteOpen(false)} count={1} onConfirm={confirmDelete} pending={remove.isPending} />
     </div>
   )

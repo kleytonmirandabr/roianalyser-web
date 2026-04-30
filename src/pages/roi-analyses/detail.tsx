@@ -238,7 +238,7 @@ export function RoiAnalysisDetailPage() {
   /* ──────────────────────────── Render ──────────────────────────── */
 
   return (
-    <div className="space-y-6 p-6 max-w-6xl">
+    <div className="space-y-6 p-6 max-w-7xl mx-auto">
       <header className="flex items-center gap-3">
         <Button asChild variant="ghost" size="sm">
           <Link to={`/opportunities/${roi.opportunityId}`}>
