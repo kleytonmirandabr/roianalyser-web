@@ -73,7 +73,7 @@ export function AdminCatalogItemsPage() {
     { key: 'unit', label: 'Unidade', getValue: (r: any) => r.unit ?? "" },
   ], [])
   const dt = useDataTable(items, columns)
-  const categoryById = new Map(categories.map(c => [c.id, c.name]))
+  const categoryById = new Map(categories.map(c => [String(c.id), c.name]))
 
   function openCreate() { setDraft(EMPTY); setOpen(true) }
   function openEdit(c: CatalogItem) {
