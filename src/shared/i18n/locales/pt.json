@@ -1185,7 +1185,9 @@
         "INCOME_INSTALLMENT": "Receita Parcelada",
         "EXPENSE_ONE_TIME": "Custo Pontual",
         "EXPENSE_MONTHLY": "Custo Mensal Recorrente",
-        "EXPENSE_INSTALLMENT": "Custo Parcelado"
+        "EXPENSE_INSTALLMENT": "Custo Parcelado",
+        "INVESTMENT_ONE_TIME": "Investimento Pontual",
+        "INVESTMENT_INSTALLMENT": "Investimento Parcelado"
       }
     },
     "itemCategories": {
@@ -1204,7 +1206,9 @@
       "income": "Entrada",
       "incomeDesc": "Receitas — somam no fluxo de caixa do ROI.",
       "expense": "Saída",
-      "expenseDesc": "Custos e investimentos — subtraem no fluxo de caixa do ROI."
+      "expenseDesc": "Custos e investimentos — subtraem no fluxo de caixa do ROI.",
+      "investment": "Investimento",
+      "investmentDesc": "Aporte de capital (CAPEX) — subtrai no fluxo, mas separado do custo pra apuração de payback."
     },
     "taskTemplates": {
       "titleEdit": "Editar tipo de tarefa",

@@ -34,7 +34,7 @@ interface Draft {
   id?: string; key: string; name: string
   code: string; description: string; unit: string
   categoryId: string; billingUnitId: string
-  comportamento: 'INCOME_ONE_TIME' | 'INCOME_MONTHLY' | 'INCOME_INSTALLMENT' | 'EXPENSE_ONE_TIME' | 'EXPENSE_MONTHLY' | 'EXPENSE_INSTALLMENT'
+  comportamento: 'INCOME_ONE_TIME' | 'INCOME_MONTHLY' | 'INCOME_INSTALLMENT' | 'EXPENSE_ONE_TIME' | 'EXPENSE_MONTHLY' | 'EXPENSE_INSTALLMENT' | 'INVESTMENT_ONE_TIME' | 'INVESTMENT_INSTALLMENT'
   defaultValue: string
   defaultInstallments: string
   allowsQuantity: boolean; allowsDiscountPct: boolean
@@ -54,6 +54,7 @@ function asStr(v: unknown): string { return v == null ? '' : String(v) }
 const BEHAVIOR_KEYS = [
   'INCOME_ONE_TIME', 'INCOME_MONTHLY', 'INCOME_INSTALLMENT',
   'EXPENSE_ONE_TIME', 'EXPENSE_MONTHLY', 'EXPENSE_INSTALLMENT',
+  'INVESTMENT_ONE_TIME', 'INVESTMENT_INSTALLMENT',
 ] as const
 
 export function AdminCatalogItemsPage() {
@@ -190,8 +191,13 @@ export function AdminCatalogItemsPage() {
                       <TableCell className="text-xs">
                         {(() => {
                           const c = String(o.comportamento || 'EXPENSE_ONE_TIME')
-                          const isIncome = c.startsWith('INCOME_')
-                          const tone = isIncome ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
+                          const isIncome     = c.startsWith('INCOME_')
+                          const isInvestment = c.startsWith('INVESTMENT_')
+                          const tone = isIncome
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
+                            : isInvestment
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300'
+                              : 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
                           return (
                             <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${tone}`}>
                               {t(`admin.catalogItems.behavior.${c}`)}

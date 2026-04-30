@@ -4,7 +4,7 @@
  * Read-only. Os 2 tipos (INCOME / EXPENSE) são fixos do sistema e governam
  * o sinal das entradas no cálculo do ROI. Não são editáveis nem deletáveis.
  */
-import { ArrowDownCircle, ArrowUpCircle, Info } from 'lucide-react'
+import { ArrowDownCircle, ArrowUpCircle, Info, TrendingDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router-dom'
 
@@ -12,8 +12,9 @@ import { useAuth } from '@/features/auth/hooks/use-auth'
 import { Card } from '@/shared/ui/card'
 
 const TYPES = [
-  { key: 'INCOME',  sign: '+', color: 'emerald', Icon: ArrowUpCircle },
-  { key: 'EXPENSE', sign: '−', color: 'rose',    Icon: ArrowDownCircle },
+  { key: 'INCOME',     sign: '+', color: 'emerald', Icon: ArrowUpCircle },
+  { key: 'EXPENSE',    sign: '−', color: 'rose',    Icon: ArrowDownCircle },
+  { key: 'INVESTMENT', sign: '−', color: 'blue',    Icon: TrendingDown },
 ] as const
 
 export function AdminFinancialTypesPage() {
@@ -33,15 +34,16 @@ export function AdminFinancialTypesPage() {
         <p className="text-xs text-muted-foreground">{t('admin.financialTypes.banner')}</p>
       </Card>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {TYPES.map((it) => {
           const tones: Record<string, string> = {
             emerald: 'border-emerald-200 bg-emerald-50/60 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300',
             rose:    'border-rose-200 bg-rose-50/60 text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300',
+            blue:    'border-blue-200 bg-blue-50/60 text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300',
           }
           const Icon = it.Icon
-          const nameKey = it.key === 'INCOME' ? 'income' : 'expense'
-          const descKey = it.key === 'INCOME' ? 'incomeDesc' : 'expenseDesc'
+          const nameKey = it.key === 'INCOME' ? 'income' : it.key === 'INVESTMENT' ? 'investment' : 'expense'
+          const descKey = it.key === 'INCOME' ? 'incomeDesc' : it.key === 'INVESTMENT' ? 'investmentDesc' : 'expenseDesc'
           return (
             <Card key={it.key} className={`flex flex-col gap-2 border p-4 ${tones[it.color]}`}>
               <div className="flex items-center justify-between">

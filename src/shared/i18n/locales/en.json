@@ -1185,7 +1185,9 @@
         "INCOME_INSTALLMENT": "Income in Installments",
         "EXPENSE_ONE_TIME": "One-time Cost",
         "EXPENSE_MONTHLY": "Monthly Recurring Cost",
-        "EXPENSE_INSTALLMENT": "Cost in Installments"
+        "EXPENSE_INSTALLMENT": "Cost in Installments",
+        "INVESTMENT_ONE_TIME": "One-time Investment",
+        "INVESTMENT_INSTALLMENT": "Investment in Installments"
       }
     },
     "itemCategories": {
@@ -1204,7 +1206,9 @@
       "income": "Income",
       "incomeDesc": "Revenues — add to the cash flow of ROI.",
       "expense": "Expense",
-      "expenseDesc": "Costs and investments — subtract from the cash flow of ROI."
+      "expenseDesc": "Costs and investments — subtract from the cash flow of ROI.",
+      "investment": "Investment",
+      "investmentDesc": "Capital outlay (CAPEX) — subtracts from cash flow, but separated from operational cost for payback calculation."
     },
     "taskTemplates": {
       "titleEdit": "Edit task type",

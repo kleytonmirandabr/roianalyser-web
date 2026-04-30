@@ -1185,7 +1185,9 @@
         "INCOME_INSTALLMENT": "Ingreso a Plazos",
         "EXPENSE_ONE_TIME": "Costo Único",
         "EXPENSE_MONTHLY": "Costo Mensual Recurrente",
-        "EXPENSE_INSTALLMENT": "Costo a Plazos"
+        "EXPENSE_INSTALLMENT": "Costo a Plazos",
+        "INVESTMENT_ONE_TIME": "Inversión Única",
+        "INVESTMENT_INSTALLMENT": "Inversión a Plazos"
       }
     },
     "itemCategories": {
@@ -1204,7 +1206,9 @@
       "income": "Entrada",
       "incomeDesc": "Ingresos — suman al flujo de caja del ROI.",
       "expense": "Salida",
-      "expenseDesc": "Costos e inversiones — restan del flujo de caja del ROI."
+      "expenseDesc": "Costos e inversiones — restan del flujo de caja del ROI.",
+      "investment": "Inversión",
+      "investmentDesc": "Aporte de capital (CAPEX) — resta al flujo, pero separado del costo operacional para el cálculo del payback."
     },
     "taskTemplates": {
       "titleEdit": "Editar tipo de tarea",

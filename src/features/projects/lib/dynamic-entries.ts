@@ -27,6 +27,7 @@ import { clamp } from './money'
 export type Comportamento =
   | 'INCOME_ONE_TIME'  | 'INCOME_MONTHLY'  | 'INCOME_INSTALLMENT'
   | 'EXPENSE_ONE_TIME' | 'EXPENSE_MONTHLY' | 'EXPENSE_INSTALLMENT'
+  | 'INVESTMENT_ONE_TIME' | 'INVESTMENT_INSTALLMENT'
 
 /** Mapeia comportamento → calculation_mode legado pra manter compat. */
 function comportamentoToCalcMode(c?: Comportamento | string | null): string {
@@ -36,12 +37,13 @@ function comportamentoToCalcMode(c?: Comportamento | string | null): string {
   return 'one_time'
 }
 
-/** Mapeia comportamento → flags revenue/cost. Investment fica false. */
-function comportamentoToFlowFlags(c?: Comportamento | string | null): { revenue: boolean; cost: boolean } {
-  if (!c) return { revenue: false, cost: false }
-  if (c.startsWith('INCOME_'))  return { revenue: true,  cost: false }
-  if (c.startsWith('EXPENSE_')) return { revenue: false, cost: true  }
-  return { revenue: false, cost: false }
+/** Mapeia comportamento → flags revenue/cost/investment. */
+function comportamentoToFlowFlags(c?: Comportamento | string | null): { revenue: boolean; cost: boolean; investment: boolean } {
+  if (!c) return { revenue: false, cost: false, investment: false }
+  if (c.startsWith('INCOME_'))      return { revenue: true,  cost: false, investment: false }
+  if (c.startsWith('EXPENSE_'))     return { revenue: false, cost: true,  investment: false }
+  if (c.startsWith('INVESTMENT_'))  return { revenue: false, cost: false, investment: true  }
+  return { revenue: false, cost: false, investment: false }
 }
 
 export type DynamicEntryCatalogItem = {
@@ -300,7 +302,7 @@ export function entryFromCatalogItem(
   if (comp) {
     derivedCalcMode = comportamentoToCalcMode(comp)
     const f = comportamentoToFlowFlags(comp)
-    flags = { affectsRevenue: f.revenue, affectsCost: f.cost, affectsInvestment: false }
+    flags = { affectsRevenue: f.revenue, affectsCost: f.cost, affectsInvestment: f.investment }
   } else {
     derivedCalcMode = item.calculationMode ?? 'one_time'
     flags = resolveEntryFlags(
