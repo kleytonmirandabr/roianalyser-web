@@ -7,6 +7,7 @@
  */
 import { useEffect, useRef } from 'react'
 import { Bell, BellOff, ChevronRight, Clock, RefreshCcw } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 
 import {
@@ -52,19 +53,28 @@ function formatDateTime(iso: string): string {
   })
 }
 
-function formatRelative(iso: string): string {
+function formatRelative(iso: string, t?: (k: string, opts?: any) => string): string {
   const ms = Date.now() - new Date(iso).getTime()
   const s = Math.floor(ms / 1000)
-  if (s < 60) return `${s}s atrás`
+  const fb = (k: string, opts?: any): string => {
+    if (k.endsWith('.s'))   return `${opts?.n}s atrás`
+    if (k.endsWith('.min')) return `${opts?.n} min atrás`
+    if (k.endsWith('.h'))   return `${opts?.n}h atrás`
+    if (k.endsWith('.d'))   return `${opts?.n} dia${(opts?.n ?? 0) > 1 ? 's' : ''} atrás`
+    return ''
+  }
+  const tt = t || fb
+  if (s < 60) return tt('me.notifications.ago.s', { n: s })
   const m = Math.floor(s / 60)
-  if (m < 60) return `${m} min atrás`
+  if (m < 60) return tt('me.notifications.ago.min', { n: m })
   const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h atrás`
+  if (h < 24) return tt('me.notifications.ago.h', { n: h })
   const d = Math.floor(h / 24)
-  return `${d} dia${d > 1 ? 's' : ''} atrás`
+  return tt('me.notifications.ago.d', { n: d })
 }
 
 export function NotificationsListPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [filter, setFilter] = useState<Filter>('all')
@@ -139,7 +149,7 @@ export function NotificationsListPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-            <Bell className="h-5 w-5" /> Notificações
+            <Bell className="h-5 w-5" /> {t('me.notifications.title')}
           </h1>
           <p className="text-sm text-muted-foreground">
             Histórico completo. As mais novas primeiro.
@@ -165,7 +175,7 @@ export function NotificationsListPage() {
                 : 'bg-muted text-muted-foreground hover:bg-muted/70'
             }`}
           >
-            {f === 'all' ? 'Todas' : f === 'unread' ? 'Não lidas' : 'Adiadas'}
+            {f === 'all' ? t('me.notifications.tabAll') : f === 'unread' ? t('me.notifications.tabUnread') : t('me.notifications.tabSnoozed')}
           </button>
         ))}
         <select
@@ -173,7 +183,7 @@ export function NotificationsListPage() {
           onChange={(e) => setKindFilter(e.target.value)}
           className="ml-auto rounded border border-input bg-background px-2 py-1.5 text-sm"
         >
-          <option value="">Todos os tipos</option>
+          <option value="">{t('me.notifications.allTypes')}</option>
           {availableKinds.map((k) => (
             <option key={k} value={k}>
               {KIND_LABEL[k] || k}
@@ -192,10 +202,10 @@ export function NotificationsListPage() {
         <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-muted-foreground">
           <BellOff className="h-8 w-8 opacity-30" />
           {filter === 'unread'
-            ? 'Tudo limpo — nenhuma notificação não lida.'
+            ? t('me.notifications.emptyUnread')
             : filter === 'snoozed'
-            ? 'Nenhuma notificação adiada no momento.'
-            : 'Sem notificações por aqui ainda.'}
+            ? t('me.notifications.emptySnoozed')
+            : t('me.notifications.emptyAll')}
         </div>
       ) : (
         <ul className="divide-y rounded-lg border">
@@ -230,7 +240,7 @@ export function NotificationsListPage() {
                         {n.title}
                       </span>
                       <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                        {formatRelative(n.createdAt)}
+                        {formatRelative(n.createdAt, t)}
                       </span>
                     </div>
                     {n.body && (
@@ -240,15 +250,14 @@ export function NotificationsListPage() {
                     )}
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                       <span className="rounded bg-muted px-1.5 py-0.5">
-                        {KIND_LABEL[n.kind] || n.kind}
+                        {t('me.notifications.kind.' + n.kind, KIND_LABEL[n.kind] || n.kind)}
                       </span>
                       <span className="tabular-nums">
                         {formatDateTime(n.createdAt)}
                       </span>
                       {isSnoozed && (
                         <span className="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
-                          <Clock className="h-3 w-3" /> Adiada até{' '}
-                          {formatDateTime(n.snoozedUntil!)}
+                          <Clock className="h-3 w-3" /> {t('me.notifications.snoozedUntil', { date: formatDateTime(n.snoozedUntil!) })}
                         </span>
                       )}
                     </div>
@@ -263,7 +272,7 @@ export function NotificationsListPage() {
                     disabled={unsnooze.isPending}
                     className="shrink-0"
                   >
-                    <RefreshCcw className="mr-1 h-3 w-3" /> Reativar
+                    <RefreshCcw className="mr-1 h-3 w-3" /> {t('me.notifications.reactivate')}
                   </Button>
                 )}
               </li>

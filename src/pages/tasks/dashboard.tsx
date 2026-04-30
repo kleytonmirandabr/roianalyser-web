@@ -1,5 +1,5 @@
 /**
- * Dashboard de Tarefas — refino #5 (Sprint #223).
+ * {t('tasks.dashboard.title')} — refino #5 (Sprint #223).
  *
  * Adicionado em cima do baseline:
  *   - ETA pra zerar backlog (footer do Cumulative Flow)
@@ -15,6 +15,7 @@ import {
   ArrowUp, ArrowDown, Minus, PartyPopper, Activity,
   CalendarRange, Target, AlertCircle, UserX,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@/features/auth/hooks/use-auth'
@@ -26,13 +27,13 @@ import { Card } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 
-const PERIOD_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: 'all',  label: 'Sempre' },
-  { value: '7d',   label: '7 dias' },
-  { value: '30d',  label: '30 dias' },
-  { value: '90d',  label: '90 dias' },
-  { value: '1y',   label: '1 ano' },
-  { value: 'custom', label: 'Custom' },
+const PERIOD_OPTIONS: Array<{ value: string; labelKey: string }> = [
+  { value: 'all',  labelKey: 'tasks.dashboard.periodAll' },
+  { value: '7d',   labelKey: 'tasks.dashboard.period7d' },
+  { value: '30d',  labelKey: 'tasks.dashboard.period30d' },
+  { value: '90d',  labelKey: 'tasks.dashboard.period90d' },
+  { value: '1y',   labelKey: 'tasks.dashboard.period1y' },
+  { value: 'custom', labelKey: 'tasks.dashboard.periodCustom' },
 ]
 
 interface Window { start: Date | null; end: Date | null }
@@ -82,6 +83,7 @@ function periodDays(p: string, w: Window): number {
 }
 
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const
+/** Mantemos só por compat — labels reais via t('tasks.dashboard.priority.<key>'). */
 const PRIORITY_LABEL: Record<string, string> = {
   low: 'Baixa', medium: 'Média', high: 'Alta', urgent: 'Urgente',
 }
@@ -101,11 +103,11 @@ function dayKey(iso: string): string { return new Date(iso).toISOString().slice(
 function dayKeyFromDate(d: Date): string { return d.toISOString().slice(0, 10) }
 function daysBetween(a: Date, b: Date): number { return Math.floor((b.getTime() - a.getTime()) / 86400000) }
 
-function formatDuration(days: number): string {
-  if (days < 1) return 'menos de 1 dia'
-  if (days < 30) return `${Math.round(days)} dia${days >= 2 ? 's' : ''}`
-  if (days < 365) return `${(days / 30).toFixed(1)} meses`
-  return `${(days / 365).toFixed(1)} anos`
+function formatDuration(days: number, t: (key: string, opts?: any) => string): string {
+  if (days < 1) return t('tasks.dashboard.duration.lessThanDay')
+  if (days < 30) return t('tasks.dashboard.duration.days', { count: Math.round(days), n: Math.round(days) })
+  if (days < 365) return t('tasks.dashboard.duration.months', { n: (days / 30).toFixed(1) })
+  return t('tasks.dashboard.duration.years', { n: (days / 365).toFixed(1) })
 }
 
 function dayRange(days: number, end: Date = new Date()): string[] {
@@ -163,6 +165,7 @@ function computeKpis(items: Task[]) {
 }
 
 export function TasksDashboardPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
   const appState = useAppState()
@@ -319,7 +322,7 @@ export function TasksDashboardPage() {
     const m = new Map<string, number>()
     for (const t of filtered) m.set(t.status, (m.get(t.status) || 0) + 1)
     return Array.from(m.entries())
-      .map(([status, count]) => ({ status, count, label: STATUS_LABEL[status] || status, color: STATUS_COLOR[status] || '#6b7280' }))
+      .map(([status, count]) => ({ status, count, labelKey: 'tasks.dashboard.status.' + status, fallbackLabel: STATUS_LABEL[status] || status, color: STATUS_COLOR[status] || '#6b7280' }))
       .sort((a, b) => b.count - a.count)
   }, [filtered])
 
@@ -327,10 +330,10 @@ export function TasksDashboardPage() {
   const aging = useMemo(() => {
     const now = new Date()
     const buckets = [
-      { key: '0-7',   label: '0–7 dias',     min: 0,   max: 7,   color: '#10b981' },
-      { key: '8-30',  label: '8–30 dias',    min: 8,   max: 30,  color: '#3b82f6' },
-      { key: '31-90', label: '31–90 dias',   min: 31,  max: 90,  color: '#f59e0b' },
-      { key: '90+',   label: '90+ dias',     min: 91,  max: 1e9, color: '#ef4444' },
+      { key: '0-7',   labelKey: 'tasks.dashboard.agingBuckets.0-7',   min: 0,   max: 7,   color: '#10b981' },
+      { key: '8-30',  labelKey: 'tasks.dashboard.agingBuckets.8-30',  min: 8,   max: 30,  color: '#3b82f6' },
+      { key: '31-90', labelKey: 'tasks.dashboard.agingBuckets.31-90', min: 31,  max: 90,  color: '#f59e0b' },
+      { key: '90+',   labelKey: 'tasks.dashboard.agingBuckets.90+',   min: 91,  max: 1e9, color: '#ef4444' },
     ]
     const counts = new Map(buckets.map(b => [b.key, 0]))
     for (const t of filtered) {
@@ -347,11 +350,11 @@ export function TasksDashboardPage() {
   const overdueByLateness = useMemo(() => {
     const now = new Date()
     const buckets = [
-      { key: '<1',    label: 'Menos de 1 dia',  min: 0,   max: 0,   color: '#fde68a' },
-      { key: '1-3',   label: '1–3 dias',        min: 1,   max: 3,   color: '#fbbf24' },
-      { key: '4-7',   label: '4–7 dias',        min: 4,   max: 7,   color: '#fb923c' },
-      { key: '8-30',  label: '8–30 dias',       min: 8,   max: 30,  color: '#f97316' },
-      { key: '30+',   label: '30+ dias',        min: 31,  max: 1e9, color: '#dc2626' },
+      { key: '<1',    labelKey: 'tasks.dashboard.overdueBuckets.<1',   min: 0,   max: 0,   color: '#fde68a' },
+      { key: '1-3',   labelKey: 'tasks.dashboard.overdueBuckets.1-3',  min: 1,   max: 3,   color: '#fbbf24' },
+      { key: '4-7',   labelKey: 'tasks.dashboard.overdueBuckets.4-7',  min: 4,   max: 7,   color: '#fb923c' },
+      { key: '8-30',  labelKey: 'tasks.dashboard.overdueBuckets.8-30', min: 8,   max: 30,  color: '#f97316' },
+      { key: '30+',   labelKey: 'tasks.dashboard.overdueBuckets.30+',  min: 31,  max: 1e9, color: '#dc2626' },
     ]
     const counts = new Map(buckets.map(b => [b.key, 0]))
     for (const t of filtered) {
@@ -418,7 +421,7 @@ export function TasksDashboardPage() {
   const byPriority = useMemo(() => {
     const m = new Map<string, number>()
     for (const t of filtered) m.set(t.priority || 'medium', (m.get(t.priority || 'medium') || 0) + 1)
-    return PRIORITIES.map(p => ({ priority: p, label: PRIORITY_LABEL[p], color: PRIORITY_COLOR[p], count: m.get(p) || 0 }))
+    return PRIORITIES.map(p => ({ priority: p, labelKey: 'tasks.dashboard.priority.' + p, fallbackLabel: PRIORITY_LABEL[p], color: PRIORITY_COLOR[p], count: m.get(p) || 0 }))
   }, [filtered])
   const priorityMax = Math.max(1, ...byPriority.map(p => p.count))
 
@@ -450,14 +453,14 @@ export function TasksDashboardPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-            <BarChart3 className="h-5 w-5" /> Dashboard de Tarefas
+            <BarChart3 className="h-5 w-5" /> {t('tasks.dashboard.title')}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Insights operacionais sobre criação, conclusão e backlog. Os filtros abaixo afetam todos os gráficos.
+            {t('tasks.dashboard.subtitle')}
           </p>
         </div>
         <Link to="/tasks" className="text-sm text-muted-foreground underline-offset-2 hover:underline">
-          ← Voltar pra lista
+          {t('tasks.dashboard.backToList')}
         </Link>
       </div>
 
@@ -465,7 +468,7 @@ export function TasksDashboardPage() {
       <Card className="space-y-3 p-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
-            <Filter className="h-3 w-3" /> Período
+            <Filter className="h-3 w-3" /> {t('tasks.dashboard.period')}
           </span>
           {PERIOD_OPTIONS.map(p => (
             <button
@@ -478,7 +481,7 @@ export function TasksDashboardPage() {
                   : 'bg-muted/30 text-muted-foreground hover:bg-muted/60'
               }`}
             >
-              {p.label}
+              {t(p.labelKey)}
             </button>
           ))}
           {period === 'custom' && (
@@ -490,7 +493,7 @@ export function TasksDashboardPage() {
                 onChange={e => setCustomStart(e.target.value)}
                 className="rounded border border-input bg-background px-1.5 py-0.5 text-xs"
               />
-              <span>até</span>
+              <span>{t('tasks.dashboard.rangeTo')}</span>
               <input
                 type="date"
                 value={customEnd}
@@ -502,15 +505,15 @@ export function TasksDashboardPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3 border-t pt-3">
           <MultiPickChips
-            label="Responsáveis"
-            placeholder="Todos"
+            label={t('tasks.dashboard.responsibles')}
+            placeholder={t('tasks.dashboard.allMasc')}
             options={tenantUsers.filter(u => u.id).map(u => ({ value: String(u.id), label: u.name || u.email || String(u.id) }))}
             values={responsibleIds}
             onChange={setResponsibleIds}
           />
           <MultiPickChips
-            label="Oportunidades"
-            placeholder="Todas"
+            label={t('tasks.dashboard.opportunitiesLabel')}
+            placeholder={t('tasks.dashboard.allFem')}
             options={(opps as any[]).map(o => ({ value: String(o.id), label: o.name }))}
             values={oppIds}
             onChange={setOppIds}
@@ -521,7 +524,7 @@ export function TasksDashboardPage() {
               onClick={() => { setResponsibleIds([]); setOppIds([]); setPeriod('all'); setCustomStart(''); setCustomEnd('') }}
               className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
             >
-              <X className="h-3 w-3" /> Limpar filtros
+              <X className="h-3 w-3" /> {t('tasks.dashboard.clearFilters')}
             </button>
           )}
         </div>
@@ -536,9 +539,9 @@ export function TasksDashboardPage() {
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           <KpiCard
             icon={<Briefcase className="h-4 w-4" />}
-            label="Total no período"
+            label={t('tasks.dashboard.kpiTotalLabel')}
             value={String(kpis.total)}
-            sub={`${kpis.openCount} em aberto · ${kpis.completedCount} concluídas`}
+            sub={t('tasks.dashboard.kpiTotalSub', { open: kpis.openCount, done: kpis.completedCount })}
             tone="indigo"
             spark={sparkSeries.created}
             prev={kpisPrev?.total}
@@ -548,9 +551,9 @@ export function TasksDashboardPage() {
           />
           <KpiCard
             icon={<CheckCircle2 className="h-4 w-4" />}
-            label="No prazo"
+            label={t('tasks.dashboard.kpiOnTimeLabel')}
             value={kpis.onTimeRate === null ? 'n/d' : `${Math.round(kpis.onTimeRate * 100)}%`}
-            sub={kpis.onTimeRate === null ? 'sem concluídas com prazo' : 'das concluídas com prazo'}
+            sub={kpis.onTimeRate === null ? t('tasks.dashboard.kpiOnTimeSubNone') : t('tasks.dashboard.kpiOnTimeSubHas')}
             tone="emerald"
             prev={kpisPrev?.onTimeRate ?? null}
             current={kpis.onTimeRate}
@@ -559,9 +562,9 @@ export function TasksDashboardPage() {
           />
           <KpiCard
             icon={<AlertTriangle className="h-4 w-4" />}
-            label="Atrasadas em aberto"
+            label={t('tasks.dashboard.kpiOverdueLabel')}
             value={String(kpis.overdueOpenCount)}
-            sub={kpis.openCount > 0 ? `${Math.round((kpis.overdueOpenCount / kpis.openCount) * 100)}% do backlog` : 'sem backlog'}
+            sub={kpis.openCount > 0 ? t('tasks.dashboard.kpiOverdueSub', { pct: Math.round((kpis.overdueOpenCount / kpis.openCount) * 100) }) : t('tasks.dashboard.kpiOverdueSubEmpty')}
             tone="red"
             spark={sparkSeries.overdue}
             prev={kpisPrev?.overdueOpenCount}
@@ -571,12 +574,12 @@ export function TasksDashboardPage() {
           />
           <KpiCard
             icon={<Hourglass className="h-4 w-4" />}
-            label="Mediana até concluir"
-            value={kpis.medianCompletionDays === null ? 'n/d' : formatDuration(kpis.medianCompletionDays)}
+            label={t('tasks.dashboard.kpiCycleLabel')}
+            value={kpis.medianCompletionDays === null ? 'n/d' : formatDuration(kpis.medianCompletionDays, t)}
             sub={
               kpis.medianCompletionDays === null
-                ? 'sem concluídas'
-                : `média ${kpis.avgCompletionDays != null ? formatDuration(kpis.avgCompletionDays) : 'n/d'} · p90 ${kpis.p90CompletionDays != null ? formatDuration(kpis.p90CompletionDays) : 'n/d'}`
+                ? t('tasks.dashboard.kpiCycleSubNone')
+                : t('tasks.dashboard.kpiCycleSub', { avg: kpis.avgCompletionDays != null ? formatDuration(kpis.avgCompletionDays, t) : 'n/d', p90: kpis.p90CompletionDays != null ? formatDuration(kpis.p90CompletionDays, t) : 'n/d' })
             }
             tone="amber"
             prev={kpisPrev?.medianCompletionDays ?? null}
@@ -585,9 +588,9 @@ export function TasksDashboardPage() {
           />
           <KpiCard
             icon={<TrendingUp className="h-4 w-4" />}
-            label="Throughput"
+            label={t('tasks.dashboard.kpiThroughputLabel')}
             value={String(kpis.completedCount)}
-            sub="concluídas no período"
+            sub={t('tasks.dashboard.kpiThroughputSub')}
             tone="blue"
             spark={sparkSeries.done}
             prev={kpisPrev?.completedCount}
@@ -609,11 +612,11 @@ export function TasksDashboardPage() {
               <div className="flex items-center gap-2.5 text-amber-800 dark:text-amber-300">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 <div>
-                  <div className="text-sm font-semibold">{kpis.noDueOpen} tarefa{kpis.noDueOpen === 1 ? '' : 's'} sem prazo</div>
-                  <div className="text-xs opacity-80">Sem dueAt — não entra em SLA nem aging.</div>
+                  <div className="text-sm font-semibold">{t('tasks.dashboard.noDueLabel', { count: kpis.noDueOpen })}</div>
+                  <div className="text-xs opacity-80">{t('tasks.dashboard.noDueDesc')}</div>
                 </div>
               </div>
-              <span className="text-xs text-amber-700 dark:text-amber-400">Ver lista →</span>
+              <span className="text-xs text-amber-700 dark:text-amber-400">{t('tasks.dashboard.seeList')}</span>
             </button>
           )}
           {kpis.noResp > 0 && (
@@ -625,11 +628,11 @@ export function TasksDashboardPage() {
               <div className="flex items-center gap-2.5 text-rose-800 dark:text-rose-300">
                 <UserX className="h-4 w-4 shrink-0" />
                 <div>
-                  <div className="text-sm font-semibold">{kpis.noResp} tarefa{kpis.noResp === 1 ? '' : 's'} sem responsável</div>
-                  <div className="text-xs opacity-80">Não há quem atender — atribua antes de seguir.</div>
+                  <div className="text-sm font-semibold">{t('tasks.dashboard.noRespLabel', { count: kpis.noResp })}</div>
+                  <div className="text-xs opacity-80">{t('tasks.dashboard.noRespDesc')}</div>
                 </div>
               </div>
-              <span className="text-xs text-rose-700 dark:text-rose-400">Ver lista →</span>
+              <span className="text-xs text-rose-700 dark:text-rose-400">{t('tasks.dashboard.seeList')}</span>
             </button>
           )}
         </div>
@@ -639,8 +642,8 @@ export function TasksDashboardPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="space-y-3 p-4">
           <div>
-            <h3 className="font-semibold">Throughput diário</h3>
-            <p className="text-xs text-muted-foreground">Tarefas criadas vs concluídas</p>
+            <h3 className="font-semibold">{t('tasks.dashboard.throughputDailyTitle')}</h3>
+            <p className="text-xs text-muted-foreground">{t('tasks.dashboard.throughputDailySub')}</p>
           </div>
           {isLoading ? <Skeleton className="h-40" /> : (
             <div className="flex items-end gap-px h-40 border-b border-border pl-1">
@@ -666,19 +669,19 @@ export function TasksDashboardPage() {
             </div>
           )}
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-blue-500/80" /> Criadas</span>
-            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-emerald-500/80" /> Concluídas</span>
-            <span className="ml-auto tabular-nums">{throughput.length} dias</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-blue-500/80" /> {t('tasks.dashboard.created')}</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-emerald-500/80" /> {t('tasks.dashboard.done')}</span>
+            <span className="ml-auto tabular-nums">{t('tasks.dashboard.daysCount', { count: throughput.length })}</span>
           </div>
         </Card>
 
         <Card className="space-y-3 p-4">
           <div>
-            <h3 className="font-semibold">Distribuição por status</h3>
-            <p className="text-xs text-muted-foreground">Volume e percentual por status</p>
+            <h3 className="font-semibold">{t('tasks.dashboard.statusDistTitle')}</h3>
+            <p className="text-xs text-muted-foreground">{t('tasks.dashboard.statusDistSub')}</p>
           </div>
           {isLoading ? <Skeleton className="h-32" /> : byStatus.length === 0 ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">Sem dados.</div>
+            <div className="py-8 text-center text-sm text-muted-foreground">{t('tasks.dashboard.noData')}</div>
           ) : (
             <div className="space-y-2.5">
               {byStatus.map(s => {
@@ -688,7 +691,7 @@ export function TasksDashboardPage() {
                     <TooltipTrigger asChild>
                       <button type="button" onClick={() => goToTasks({ status: s.status })} className="w-full text-left group">
                         <div className="mb-1 flex items-center justify-between text-sm">
-                          <span className="font-medium group-hover:text-foreground">{s.label}</span>
+                          <span className="font-medium group-hover:text-foreground">{t(s.labelKey, s.fallbackLabel)}</span>
                           <span className="tabular-nums text-xs text-muted-foreground">
                             <span className="font-semibold text-foreground">{s.count}</span> · {pct.toFixed(0)}%
                           </span>
@@ -699,7 +702,7 @@ export function TasksDashboardPage() {
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="left">
-                      {s.label}: <span className="font-semibold">{s.count}</span> ({pct.toFixed(1)}%) · clique para filtrar
+                      {t(s.labelKey, s.fallbackLabel)}: <span className="font-semibold">{s.count}</span> ({pct.toFixed(1)}%) · clique para filtrar
                     </TooltipContent>
                   </Tooltip>
                 )
@@ -713,7 +716,7 @@ export function TasksDashboardPage() {
       <Card className="space-y-3 p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold">Backlog ao longo do tempo</h3>
+            <h3 className="font-semibold">{t('tasks.dashboard.flowTitle')}</h3>
             <p className="text-xs text-muted-foreground">
               Tarefas em aberto no fim de cada dia (cumulative flow). Linha azul subindo = backlog crescendo,
               linha caindo = equipe drenando.
@@ -729,11 +732,10 @@ export function TasksDashboardPage() {
           <div className="flex items-center gap-2 rounded-md border border-blue-200/60 bg-blue-50/60 px-3 py-2 text-xs dark:border-blue-900/50 dark:bg-blue-950/20">
             <Target className="h-4 w-4 shrink-0 text-blue-700 dark:text-blue-400" />
             {eta.backlogNow === 0 ? (
-              <span><strong>Backlog zerado.</strong> Sem tarefas em aberto pra esses filtros.</span>
+              <span><strong>{t('tasks.dashboard.etaBacklogZero')}</strong> {t('tasks.dashboard.etaNoBacklog')}</span>
             ) : (
               <span>
-                Ao ritmo de <strong>{eta.ratePerDay.toFixed(1)} tarefa{eta.ratePerDay >= 2 ? 's' : ''}/dia</strong> (média dos últimos 7 dias),
-                o backlog atual de <strong>{eta.backlogNow}</strong> zera em <strong>{formatDuration(eta.etaDays)}</strong>.
+                {t('tasks.dashboard.etaProjection', { rate: eta.ratePerDay.toFixed(1), plural: eta.ratePerDay >= 2 ? 's' : '', backlog: eta.backlogNow, eta: formatDuration(eta.etaDays, t) }).split(/<[012]>|<\/[012]>/).map((seg, i) => i % 2 === 0 ? seg : <strong key={i}>{seg}</strong>)}
               </span>
             )}
           </div>
@@ -741,7 +743,7 @@ export function TasksDashboardPage() {
         {!isLoading && !eta && (
           <div className="flex items-center gap-2 rounded-md border border-amber-200/60 bg-amber-50/60 px-3 py-2 text-xs dark:border-amber-900/50 dark:bg-amber-950/20">
             <Target className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
-            <span>Throughput zero nos últimos 7 dias — backlog não está sendo drenado.</span>
+            <span>{t('tasks.dashboard.etaThroughputZero')}</span>
           </div>
         )}
       </Card>
@@ -751,8 +753,8 @@ export function TasksDashboardPage() {
         <Card className="space-y-3 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold">Aging do backlog</h3>
-              <p className="text-xs text-muted-foreground">Idade das tarefas em aberto (criação)</p>
+              <h3 className="font-semibold">{t('tasks.dashboard.agingTitle')}</h3>
+              <p className="text-xs text-muted-foreground">{t('tasks.dashboard.agingSub')}</p>
             </div>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </div>
@@ -762,13 +764,13 @@ export function TasksDashboardPage() {
               <>
                 <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" />
                 <span className="text-red-600 dark:text-red-400 font-medium">
-                  Há tarefas em aberto há mais de 90 dias — considere fechar ou repactuar.
+                  {t('tasks.dashboard.agingUnhealthy')}
                 </span>
               </>
             ) : (
               <>
                 <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                <span>Backlog saudável (nada com mais de 90 dias).</span>
+                <span>{t('tasks.dashboard.agingHealthy')}</span>
               </>
             )}
           </p>
@@ -777,8 +779,8 @@ export function TasksDashboardPage() {
         <Card className="space-y-3 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold">Atrasadas por tempo</h3>
-              <p className="text-xs text-muted-foreground">Em aberto + dueAt no passado</p>
+              <h3 className="font-semibold">{t('tasks.dashboard.overdueTitle')}</h3>
+              <p className="text-xs text-muted-foreground">{t('tasks.dashboard.overdueSub')}</p>
             </div>
             <Flame className="h-4 w-4 text-muted-foreground" />
           </div>
@@ -787,10 +789,10 @@ export function TasksDashboardPage() {
             {totalOverdue === 0 ? (
               <>
                 <PartyPopper className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                <span>Nenhuma atrasada.</span>
+                <span>{t('tasks.dashboard.overdueNone')}</span>
               </>
             ) : (
-              <span>Total {totalOverdue} atrasada(s) em aberto.</span>
+              <span>{t('tasks.dashboard.overdueTotal', { n: totalOverdue, plural: totalOverdue === 1 ? '' : 's' })}</span>
             )}
           </p>
         </Card>
@@ -801,9 +803,9 @@ export function TasksDashboardPage() {
         <Card className="space-y-3 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold">Atrasadas por responsável e prioridade</h3>
+              <h3 className="font-semibold">{t('tasks.dashboard.heatmapTitle')}</h3>
               <p className="text-xs text-muted-foreground">
-                Onde investir atenção primeiro. Intensidade = volume; números à direita são totais.
+                {t('tasks.dashboard.heatmapSub')}
               </p>
             </div>
             <Flame className="h-4 w-4 text-muted-foreground" />
@@ -823,13 +825,13 @@ export function TasksDashboardPage() {
         <Card className="space-y-3 p-4 lg:col-span-2">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold">Top responsáveis</h3>
-              <p className="text-xs text-muted-foreground">Carga distribuída — splitando aberto / atrasado / concluído</p>
+              <h3 className="font-semibold">{t('tasks.dashboard.topRespTitle')}</h3>
+              <p className="text-xs text-muted-foreground">{t('tasks.dashboard.topRespSub')}</p>
             </div>
             <Users className="h-4 w-4 text-muted-foreground" />
           </div>
           {isLoading ? <Skeleton className="h-40" /> : byResponsible.length === 0 ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">Sem responsáveis com tarefas no período.</div>
+            <div className="py-8 text-center text-sm text-muted-foreground">{t('tasks.dashboard.topRespEmpty')}</div>
           ) : (
             <div className="space-y-2">
               {byResponsible.map(r => {
@@ -872,16 +874,16 @@ export function TasksDashboardPage() {
             </div>
           )}
           <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
-            <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-blue-500/80" /> Em aberto</span>
-            <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-red-500/80" /> Atrasadas</span>
-            <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-emerald-500/80" /> Concluídas</span>
+            <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-blue-500/80" /> {t('tasks.dashboard.open')}</span>
+            <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-red-500/80" /> {t('tasks.dashboard.overdueLegend')}</span>
+            <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-emerald-500/80" /> {t('tasks.dashboard.done')}</span>
           </div>
         </Card>
 
         <Card className="space-y-3 p-4">
           <div>
-            <h3 className="font-semibold">Prioridade</h3>
-            <p className="text-xs text-muted-foreground">Distribuição no período</p>
+            <h3 className="font-semibold">{t('tasks.dashboard.priorityTitle')}</h3>
+            <p className="text-xs text-muted-foreground">{t('tasks.dashboard.prioritySub')}</p>
           </div>
           {isLoading ? <Skeleton className="h-40" /> : (
             <div className="space-y-2">
@@ -890,7 +892,7 @@ export function TasksDashboardPage() {
                   <TooltipTrigger asChild>
                     <div>
                       <div className="mb-0.5 flex items-center justify-between text-sm">
-                        <span style={{ color: p.color }} className="font-medium">{p.label}</span>
+                        <span style={{ color: p.color }} className="font-medium">{t(p.labelKey)}</span>
                         <span className="tabular-nums text-xs text-muted-foreground">{p.count}</span>
                       </div>
                       <div className="h-2 w-full rounded bg-muted/30">
@@ -899,7 +901,7 @@ export function TasksDashboardPage() {
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="left">
-                    <span className="font-semibold">{p.label}</span>: {p.count} tarefa{p.count === 1 ? '' : 's'}
+                    <span className="font-semibold">{t(p.labelKey)}</span>: {p.count} tarefa{p.count === 1 ? '' : 's'}
                   </TooltipContent>
                 </Tooltip>
               ))}
@@ -912,13 +914,13 @@ export function TasksDashboardPage() {
       <Card className="space-y-3 p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold">Top oportunidades por tarefas</h3>
-            <p className="text-xs text-muted-foreground">Onde a equipe está investindo mais esforço operacional</p>
+            <h3 className="font-semibold">{t('tasks.dashboard.topOppTitle')}</h3>
+            <p className="text-xs text-muted-foreground">{t('tasks.dashboard.topOppSub')}</p>
           </div>
           <Briefcase className="h-4 w-4 text-muted-foreground" />
         </div>
         {isLoading ? <Skeleton className="h-32" /> : byOpp.length === 0 ? (
-          <div className="py-8 text-center text-sm text-muted-foreground">Sem tarefas vinculadas a oportunidades no período.</div>
+          <div className="py-8 text-center text-sm text-muted-foreground">{t('tasks.dashboard.topOppEmpty')}</div>
         ) : (
           <div className="space-y-2">
             {byOpp.map(o => (
@@ -1037,7 +1039,8 @@ function Sparkline({ data, tone }: { data: number[]; tone: KpiCardProps['tone'] 
 }
 
 function CumulativeFlowChart({ flow, max }: { flow: Array<{ key: string; open: number; createdCum: number; doneCum: number }>; max: number }) {
-  if (flow.length === 0) return <div className="h-48 text-center text-sm text-muted-foreground py-12">Sem dados.</div>
+  const { t } = useTranslation()
+  if (flow.length === 0) return <div className="h-48 text-center text-sm text-muted-foreground py-12">{t('tasks.dashboard.noData')}</div>
   const w = 800
   const h = 180
   const step = flow.length > 1 ? w / (flow.length - 1) : 0
@@ -1077,15 +1080,16 @@ function CumulativeFlowChart({ flow, max }: { flow: Array<{ key: string; open: n
         ))}
       </svg>
       <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5"><span className="h-0.5 w-3 bg-blue-500" /> Em aberto (backlog)</span>
-        <span className="inline-flex items-center gap-1.5"><span className="h-0.5 w-3 bg-indigo-500" /> Criadas (acumulado)</span>
-        <span className="inline-flex items-center gap-1.5"><span className="h-0.5 w-3 bg-emerald-500" /> Concluídas (acumulado)</span>
+        <span className="inline-flex items-center gap-1.5"><span className="h-0.5 w-3 bg-blue-500" /> {t('tasks.dashboard.flowOpen')}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="h-0.5 w-3 bg-indigo-500" /> {t('tasks.dashboard.flowCreatedCum')}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="h-0.5 w-3 bg-emerald-500" /> {t('tasks.dashboard.flowDoneCum')}</span>
       </div>
     </div>
   )
 }
 
-function BarBuckets(props: { buckets: Array<{ key: string; label: string; count: number; color: string }>; max: number }) {
+function BarBuckets(props: { buckets: Array<{ key: string; labelKey: string; count: number; color: string }>; max: number }) {
+  const { t } = useTranslation()
   return (
     <div className="space-y-2">
       {props.buckets.map(b => (
@@ -1093,7 +1097,7 @@ function BarBuckets(props: { buckets: Array<{ key: string; label: string; count:
           <TooltipTrigger asChild>
             <div>
               <div className="mb-0.5 flex items-center justify-between text-sm">
-                <span className="font-medium">{b.label}</span>
+                <span className="font-medium">{t(b.labelKey)}</span>
                 <span className="tabular-nums text-xs text-muted-foreground">{b.count}</span>
               </div>
               <div className="h-2 w-full rounded bg-muted/30">
@@ -1102,7 +1106,7 @@ function BarBuckets(props: { buckets: Array<{ key: string; label: string; count:
             </div>
           </TooltipTrigger>
           <TooltipContent side="left">
-            <span className="font-semibold">{b.label}</span>: {b.count}
+            <span className="font-semibold">{t(b.labelKey)}</span>: {b.count}
           </TooltipContent>
         </Tooltip>
       ))}
@@ -1119,6 +1123,7 @@ interface HeatmapProps {
 }
 
 function Heatmap({ respMeta, priorities, matrix, max, onClickCell }: HeatmapProps) {
+  const { t } = useTranslation()
   return (
     <div
       className="grid gap-1 text-xs"
@@ -1127,10 +1132,10 @@ function Heatmap({ respMeta, priorities, matrix, max, onClickCell }: HeatmapProp
       <div />
       {priorities.map(p => (
         <div key={p} className="px-2 py-1 text-center font-medium uppercase tracking-wide text-[10px] text-muted-foreground">
-          {PRIORITY_LABEL[p] || p}
+          {t('tasks.dashboard.priority.' + p, PRIORITY_LABEL[p] || p)}
         </div>
       ))}
-      <div className="px-2 py-1 text-right text-[10px] uppercase tracking-wide text-muted-foreground">Total</div>
+      <div className="px-2 py-1 text-right text-[10px] uppercase tracking-wide text-muted-foreground">{t('tasks.dashboard.heatmapTotalCol')}</div>
       {respMeta.map((r, i) => (
         <Fragment key={r.id}>
           <div className="truncate px-2 py-1.5 font-medium text-foreground">{r.name}</div>
@@ -1180,6 +1185,7 @@ interface MultiPickProps {
 }
 
 function MultiPickChips({ label, placeholder, options, values, onChange }: MultiPickProps) {
+  const { t } = useTranslation()
   const labelByValue = useMemo(() => {
     const m = new Map<string, string>()
     for (const o of options) m.set(o.value, o.label)
@@ -1200,7 +1206,7 @@ function MultiPickChips({ label, placeholder, options, values, onChange }: Multi
               type="button"
               onClick={() => onChange(values.filter(x => x !== v))}
               className="hover:text-primary/70"
-              aria-label={`Remover ${labelByValue.get(v) ?? v}`}
+              aria-label={`${labelByValue.get(v) ?? v}`}
             >
               <X className="h-3 w-3" />
             </button>
@@ -1216,7 +1222,7 @@ function MultiPickChips({ label, placeholder, options, values, onChange }: Multi
           }}
           className="rounded-md border border-input bg-background px-2 py-1 text-xs text-muted-foreground"
         >
-          <option value="">+ adicionar</option>
+          <option value="">{t('tasks.dashboard.addMore')}</option>
           {available.map(o => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
