@@ -21,7 +21,8 @@
       "apply": "Apply",
       "export": "Export",
       "import": "Import",
-      "clear": "Clear"
+      "clear": "Clear",
+      "select": "Select..."
     },
     "fields": {
       "name": "Name",
@@ -105,7 +106,12 @@
       "contractEnd": "Validity end",
       "totalCost": "Total cost",
       "totalRevenue": "Total revenue",
-      "netValue": "Net value"
+      "netValue": "Net value",
+      "createdAt": "Created",
+      "months": "months",
+      "month": "month",
+      "quantity": "Quantity",
+      "items": "items"
     },
     "table": {
       "actions": "Actions"
@@ -130,8 +136,10 @@
       "task": "Task",
       "sectionInfo": "Information",
       "sourceOpp": "Source opportunity",
-      "sourceContract": "Source contract"
-    }
+      "sourceContract": "Source contract",
+      "item": "Item"
+    },
+    "uncategorized": "Uncategorized"
   },
   "entryTable": {
     "item": "Item",
@@ -1686,6 +1694,60 @@
       "approvalRate": "Approval rate",
       "avgTime": "Average time",
       "viewOpportunities": "View opportunities"
+    },
+    "notFound": "ROI Analysis not found.",
+    "frozen": {
+      "approved": "ROI approved — entries are immutable. A contract can be created from this analysis.",
+      "archived": "ROI archived — entries are immutable."
+    },
+    "status": {
+      "approved": "Approved"
+    },
+    "toast": {
+      "approved": "ROI approved — unlocks contract creation"
+    },
+    "kpi": {
+      "investment": "Investment"
+    },
+    "discount": {
+      "title": "Revenue: gross vs. net",
+      "gross": "Gross",
+      "net": "Net",
+      "given": "Discount given"
+    },
+    "ticket": {
+      "title": "Average recurring ticket",
+      "hint": "Average per recurring revenue line entered."
+    },
+    "entry": {
+      "add": "Add item",
+      "hint": "Select category and item — behavior comes from the catalog",
+      "pickCategoryFirst": "Choose a category first",
+      "startMonth": "Start month",
+      "unitValue": "Unit value",
+      "discountPct": "Discount %",
+      "installments": "Installments",
+      "descriptionPlaceholder": "optional",
+      "itemRequired": "Select a catalog item",
+      "qtyInvalid": "Quantity must be positive",
+      "unitInvalid": "Unit value must be positive",
+      "installmentsInvalid": "Installments must be integer >= 1",
+      "added": "Item added"
+    },
+    "preview": {
+      "gross": "Gross",
+      "net": "Net (after disc.)",
+      "occurrences": "Occurrences",
+      "totalImpact": "Contract impact",
+      "behavior": "Pattern"
+    },
+    "entries": {
+      "title": "Items entered",
+      "empty": "No items entered yet. Use the form above to get started.",
+      "totalImpact": "Impact"
+    },
+    "summary": {
+      "byBehavior": "Summary by behavior"
     }
   },
   "forecasts": {

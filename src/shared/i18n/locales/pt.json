@@ -21,7 +21,8 @@
       "apply": "Aplicar",
       "export": "Exportar",
       "import": "Importar",
-      "clear": "Limpar"
+      "clear": "Limpar",
+      "select": "Selecionar..."
     },
     "fields": {
       "name": "Nome",
@@ -105,7 +106,12 @@
       "contractEnd": "Fim da vigência",
       "totalCost": "Custo total",
       "totalRevenue": "Receita total",
-      "netValue": "Valor líquido"
+      "netValue": "Valor líquido",
+      "createdAt": "Criado",
+      "months": "meses",
+      "month": "mês",
+      "quantity": "Quantidade",
+      "items": "itens"
     },
     "table": {
       "actions": "Ações"
@@ -130,8 +136,10 @@
       "task": "Tarefa",
       "sectionInfo": "Informações",
       "sourceOpp": "Oportunidade origem",
-      "sourceContract": "Contrato origem"
-    }
+      "sourceContract": "Contrato origem",
+      "item": "Item"
+    },
+    "uncategorized": "Sem categoria"
   },
   "entryTable": {
     "item": "Item",
@@ -1686,6 +1694,60 @@
       "approvalRate": "Taxa de aprovação",
       "avgTime": "Tempo médio",
       "viewOpportunities": "Ver oportunidades"
+    },
+    "notFound": "ROI Analysis não encontrado.",
+    "frozen": {
+      "approved": "ROI aprovado — entries imutáveis. Contrato pode ser criado a partir desta análise.",
+      "archived": "ROI arquivado — entries imutáveis."
+    },
+    "status": {
+      "approved": "Aprovado"
+    },
+    "toast": {
+      "approved": "ROI aprovado — destrava criação de contrato"
+    },
+    "kpi": {
+      "investment": "Investimento"
+    },
+    "discount": {
+      "title": "Receita: bruto vs. líquido",
+      "gross": "Bruto",
+      "net": "Líquido",
+      "given": "Desconto concedido"
+    },
+    "ticket": {
+      "title": "Ticket médio recorrente",
+      "hint": "Média por linha de receita mensal lançada."
+    },
+    "entry": {
+      "add": "Adicionar item",
+      "hint": "Selecione categoria e item — o comportamento vem do catálogo",
+      "pickCategoryFirst": "Escolha uma categoria primeiro",
+      "startMonth": "Mês de início",
+      "unitValue": "Valor unitário",
+      "discountPct": "Desconto %",
+      "installments": "Parcelas",
+      "descriptionPlaceholder": "opcional",
+      "itemRequired": "Selecione um item do catálogo",
+      "qtyInvalid": "Quantidade precisa ser positiva",
+      "unitInvalid": "Valor unitário precisa ser positivo",
+      "installmentsInvalid": "Parcelas precisa ser inteiro >= 1",
+      "added": "Item adicionado"
+    },
+    "preview": {
+      "gross": "Bruto",
+      "net": "Líquido (após desc.)",
+      "occurrences": "Ocorrências",
+      "totalImpact": "Impacto no contrato",
+      "behavior": "Padrão"
+    },
+    "entries": {
+      "title": "Itens lançados",
+      "empty": "Nenhum item lançado ainda. Use o formulário acima pra começar.",
+      "totalImpact": "Impacto"
+    },
+    "summary": {
+      "byBehavior": "Resumo por comportamento"
     }
   },
   "forecasts": {

@@ -1,6 +1,6 @@
 import { api } from '@/shared/api/client'
 import type {
-  CreateRoiEntryInput, CreateRoiInput, RoiAnalysis, RoiEntry,
+  CreateRoiEntryInput, CreateRoiInput, RoiAnalysis, RoiEntry, RoiMetrics,
   UpdateRoiEntryInput, UpdateRoiInput,
 } from './types'
 
@@ -13,7 +13,7 @@ export const roiAnalysesApi = {
        .then(r => r.items),
 
   getById: (id: string) =>
-    api.get<{ item: RoiAnalysis; entries: RoiEntry[] }>(`/roi-analyses/${encodeURIComponent(id)}`),
+    api.get<{ item: RoiAnalysis; entries: RoiEntry[]; metrics?: RoiMetrics }>(`/roi-analyses/${encodeURIComponent(id)}`),
 
   create: (input: CreateRoiInput) =>
     api.post<{ item: RoiAnalysis }>('/roi-analyses', input).then(r => r.item),
