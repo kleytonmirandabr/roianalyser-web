@@ -479,7 +479,7 @@ function UserForm({
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Telefone</Label>
+            <Label>{t('common.fields.phone')}</Label>
             <div className="flex">
               {/* Caixa fixa do DDI com bandeira BR (estilo Stripe/Wise).
                   Não-clicável por enquanto — multi-país fica pra v2. */}
@@ -501,7 +501,7 @@ function UserForm({
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Idioma padrão</Label>
+            <Label>{t('common.fields.language')}</Label>
             <Combobox
               options={[
                 { value: 'pt', label: 'Português (PT)' },

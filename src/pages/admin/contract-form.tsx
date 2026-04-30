@@ -247,7 +247,7 @@ export function AdminContractFormPage() {
         <div className="flex gap-2">
           <Button onClick={addCustom} variant="outline">
             <Plus className="h-4 w-4" />
-            <span>Adicionar campo customizado</span>
+            <span>{t('common.fields.addCustomField')}</span>
           </Button>
           <Button onClick={handleSave} disabled={!dirty || saving || loading}>
             <Save className="h-4 w-4" />
@@ -261,10 +261,10 @@ export function AdminContractFormPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Campo</TableHead>
-                <TableHead className="w-32">Tipo</TableHead>
-                <TableHead className="w-24 text-center">Visível</TableHead>
-                <TableHead className="w-28 text-center">Obrigatório</TableHead>
+                <TableHead>{t('common.fields.field')}</TableHead>
+                <TableHead className="w-32">{t('common.fields.type')}</TableHead>
+                <TableHead className="w-24 text-center">{t('common.fields.visible')}</TableHead>
+                <TableHead className="w-28 text-center">{t('common.fields.required')}</TableHead>
                 <TableHead className="w-24" />
               </TableRow>
             </TableHeader>
@@ -428,6 +428,7 @@ function CustomFieldForm({
   onCancel: () => void
   onSave: (next: Extract<UnifiedField, { kind: 'custom' }>) => void
 }) {
+  const { t } = useTranslation()
   const [draft, setDraft] = useState(field)
   const isNew = !field.label || field.label === 'Novo campo'
   const needsOptions =
@@ -485,7 +486,7 @@ function CustomFieldForm({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Tipo</Label>
+            <Label>{t('common.fields.type')}</Label>
             <Combobox
               options={CUSTOM_FIELD_TYPES.map((t) => ({
                 value: t.value,
@@ -502,7 +503,7 @@ function CustomFieldForm({
 
           {needsOptions && (
             <div className="space-y-1.5">
-              <Label>Opções</Label>
+              <Label>{t('common.fields.options')}</Label>
               <Input
                 value={draft.options}
                 onChange={(e) => setDraft({ ...draft, options: e.target.value })}

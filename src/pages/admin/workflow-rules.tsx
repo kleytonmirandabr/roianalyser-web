@@ -182,7 +182,7 @@ export function AdminWorkflowRulesPage() {
         <div className="flex gap-2">
           <Button variant="outline" onClick={applySuggestedRules}>
             <Sparkles className="h-4 w-4" />
-            <span>Aplicar sugeridas</span>
+            <span>{t('common.fields.applySuggested')}</span>
           </Button>
           <CsvExportButton
             filename="regras-workflow"

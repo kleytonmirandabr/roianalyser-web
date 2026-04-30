@@ -183,7 +183,7 @@ export function AdminCatalogItemsPage() {
                   {columns.map(col => (
                     <DataTableHeaderCell key={col.key} column={col} state={dt} />
                   ))}
-                  <TableHead className="w-32 text-center">Ações</TableHead>
+                  <TableHead className="w-32 text-center">{t('common.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -218,22 +218,22 @@ export function AdminCatalogItemsPage() {
               <div className="space-y-1 col-span-2"><Label>Nome *</Label>
                 <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
               </div>
-              <div className="space-y-1"><Label>Código</Label>
+              <div className="space-y-1"><Label>{t('common.fields.code')}</Label>
                 <Input value={draft.code} onChange={(e) => setDraft({ ...draft, code: e.target.value })} />
               </div>
               <div className="space-y-1"><Label>Cat (livre)</Label>
                 <Input value={draft.cat} onChange={(e) => setDraft({ ...draft, cat: e.target.value })} placeholder="hw, sw, mob, capex, cogs" />
               </div>
-              <div className="space-y-1"><Label>Unidade</Label>
+              <div className="space-y-1"><Label>{t('common.fields.unit')}</Label>
                 <Input value={draft.unit} onChange={(e) => setDraft({ ...draft, unit: e.target.value })} placeholder="unid, mês, hora" />
               </div>
-              <div className="space-y-1"><Label>Group key</Label>
+              <div className="space-y-1"><Label>{t('common.fields.groupKey')}</Label>
                 <Input value={draft.groupKey} onChange={(e) => setDraft({ ...draft, groupKey: e.target.value })} />
               </div>
-              <div className="space-y-1 col-span-2"><Label>Descrição</Label>
+              <div className="space-y-1 col-span-2"><Label>{t('common.fields.description')}</Label>
                 <Input value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
               </div>
-              <div className="space-y-1"><Label>Categoria</Label>
+              <div className="space-y-1"><Label>{t('common.fields.category')}</Label>
                 <Combobox options={catOptions} value={draft.categoryId} onChange={(v) => setDraft({ ...draft, categoryId: v })} />
               </div>
               <div className="space-y-1"><Label>Unidade de Cobrança</Label>
@@ -242,22 +242,22 @@ export function AdminCatalogItemsPage() {
               <div className="space-y-1 col-span-2"><Label>Tipo Financeiro</Label>
                 <Combobox options={ftOptions} value={draft.financialTypeId} onChange={(v) => setDraft({ ...draft, financialTypeId: v })} />
               </div>
-              <div className="space-y-1"><Label>Comportamento</Label>
+              <div className="space-y-1"><Label>{t('common.fields.behavior')}</Label>
                 <Input value={draft.entryBehavior} onChange={(e) => setDraft({ ...draft, entryBehavior: e.target.value })} placeholder="amortized, recurring" />
               </div>
-              <div className="space-y-1"><Label>Modo de cálculo</Label>
+              <div className="space-y-1"><Label>{t('common.fields.calculationMode')}</Label>
                 <Input value={draft.calculationMode} onChange={(e) => setDraft({ ...draft, calculationMode: e.target.value })} placeholder="amortized" />
               </div>
-              <div className="space-y-1"><Label>Valor padrão</Label>
+              <div className="space-y-1"><Label>{t('common.fields.defaultValue')}</Label>
                 <Input type="number" step="0.01" value={draft.defaultValue} onChange={(e) => setDraft({ ...draft, defaultValue: e.target.value })} />
               </div>
               <div className="space-y-1"><Label>Duração padrão (meses)</Label>
                 <Input type="number" value={draft.defaultDurationMonths} onChange={(e) => setDraft({ ...draft, defaultDurationMonths: e.target.value })} />
               </div>
-              <div className="space-y-1"><Label>Parcelas padrão</Label>
+              <div className="space-y-1"><Label>{t('common.fields.defaultInstallments')}</Label>
                 <Input type="number" value={draft.defaultInstallments} onChange={(e) => setDraft({ ...draft, defaultInstallments: e.target.value })} />
               </div>
-              <div className="space-y-1"><Label>Mês de início padrão</Label>
+              <div className="space-y-1"><Label>{t('common.fields.defaultStartMonth')}</Label>
                 <Input type="number" value={draft.defaultStartMonth} onChange={(e) => setDraft({ ...draft, defaultStartMonth: e.target.value })} />
               </div>
               <div className="space-y-1"><Label>Valor HW</Label>
@@ -277,12 +277,12 @@ export function AdminCatalogItemsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Checkbox checked={draft.allowsInstallments} onCheckedChange={(c) => setDraft({ ...draft, allowsInstallments: c === true })} />
-                  <Label>Permite parcelas</Label>
+                  <Label>{t('common.fields.allowsInstallments')}</Label>
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-6">
                 <Checkbox checked={draft.active} onCheckedChange={(c) => setDraft({ ...draft, active: c === true })} />
-                <Label>Ativo</Label>
+                <Label>{t('common.fields.active')}</Label>
               </div>
             </div>
             {draft.id && (
@@ -293,9 +293,9 @@ export function AdminCatalogItemsPage() {
             )}
           </SheetBody>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{t('common.actions.cancel')}</Button>
             <Button onClick={handleSave} disabled={create.isPending || update.isPending}>
-              <Save className="h-4 w-4 mr-2" /> Salvar
+              <Save className="h-4 w-4 mr-2" /> {t('common.actions.save')}
             </Button>
           </SheetFooter>
         </SheetContent>

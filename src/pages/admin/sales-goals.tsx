@@ -138,7 +138,7 @@ export function AdminSalesGoalsPage() {
                   {columns.map(col => (
                     <DataTableHeaderCell key={col.key} column={col} state={dt} />
                   ))}
-                  <TableHead className="w-32 text-center">Ações</TableHead>
+                  <TableHead className="w-32 text-center">{t('common.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -170,7 +170,7 @@ export function AdminSalesGoalsPage() {
             <div className="space-y-1"><Label>Nome *</Label>
               <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Ex: Meta Q1 2026 - SP" autoFocus />
             </div>
-            <div className="space-y-1"><Label>Descrição</Label>
+            <div className="space-y-1"><Label>{t('common.fields.description')}</Label>
               <textarea
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 rows={2}
@@ -189,7 +189,7 @@ export function AdminSalesGoalsPage() {
                   placeholder="100000"
                 />
               </div>
-              <div className="space-y-1"><Label>Responsável</Label>
+              <div className="space-y-1"><Label>{t('common.fields.responsible')}</Label>
                 <Combobox
                   options={userOptions}
                   value={draft.responsibleUserId}
@@ -198,16 +198,16 @@ export function AdminSalesGoalsPage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label>Início do período</Label>
+              <div className="space-y-1"><Label>{t('common.fields.periodStart')}</Label>
                 <Input type="date" value={draft.periodStart} onChange={(e) => setDraft({ ...draft, periodStart: e.target.value })} />
               </div>
-              <div className="space-y-1"><Label>Fim do período</Label>
+              <div className="space-y-1"><Label>{t('common.fields.periodEnd')}</Label>
                 <Input type="date" value={draft.periodEnd} onChange={(e) => setDraft({ ...draft, periodEnd: e.target.value })} />
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Checkbox checked={draft.active} onCheckedChange={(c) => setDraft({ ...draft, active: c === true })} />
-              <Label>Ativo</Label>
+              <Label>{t('common.fields.active')}</Label>
             </div>
             {draft.id && (
               <AuditInfoFooter
@@ -217,9 +217,9 @@ export function AdminSalesGoalsPage() {
             )}
           </SheetBody>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{t('common.actions.cancel')}</Button>
             <Button onClick={handleSave} disabled={create.isPending || update.isPending}>
-              <Save className="h-4 w-4 mr-2" /> Salvar
+              <Save className="h-4 w-4 mr-2" /> {t('common.actions.save')}
             </Button>
           </SheetFooter>
         </SheetContent>

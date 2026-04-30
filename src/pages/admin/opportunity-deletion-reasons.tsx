@@ -125,7 +125,7 @@ export function AdminOpportunityDeletionReasonsPage() {
                   {columns.map(col => (
                     <DataTableHeaderCell key={col.key} column={col} state={dt} />
                   ))}
-                  <TableHead className="w-32 text-center">Ações</TableHead>
+                  <TableHead className="w-32 text-center">{t('common.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -154,7 +154,7 @@ export function AdminOpportunityDeletionReasonsPage() {
           <SheetHeader><SheetTitle>{draft.id ? 'Editar motivo' : 'Novo motivo'}</SheetTitle></SheetHeader>
           <SheetBody className="space-y-4">
             <div className="space-y-1">
-              <Label>Nome</Label>
+              <Label>{t('common.fields.name')}</Label>
               <Input
                 value={draft.name}
                 onChange={(e) => setDraft({ ...draft, name: e.target.value })}
@@ -174,9 +174,9 @@ export function AdminOpportunityDeletionReasonsPage() {
             )}
           </SheetBody>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{t('common.actions.cancel')}</Button>
             <Button onClick={handleSave} disabled={create.isPending || update.isPending}>
-              <Save className="h-4 w-4 mr-2" /> Salvar
+              <Save className="h-4 w-4 mr-2" /> {t('common.actions.save')}
             </Button>
           </SheetFooter>
         </SheetContent>

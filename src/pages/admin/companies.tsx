@@ -185,7 +185,7 @@ export function AdminCompaniesPage() {
                   {columns.map(col => (
                     <DataTableHeaderCell key={col.key} column={col} state={dt} />
                   ))}
-                  <TableHead className="w-32 text-center">Ações</TableHead>
+                  <TableHead className="w-32 text-center">{t('common.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -222,45 +222,45 @@ export function AdminCompaniesPage() {
               <div className="space-y-1"><Label>CNPJ</Label>
                 <Input value={draft.cnpj} onChange={(e) => setDraft({ ...draft, cnpj: e.target.value })} placeholder="00.000.000/0000-00" />
               </div>
-              <div className="space-y-1"><Label>Setor</Label>
+              <div className="space-y-1"><Label>{t('common.fields.sector')}</Label>
                 <Combobox options={sectorOptions} value={draft.sectorId} onChange={(v) => setDraft({ ...draft, sectorId: v })} />
               </div>
-              <div className="space-y-1"><Label>Funcionários</Label>
+              <div className="space-y-1"><Label>{t('common.fields.employees')}</Label>
                 <Input type="number" value={draft.employeeCount} onChange={(e) => setDraft({ ...draft, employeeCount: e.target.value })} />
               </div>
-              <div className="space-y-1"><Label>CEP</Label>
+              <div className="space-y-1"><Label>{t('common.fields.addressCep')}</Label>
                 <Input value={draft.cep} onChange={(e) => setDraft({ ...draft, cep: e.target.value })} onBlur={handleCepBlur} placeholder="00000-000" />
               </div>
-              <div className="space-y-1 col-span-2"><Label>Rua</Label>
+              <div className="space-y-1 col-span-2"><Label>{t('common.fields.addressStreet')}</Label>
                 <Input value={draft.street} onChange={(e) => setDraft({ ...draft, street: e.target.value })} />
               </div>
-              <div className="space-y-1"><Label>Número</Label>
+              <div className="space-y-1"><Label>{t('common.fields.addressNumber')}</Label>
                 <Input value={draft.number} onChange={(e) => setDraft({ ...draft, number: e.target.value })} />
               </div>
-              <div className="space-y-1"><Label>Complemento</Label>
+              <div className="space-y-1"><Label>{t('common.fields.addressComplement')}</Label>
                 <Input value={draft.complement} onChange={(e) => setDraft({ ...draft, complement: e.target.value })} />
               </div>
-              <div className="space-y-1"><Label>Bairro</Label>
+              <div className="space-y-1"><Label>{t('common.fields.addressDistrict')}</Label>
                 <Input value={draft.district} onChange={(e) => setDraft({ ...draft, district: e.target.value })} />
               </div>
-              <div className="space-y-1"><Label>Cidade</Label>
+              <div className="space-y-1"><Label>{t('common.fields.addressCity')}</Label>
                 <Input value={draft.city} onChange={(e) => setDraft({ ...draft, city: e.target.value })} />
               </div>
               <div className="space-y-1"><Label>UF</Label>
                 <Input value={draft.state} onChange={(e) => setDraft({ ...draft, state: e.target.value })} maxLength={2} />
               </div>
-              <div className="space-y-1"><Label>País</Label>
+              <div className="space-y-1"><Label>{t('common.fields.addressCountry')}</Label>
                 <Input value={draft.country} onChange={(e) => setDraft({ ...draft, country: e.target.value })} />
               </div>
-              <div className="space-y-1"><Label>LinkedIn</Label>
+              <div className="space-y-1"><Label>{t('common.fields.linkedin')}</Label>
                 <Input value={draft.linkedin} onChange={(e) => setDraft({ ...draft, linkedin: e.target.value })} placeholder="https://linkedin.com/company/..." />
               </div>
-              <div className="space-y-1"><Label>Instagram</Label>
+              <div className="space-y-1"><Label>{t('common.fields.instagram')}</Label>
                 <Input value={draft.instagram} onChange={(e) => setDraft({ ...draft, instagram: e.target.value })} placeholder="@empresa" />
               </div>
               <div className="flex items-center gap-2 mt-6">
                 <Checkbox checked={draft.active} onCheckedChange={(c) => setDraft({ ...draft, active: c === true })} />
-                <Label>Ativo</Label>
+                <Label>{t('common.fields.active')}</Label>
               </div>
             </div>
             {draft.id && (
@@ -271,9 +271,9 @@ export function AdminCompaniesPage() {
             )}
           </SheetBody>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{t('common.actions.cancel')}</Button>
             <Button onClick={handleSave} disabled={create.isPending || update.isPending}>
-              <Save className="h-4 w-4 mr-2" /> Salvar
+              <Save className="h-4 w-4 mr-2" /> {t('common.actions.save')}
             </Button>
           </SheetFooter>
         </SheetContent>

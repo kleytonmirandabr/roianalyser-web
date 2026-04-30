@@ -126,7 +126,7 @@ export function AdminOpportunityTypesPage() {
                   {columns.map(col => (
                     <DataTableHeaderCell key={col.key} column={col} state={dt} />
                   ))}
-                  <TableHead className="w-32 text-center">Ações</TableHead>
+                  <TableHead className="w-32 text-center">{t('common.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -154,15 +154,15 @@ export function AdminOpportunityTypesPage() {
         <SheetContent className="sm:max-w-lg">
           <SheetHeader><SheetTitle>{draft.id ? 'Editar tipo' : 'Novo tipo'}</SheetTitle></SheetHeader>
           <SheetBody className="space-y-4">
-            <div className="space-y-1"><Label>Nome</Label>
+            <div className="space-y-1"><Label>{t('common.fields.name')}</Label>
               <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Ex: Renovação" />
             </div>
-            <div className="space-y-1"><Label>Descrição</Label>
+            <div className="space-y-1"><Label>{t('common.fields.description')}</Label>
               <Input value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
             </div>
             <div className="flex items-center gap-2">
               <Checkbox checked={draft.active} onCheckedChange={(c) => setDraft({ ...draft, active: c === true })} />
-              <Label>Ativo</Label>
+              <Label>{t('common.fields.active')}</Label>
             </div>
             {draft.id && (
               <AuditInfoFooter
@@ -172,9 +172,9 @@ export function AdminOpportunityTypesPage() {
             )}
           </SheetBody>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{t('common.actions.cancel')}</Button>
             <Button onClick={handleSave} disabled={create.isPending || update.isPending}>
-              <Save className="h-4 w-4 mr-2" /> Salvar
+              <Save className="h-4 w-4 mr-2" /> {t('common.actions.save')}
             </Button>
           </SheetFooter>
         </SheetContent>

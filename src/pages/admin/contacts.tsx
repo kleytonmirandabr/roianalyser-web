@@ -149,7 +149,7 @@ export function AdminContactsPage() {
                   {columns.map(col => (
                     <DataTableHeaderCell key={col.key} column={col} state={dt} />
                   ))}
-                  <TableHead className="w-32 text-center">Ações</TableHead>
+                  <TableHead className="w-32 text-center">{t('common.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -184,22 +184,22 @@ export function AdminContactsPage() {
               <div className="space-y-1 col-span-2"><Label>Nome *</Label>
                 <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
               </div>
-              <div className="space-y-1"><Label>Cargo</Label>
+              <div className="space-y-1"><Label>{t('common.fields.role')}</Label>
                 <Input value={draft.role} onChange={(e) => setDraft({ ...draft, role: e.target.value })} placeholder="Diretor Comercial" />
               </div>
-              <div className="space-y-1"><Label>Empresa</Label>
+              <div className="space-y-1"><Label>{t('common.fields.company')}</Label>
                 <Combobox options={companyOptions} value={draft.companyId} onChange={(v) => setDraft({ ...draft, companyId: v })} />
               </div>
               <div className="space-y-1"><Label>E-mail</Label>
                 <Input type="email" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} />
               </div>
-              <div className="space-y-1"><Label>Telefone</Label>
+              <div className="space-y-1"><Label>{t('common.fields.phone')}</Label>
                 <PhoneInput value={draft.phone} onChange={(v) => setDraft({ ...draft, phone: v })} />
               </div>
-              <div className="space-y-1 col-span-2"><Label>LinkedIn</Label>
+              <div className="space-y-1 col-span-2"><Label>{t('common.fields.linkedin')}</Label>
                 <Input value={draft.linkedin} onChange={(e) => setDraft({ ...draft, linkedin: e.target.value })} placeholder="https://linkedin.com/in/..." />
               </div>
-              <div className="space-y-1 col-span-2"><Label>Observações</Label>
+              <div className="space-y-1 col-span-2"><Label>{t('common.fields.notes')}</Label>
                 <textarea
                   className="w-full rounded-md border px-3 py-2 text-sm min-h-[60px]"
                   value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
@@ -207,7 +207,7 @@ export function AdminContactsPage() {
               </div>
               <div className="flex items-center gap-2 mt-6">
                 <Checkbox checked={draft.active} onCheckedChange={(c) => setDraft({ ...draft, active: c === true })} />
-                <Label>Ativo</Label>
+                <Label>{t('common.fields.active')}</Label>
               </div>
             </div>
             {draft.id && (
@@ -218,9 +218,9 @@ export function AdminContactsPage() {
             )}
           </SheetBody>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{t('common.actions.cancel')}</Button>
             <Button onClick={handleSave} disabled={create.isPending || update.isPending}>
-              <Save className="h-4 w-4 mr-2" /> Salvar
+              <Save className="h-4 w-4 mr-2" /> {t('common.actions.save')}
             </Button>
           </SheetFooter>
         </SheetContent>

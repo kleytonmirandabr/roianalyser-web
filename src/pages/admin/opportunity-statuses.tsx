@@ -169,7 +169,7 @@ export function AdminOpportunityStatusesPage() {
                   {columns.map(col => (
                     <DataTableHeaderCell key={col.key} column={col} state={dt} />
                   ))}
-                  <TableHead className="w-32 text-center">Ações</TableHead>
+                  <TableHead className="w-32 text-center">{t('common.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -208,7 +208,7 @@ export function AdminOpportunityStatusesPage() {
           <SheetHeader><SheetTitle>{draft.id ? 'Editar status' : 'Novo status'}</SheetTitle></SheetHeader>
           <SheetBody className="space-y-4">
             <div className="space-y-1">
-              <Label>Nome</Label>
+              <Label>{t('common.fields.name')}</Label>
               <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Ex: Negociação" />
             </div>
             {!draft.id && (
@@ -219,7 +219,7 @@ export function AdminOpportunityStatusesPage() {
               </div>
             )}
             <div className="space-y-1">
-              <Label>Categoria</Label>
+              <Label>{t('common.fields.category')}</Label>
               <Combobox
                 options={[{ value: '', label: '— sem categoria —' }, ...CATEGORIES.map(c => ({ value: c, label: CATEGORY_LABELS[c] }))]}
                 value={draft.category || ''}
@@ -228,7 +228,7 @@ export function AdminOpportunityStatusesPage() {
               <p className="text-xs text-muted-foreground">Drives automação. <code>gain</code> = ganho, <code>loss</code> = perda.</p>
             </div>
             <div className="space-y-1">
-              <Label>Cor</Label>
+              <Label>{t('common.fields.color')}</Label>
               <div className="flex items-center gap-2">
                 <input
                   type="color"
@@ -246,7 +246,7 @@ export function AdminOpportunityStatusesPage() {
             </div>
             <div className="flex items-center gap-2">
               <Checkbox checked={draft.active} onCheckedChange={(c) => setDraft({ ...draft, active: c === true })} />
-              <Label>Ativo</Label>
+              <Label>{t('common.fields.active')}</Label>
             </div>
             {draft.id && (
               <AuditInfoFooter
@@ -256,9 +256,9 @@ export function AdminOpportunityStatusesPage() {
             )}
           </SheetBody>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{t('common.actions.cancel')}</Button>
             <Button onClick={handleSave} disabled={create.isPending || update.isPending}>
-              <Save className="h-4 w-4 mr-2" /> Salvar
+              <Save className="h-4 w-4 mr-2" /> {t('common.actions.save')}
             </Button>
           </SheetFooter>
         </SheetContent>

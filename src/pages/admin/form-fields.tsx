@@ -15,6 +15,7 @@
  */
 
 import { Pencil, Plus, Save, ShieldAlert, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 
@@ -108,6 +109,7 @@ function fromField(f: FormField): DraftField {
 }
 
 export function AdminFormFieldsPage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [activeScope, setActiveScope] = useState<FormFieldScope>('opportunity')
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -213,7 +215,7 @@ export function AdminFormFieldsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Campos personalizados</h1>
+          <h1 className="text-2xl font-bold">{t('common.fields.customFields')}</h1>
           <p className="text-sm text-muted-foreground">
             Configure campos extras que aparecem no detalhe de cada entidade.
           </p>
@@ -263,11 +265,11 @@ export function AdminFormFieldsPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/30">
               <tr className="text-left">
-                <th className="px-4 py-2">Label</th>
-                <th className="px-4 py-2">Chave</th>
-                <th className="px-4 py-2">Tipo</th>
-                <th className="px-4 py-2">Obrigatório</th>
-                <th className="px-4 py-2 w-32 text-center">Ações</th>
+                <th className="px-4 py-2">{t('common.fields.label')}</th>
+                <th className="px-4 py-2">{t('common.fields.key')}</th>
+                <th className="px-4 py-2">{t('common.fields.type')}</th>
+                <th className="px-4 py-2">{t('common.fields.required')}</th>
+                <th className="px-4 py-2 w-32 text-center">{t('common.table.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -304,7 +306,7 @@ export function AdminFormFieldsPage() {
           <SheetBody className="space-y-4">
             {!draft.id && (
               <div className="space-y-1">
-                <Label>Escopo</Label>
+                <Label>{t('common.fields.scope')}</Label>
                 <Combobox
                   options={FORM_FIELD_SCOPES.map((s) => ({
                     value: s,
@@ -341,7 +343,7 @@ export function AdminFormFieldsPage() {
 
             {!draft.id && (
               <div className="space-y-1">
-                <Label>Tipo</Label>
+                <Label>{t('common.fields.type')}</Label>
                 <Combobox
                   options={FORM_FIELD_TYPES.map((t) => ({
                     value: t,
@@ -355,7 +357,7 @@ export function AdminFormFieldsPage() {
 
             {(draft.fieldType === 'select' || draft.fieldType === 'multiselect') && (
               <div className="space-y-1">
-                <Label>Opções</Label>
+                <Label>{t('common.fields.options')}</Label>
                 <textarea
                   className="w-full rounded-md border px-3 py-2 text-sm font-mono min-h-[120px]"
                   value={draft.optionsRaw}
@@ -373,7 +375,7 @@ export function AdminFormFieldsPage() {
                 checked={draft.required}
                 onCheckedChange={(c) => setDraft({ ...draft, required: c === true })}
               />
-              <Label>Obrigatório</Label>
+              <Label>{t('common.fields.required')}</Label>
             </div>
 
             <div className="space-y-1">
@@ -386,7 +388,7 @@ export function AdminFormFieldsPage() {
             </div>
 
             <div className="space-y-1">
-              <Label>Ordem de exibição</Label>
+              <Label>{t('common.fields.order')}</Label>
               <Input
                 type="number"
                 value={draft.displayOrder}
@@ -404,7 +406,7 @@ export function AdminFormFieldsPage() {
               onClick={handleSave}
               disabled={createField.isPending || updateField.isPending}
             >
-              <Save className="h-4 w-4 mr-2" /> Salvar
+              <Save className="h-4 w-4 mr-2" /> {t('common.actions.save')}
             </Button>
           </SheetFooter>
         </SheetContent>
