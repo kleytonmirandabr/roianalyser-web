@@ -9,6 +9,7 @@
  */
 
 import { LineChart, TrendingDown, TrendingUp } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueries } from '@tanstack/react-query'
@@ -42,6 +43,7 @@ function last12Months(): string[] {
 }
 
 export function ForecastsDashboardPage() {
+  const { t } = useTranslation()
   const { data: forecasts = [], isLoading: loadingList, error } = useAllForecasts()
 
   // Pra rolling consolidado, busca entries de cada forecast aprovado/baseline.
@@ -157,7 +159,7 @@ export function ForecastsDashboardPage() {
           </div>
         </div>
         <Button asChild variant="outline">
-          <Link to="/projects">Ver projetos</Link>
+          <Link to="/projects">{t('forecasts.dashboard.viewProjects')}</Link>
         </Button>
       </header>
 
@@ -190,7 +192,7 @@ export function ForecastsDashboardPage() {
 
         <Card className="p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground uppercase">Variação</span>
+            <span className="text-xs text-muted-foreground uppercase">{t('common.fields.variation')}</span>
             <VarianceIcon className={`h-4 w-4 ${varColor}`} />
           </div>
           <div className={`text-2xl font-semibold tabular-nums mt-1 ${varColor}`}>
@@ -203,7 +205,7 @@ export function ForecastsDashboardPage() {
 
         <Card className="p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground uppercase">Aguardando aprovação</span>
+            <span className="text-xs text-muted-foreground uppercase">{t('forecasts.dashboard.waitingApproval')}</span>
             <LineChart className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="text-2xl font-semibold tabular-nums mt-1 text-amber-700">
@@ -261,7 +263,7 @@ export function ForecastsDashboardPage() {
       {/* Distribuição por status */}
       <Card className="p-6 space-y-4">
         <div>
-          <h2 className="font-semibold">Distribuição por status</h2>
+          <h2 className="font-semibold">{t('forecasts.dashboard.statusDistribution')}</h2>
         </div>
         <div className="space-y-3">
           {statusData.map(d => (

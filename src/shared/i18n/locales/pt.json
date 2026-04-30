@@ -83,7 +83,29 @@
       "progress": "Progresso",
       "schedule": "Cronograma",
       "health": "Saúde",
-      "currency": "Moeda"
+      "currency": "Moeda",
+      "value": "Valor",
+      "period": "Período",
+      "variation": "Variação",
+      "payback": "Payback",
+      "budget": "Orçamento",
+      "origin": "Origem",
+      "expected": "Esperado",
+      "actual": "Realizado",
+      "plannedStart": "Início planejado",
+      "plannedEnd": "Fim planejado",
+      "actualStart": "Início real",
+      "actualEnd": "Fim real",
+      "signing": "Assinatura",
+      "paymentTerms": "Termos de pagamento",
+      "renewal": "Renovação",
+      "renewalType": "Tipo de renovação",
+      "contractType": "Tipo de contrato",
+      "contractStart": "Início da vigência",
+      "contractEnd": "Fim da vigência",
+      "totalCost": "Custo total",
+      "totalRevenue": "Receita total",
+      "netValue": "Valor líquido"
     },
     "table": {
       "actions": "Ações"
@@ -97,6 +119,18 @@
       "status": "Nenhum status configurado.",
       "taskType": "Nenhum tipo de tarefa configurado.",
       "item": "Nenhum item cadastrado."
+    },
+    "entity": {
+      "contract": "Contrato",
+      "project": "Projeto",
+      "opportunity": "Oportunidade",
+      "client": "Cliente",
+      "user": "Usuário",
+      "forecast": "Forecast",
+      "task": "Tarefa",
+      "sectionInfo": "Informações",
+      "sourceOpp": "Oportunidade origem",
+      "sourceContract": "Contrato origem"
     }
   },
   "entryTable": {
@@ -1242,7 +1276,9 @@
       "message": "Mensagem",
       "user": "Usuário",
       "entity": "Entidade"
-    }
+    },
+    "entityType": "Tipo de entidade",
+    "all": "Todos"
   },
   "auth": {
     "showPassword": "Mostrar senha",
@@ -1593,7 +1629,8 @@
       "contractTypes": "Tipos de contrato",
       "clickToFilter": "Clique pra filtrar a lista",
       "seeList": "Ver lista"
-    }
+    },
+    "newTitle": "Novo contrato"
   },
   "projects2": {
     "title": "Projetos",
@@ -1613,6 +1650,25 @@
       "biggestFinCommit": "Maiores compromissos financeiros",
       "clickToFilter": "Clique pra filtrar a lista",
       "seeList": "Ver lista"
+    },
+    "newTitle": "Novo projeto"
+  },
+  "roiAnalyses": {
+    "dashboard": {
+      "waitingApproval": "Aguardando aprovação",
+      "submittedNeedReview": "Análises submetidas que precisam de revisão",
+      "statusDistribution": "Distribuição por status",
+      "topByNpv": "Maiores valores presentes líquidos",
+      "approvalRate": "Taxa de aprovação",
+      "avgTime": "Tempo médio",
+      "viewOpportunities": "Ver oportunidades"
+    }
+  },
+  "forecasts": {
+    "dashboard": {
+      "waitingApproval": "Aguardando aprovação",
+      "statusDistribution": "Distribuição por status",
+      "viewProjects": "Ver projetos"
     }
   }
 }

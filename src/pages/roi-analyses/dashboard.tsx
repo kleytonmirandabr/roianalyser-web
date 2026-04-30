@@ -4,6 +4,7 @@
  */
 
 import { Calculator, CheckCircle2, Clock, XCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -30,6 +31,7 @@ function daysBetween(a: string, b: string): number {
 }
 
 export function RoiDashboardPage() {
+  const { t } = useTranslation()
   const { data: items = [], isLoading, error } = useAllRoiAnalyses()
 
   const stats = useMemo(() => {
@@ -127,14 +129,14 @@ export function RoiDashboardPage() {
           </div>
         </div>
         <Button asChild variant="outline">
-          <Link to="/opportunities">Ver oportunidades</Link>
+          <Link to="/opportunities">{t('roiAnalyses.dashboard.viewOpportunities')}</Link>
         </Button>
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground uppercase">Aguardando aprovação</span>
+            <span className="text-xs text-muted-foreground uppercase">{t('roiAnalyses.dashboard.waitingApproval')}</span>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="text-2xl font-semibold tabular-nums mt-1 text-amber-700">
@@ -147,7 +149,7 @@ export function RoiDashboardPage() {
 
         <Card className="p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground uppercase">Taxa de aprovação</span>
+            <span className="text-xs text-muted-foreground uppercase">{t('roiAnalyses.dashboard.approvalRate')}</span>
             <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="text-2xl font-semibold tabular-nums mt-1 text-emerald-700">
@@ -160,7 +162,7 @@ export function RoiDashboardPage() {
 
         <Card className="p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground uppercase">Tempo médio</span>
+            <span className="text-xs text-muted-foreground uppercase">{t('roiAnalyses.dashboard.avgTime')}</span>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="text-2xl font-semibold tabular-nums mt-1">
@@ -234,7 +236,7 @@ export function RoiDashboardPage() {
       <Card className="p-6 space-y-3">
         <div>
           <h2 className="font-semibold">Top análises por NPV</h2>
-          <p className="text-xs text-muted-foreground">Maiores valores presentes líquidos</p>
+          <p className="text-xs text-muted-foreground">{t('roiAnalyses.dashboard.topByNpv')}</p>
         </div>
         {(() => {
           const top = items
@@ -267,8 +269,8 @@ export function RoiDashboardPage() {
       {/* Aguardando aprovação */}
       <Card className="p-6 space-y-3">
         <div>
-          <h2 className="font-semibold">Aguardando aprovação</h2>
-          <p className="text-xs text-muted-foreground">Análises submetidas que precisam de revisão</p>
+          <h2 className="font-semibold">{t('roiAnalyses.dashboard.waitingApproval')}</h2>
+          <p className="text-xs text-muted-foreground">{t('roiAnalyses.dashboard.submittedNeedReview')}</p>
         </div>
         {(() => {
           const pending = items
@@ -298,7 +300,7 @@ export function RoiDashboardPage() {
 
       <Card className="p-6 space-y-4">
         <div>
-          <h2 className="font-semibold">Distribuição por status</h2>
+          <h2 className="font-semibold">{t('roiAnalyses.dashboard.statusDistribution')}</h2>
         </div>
         <div className="space-y-3">
           {statusData.map(d => (

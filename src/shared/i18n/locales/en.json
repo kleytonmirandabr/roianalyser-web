@@ -83,7 +83,29 @@
       "progress": "Progress",
       "schedule": "Schedule",
       "health": "Health",
-      "currency": "Currency"
+      "currency": "Currency",
+      "value": "Value",
+      "period": "Period",
+      "variation": "Variation",
+      "payback": "Payback",
+      "budget": "Budget",
+      "origin": "Origin",
+      "expected": "Expected",
+      "actual": "Actual",
+      "plannedStart": "Planned start",
+      "plannedEnd": "Planned end",
+      "actualStart": "Actual start",
+      "actualEnd": "Actual end",
+      "signing": "Signing",
+      "paymentTerms": "Payment terms",
+      "renewal": "Renewal",
+      "renewalType": "Renewal type",
+      "contractType": "Contract type",
+      "contractStart": "Validity start",
+      "contractEnd": "Validity end",
+      "totalCost": "Total cost",
+      "totalRevenue": "Total revenue",
+      "netValue": "Net value"
     },
     "table": {
       "actions": "Actions"
@@ -97,6 +119,18 @@
       "status": "No statuses configured.",
       "taskType": "No task types configured.",
       "item": "No items registered."
+    },
+    "entity": {
+      "contract": "Contract",
+      "project": "Project",
+      "opportunity": "Opportunity",
+      "client": "Client",
+      "user": "User",
+      "forecast": "Forecast",
+      "task": "Task",
+      "sectionInfo": "Information",
+      "sourceOpp": "Source opportunity",
+      "sourceContract": "Source contract"
     }
   },
   "entryTable": {
@@ -1242,7 +1276,9 @@
       "message": "Message",
       "user": "User",
       "entity": "Entity"
-    }
+    },
+    "entityType": "Entity type",
+    "all": "All"
   },
   "auth": {
     "showPassword": "Show password",
@@ -1593,7 +1629,8 @@
       "contractTypes": "Contract types",
       "clickToFilter": "Click to filter the list",
       "seeList": "See list"
-    }
+    },
+    "newTitle": "New contract"
   },
   "projects2": {
     "title": "Projects",
@@ -1613,6 +1650,25 @@
       "biggestFinCommit": "Biggest financial commitments",
       "clickToFilter": "Click to filter the list",
       "seeList": "See list"
+    },
+    "newTitle": "New project"
+  },
+  "roiAnalyses": {
+    "dashboard": {
+      "waitingApproval": "Awaiting approval",
+      "submittedNeedReview": "Submitted analyses needing review",
+      "statusDistribution": "Status distribution",
+      "topByNpv": "Top net present values",
+      "approvalRate": "Approval rate",
+      "avgTime": "Average time",
+      "viewOpportunities": "View opportunities"
+    }
+  },
+  "forecasts": {
+    "dashboard": {
+      "waitingApproval": "Awaiting approval",
+      "statusDistribution": "Status distribution",
+      "viewProjects": "View projects"
     }
   }
 }

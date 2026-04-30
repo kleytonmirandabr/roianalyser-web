@@ -74,23 +74,23 @@ export function AuditLogPage() {
           />
         </div>
         <div className="space-y-1.5 min-w-[180px]">
-          <Label htmlFor="audit-entity-type">Tipo de entidade</Label>
+          <Label htmlFor="audit-entity-type">{t('audit.entityType')}</Label>
           <select
             id="audit-entity-type"
             value={entityType}
             onChange={(e) => setEntityType(e.target.value)}
             className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
-            <option value="">Todos</option>
-            <option value="opportunity">Oportunidade</option>
+            <option value="">{t('audit.all')}</option>
+            <option value="opportunity">{t('common.entity.opportunity')}</option>
             <option value="contract_legacy">Contrato (legado)</option>
-            <option value="contract">Contrato</option>
-            <option value="project">Projeto</option>
+            <option value="contract">{t('common.entity.contract')}</option>
+            <option value="project">{t('common.entity.project')}</option>
             <option value="roi_analysis">Análise ROI</option>
-            <option value="forecast">Forecast</option>
-            <option value="task">Tarefa</option>
-            <option value="user">Usuário</option>
-            <option value="client">Cliente</option>
+            <option value="forecast">{t('common.entity.forecast')}</option>
+            <option value="task">{t('common.entity.task')}</option>
+            <option value="user">{t('common.entity.user')}</option>
+            <option value="client">{t('common.entity.client')}</option>
           </select>
         </div>
         <div className="space-y-1.5">

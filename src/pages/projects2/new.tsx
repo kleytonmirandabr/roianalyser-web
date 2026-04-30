@@ -4,6 +4,7 @@
  */
 
 import { ArrowLeft } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -20,6 +21,7 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 
 export function NewProject2Page() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
   const [params] = useSearchParams()
@@ -63,12 +65,12 @@ export function NewProject2Page() {
     <div className="space-y-6 p-6 max-w-3xl">
       <header className="flex items-center gap-3">
         <Button asChild variant="ghost" size="sm">
-          <Link to="/projects"><ArrowLeft className="h-4 w-4" />Projetos</Link>
+          <Link to="/projects"><ArrowLeft className="h-4 w-4" />{t('projects2.title')}</Link>
         </Button>
       </header>
 
       <div>
-        <h1 className="text-2xl font-semibold">Novo projeto</h1>
+        <h1 className="text-2xl font-semibold">{t('projects2.newTitle')}</h1>
         <p className="text-sm text-muted-foreground">
           Cliente: <strong>{String(user?.clientName || 'tenant atual')}</strong> ·
           Manager: <strong>{String(user?.name || '')}</strong>
@@ -88,35 +90,35 @@ export function NewProject2Page() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Status inicial</Label>
+              <Label>{t('opportunities.initialStatus')}</Label>
               <Combobox value={status} onChange={v => setStatus(v as ProjectStatus)} options={statusOptions} />
             </div>
             <div>
-              <Label htmlFor="budget">Orçamento</Label>
+              <Label htmlFor="budget">{t('common.fields.budget')}</Label>
               <Input id="budget" type="number" step="0.01" value={budget} onChange={e => setBudget(e.target.value)} placeholder="0,00" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="start">Início planejado</Label>
+              <Label htmlFor="start">{t('common.fields.plannedStart')}</Label>
               <Input id="start" type="date" value={plannedStart} onChange={e => setPlannedStart(e.target.value)} />
             </div>
             <div>
-              <Label htmlFor="end">Fim planejado</Label>
+              <Label htmlFor="end">{t('common.fields.plannedEnd')}</Label>
               <Input id="end" type="date" value={plannedEnd} onChange={e => setPlannedEnd(e.target.value)} />
             </div>
           </div>
 
           <div>
-            <Label htmlFor="desc">Descrição</Label>
+            <Label htmlFor="desc">{t('common.fields.description')}</Label>
             <textarea id="desc" value={description} onChange={e => setDescription(e.target.value)}
               className="w-full min-h-[80px] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
           </div>
 
           <div className="flex gap-2 justify-end pt-2 border-t">
             <Button asChild variant="outline" type="button">
-              <Link to="/projects">Cancelar</Link>
+              <Link to="/projects">{t('common.actions.cancel')}</Link>
             </Button>
             <Button type="submit" disabled={create.isPending}>
               {create.isPending ? 'Salvando…' : 'Criar projeto'}

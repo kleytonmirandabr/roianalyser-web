@@ -4,6 +4,7 @@
  */
 
 import { ArrowLeft, ExternalLink, Plus, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
@@ -28,6 +29,7 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { CustomFieldsCard } from '@/features/form-fields/components/custom-fields-card'
 
 export function Project2DetailPage() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { data: prj, isLoading, error } = useProject2(id)
@@ -145,7 +147,7 @@ export function Project2DetailPage() {
         <Card className="p-4 bg-muted/30">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-xs text-muted-foreground uppercase">Contrato origem</span>
+              <span className="text-xs text-muted-foreground uppercase">{t('common.entity.sourceContract')}</span>
               <p className="text-sm font-medium">Contrato #{prj.contractId}</p>
             </div>
             <Button asChild variant="ghost" size="sm">
@@ -156,9 +158,9 @@ export function Project2DetailPage() {
       )}
 
       <Card className="p-6 space-y-5">
-        <h2 className="text-lg font-semibold">Informações</h2>
+        <h2 className="text-lg font-semibold">{t('common.entity.sectionInfo')}</h2>
         <div>
-          <Label htmlFor="name">Nome</Label>
+          <Label htmlFor="name">{t('common.fields.name')}</Label>
           <Input id="name" value={name} onChange={e => { setName(e.target.value); setDirty(true) }} />
         </div>
 
@@ -176,39 +178,39 @@ export function Project2DetailPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="ps">Início planejado</Label>
+            <Label htmlFor="ps">{t('common.fields.plannedStart')}</Label>
             <Input id="ps" type="date" value={plannedStart} onChange={e => { setPlannedStart(e.target.value); setDirty(true) }} />
           </div>
           <div>
-            <Label htmlFor="pe">Fim planejado</Label>
+            <Label htmlFor="pe">{t('common.fields.plannedEnd')}</Label>
             <Input id="pe" type="date" value={plannedEnd} onChange={e => { setPlannedEnd(e.target.value); setDirty(true) }} />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="as">Início real</Label>
+            <Label htmlFor="as">{t('common.fields.actualStart')}</Label>
             <Input id="as" type="date" value={actualStart} onChange={e => { setActualStart(e.target.value); setDirty(true) }} />
           </div>
           <div>
-            <Label htmlFor="ae">Fim real</Label>
+            <Label htmlFor="ae">{t('common.fields.actualEnd')}</Label>
             <Input id="ae" type="date" value={actualEnd} onChange={e => { setActualEnd(e.target.value); setDirty(true) }} />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="bud">Orçamento</Label>
+            <Label htmlFor="bud">{t('common.fields.budget')}</Label>
             <Input id="bud" type="number" step="0.01" value={budget} onChange={e => { setBudget(e.target.value); setDirty(true) }} />
           </div>
           <div>
-            <Label htmlFor="cur">Moeda</Label>
+            <Label htmlFor="cur">{t('common.fields.currency')}</Label>
             <Input id="cur" value={currency} onChange={e => { setCurrency(e.target.value.toUpperCase().slice(0, 3)); setDirty(true) }} maxLength={3} />
           </div>
         </div>
 
         <div>
-          <Label htmlFor="desc">Descrição</Label>
+          <Label htmlFor="desc">{t('common.fields.description')}</Label>
           <textarea id="desc" value={description} onChange={e => { setDescription(e.target.value); setDirty(true) }}
             className="w-full min-h-[80px] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
         </div>

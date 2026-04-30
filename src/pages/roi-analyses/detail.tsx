@@ -4,6 +4,7 @@
  */
 
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
@@ -27,6 +28,7 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { CustomFieldsCard } from '@/features/form-fields/components/custom-fields-card'
 
 export function RoiAnalysisDetailPage() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const { data, isLoading, error } = useRoiAnalysis(id)
   const update = useUpdateRoiAnalysis(id)
@@ -92,7 +94,7 @@ export function RoiAnalysisDetailPage() {
     <div className="space-y-6 p-6 max-w-4xl">
       <header className="flex items-center gap-3">
         <Button asChild variant="ghost" size="sm">
-          <Link to={`/opportunities/${roi.opportunityId}`}><ArrowLeft className="h-4 w-4" />Oportunidade</Link>
+          <Link to={`/opportunities/${roi.opportunityId}`}><ArrowLeft className="h-4 w-4" />{t('common.entity.opportunity')}</Link>
         </Button>
       </header>
 
@@ -128,15 +130,15 @@ export function RoiAnalysisDetailPage() {
       <Card className="p-4">
         <div className="grid grid-cols-3 gap-4 text-sm">
           <div>
-            <div className="text-xs text-muted-foreground uppercase">Receita total</div>
+            <div className="text-xs text-muted-foreground uppercase">{t('common.fields.totalRevenue')}</div>
             <div className="text-lg font-semibold tabular-nums text-emerald-700">{formatCurrency(roi.totalRevenue, roi.currency)}</div>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground uppercase">Custo total</div>
+            <div className="text-xs text-muted-foreground uppercase">{t('common.fields.totalCost')}</div>
             <div className="text-lg font-semibold tabular-nums text-rose-700">{formatCurrency(roi.totalCost, roi.currency)}</div>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground uppercase">Valor líquido</div>
+            <div className="text-xs text-muted-foreground uppercase">{t('common.fields.netValue')}</div>
             <div className={`text-lg font-semibold tabular-nums ${(roi.netValue || 0) >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
               {formatCurrency(roi.netValue, roi.currency)}
             </div>
@@ -150,7 +152,7 @@ export function RoiAnalysisDetailPage() {
             <div className="text-lg font-semibold tabular-nums">{roi.irr != null ? formatPercent(roi.irr * 100, 2) : '—'}</div>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground uppercase">Payback</div>
+            <div className="text-xs text-muted-foreground uppercase">{t('common.fields.payback')}</div>
             <div className="text-lg font-semibold tabular-nums">
               {roi.paybackMonths != null ? `${roi.paybackMonths} meses` : '—'}
             </div>
@@ -168,11 +170,11 @@ export function RoiAnalysisDetailPage() {
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr className="text-left">
-              <th className="px-3 py-2 font-medium">Período</th>
-              <th className="px-3 py-2 font-medium">Categoria</th>
-              <th className="px-3 py-2 font-medium">Descrição</th>
-              <th className="px-3 py-2 font-medium text-right">Valor</th>
-              <th className="px-3 py-2 font-medium">Tipo</th>
+              <th className="px-3 py-2 font-medium">{t('common.fields.period')}</th>
+              <th className="px-3 py-2 font-medium">{t('common.fields.category')}</th>
+              <th className="px-3 py-2 font-medium">{t('common.fields.description')}</th>
+              <th className="px-3 py-2 font-medium text-right">{t('common.fields.value')}</th>
+              <th className="px-3 py-2 font-medium">{t('common.fields.type')}</th>
               <th className="px-3 py-2"></th>
             </tr>
           </thead>

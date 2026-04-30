@@ -6,6 +6,7 @@
  */
 
 import { ArrowLeft, ExternalLink, Plus, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
@@ -28,6 +29,7 @@ import { Input } from '@/shared/ui/input'
 import { Skeleton } from '@/shared/ui/skeleton'
 
 export function ForecastDetailPage() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const { data, isLoading, error } = useForecast(id)
   const update = useUpdateForecast(id)
@@ -103,7 +105,7 @@ export function ForecastDetailPage() {
     <div className="space-y-6 p-6 max-w-4xl">
       <header className="flex items-center gap-3">
         <Button asChild variant="ghost" size="sm">
-          <Link to={`/projects/${fc.projectId}`}><ArrowLeft className="h-4 w-4" />Projeto</Link>
+          <Link to={`/projects/${fc.projectId}`}><ArrowLeft className="h-4 w-4" />{t('common.entity.project')}</Link>
         </Button>
       </header>
 
@@ -135,7 +137,7 @@ export function ForecastDetailPage() {
         <Card className="p-4 bg-muted/30">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-xs text-muted-foreground uppercase">Origem</span>
+              <span className="text-xs text-muted-foreground uppercase">{t('common.fields.origin')}</span>
               <p className="text-sm">Herdado do ROI Analysis #{fc.fromRoiAnalysisId}</p>
             </div>
             <ExternalLink className="h-4 w-4 text-muted-foreground" />
@@ -155,15 +157,15 @@ export function ForecastDetailPage() {
       <Card className="p-4">
         <div className="grid grid-cols-3 gap-4 text-sm">
           <div>
-            <div className="text-xs text-muted-foreground uppercase">Esperado</div>
+            <div className="text-xs text-muted-foreground uppercase">{t('common.fields.expected')}</div>
             <div className="text-lg font-semibold tabular-nums">{formatCurrency(totalExpected, currency)}</div>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground uppercase">Realizado</div>
+            <div className="text-xs text-muted-foreground uppercase">{t('common.fields.actual')}</div>
             <div className="text-lg font-semibold tabular-nums">{formatCurrency(totalActual, currency)}</div>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground uppercase">Variação</div>
+            <div className="text-xs text-muted-foreground uppercase">{t('common.fields.variation')}</div>
             <div className={`text-lg font-semibold tabular-nums ${totalActual > totalExpected ? 'text-emerald-700' : totalActual < totalExpected ? 'text-rose-700' : ''}`}>
               {totalExpected ? formatPercent(((totalActual - totalExpected) / totalExpected) * 100) : '—'}
             </div>
@@ -178,12 +180,12 @@ export function ForecastDetailPage() {
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr className="text-left">
-              <th className="px-3 py-2 font-medium">Período</th>
-              <th className="px-3 py-2 font-medium">Categoria</th>
-              <th className="px-3 py-2 font-medium">Descrição</th>
-              <th className="px-3 py-2 font-medium text-right">Esperado</th>
-              <th className="px-3 py-2 font-medium text-right">Realizado</th>
-              <th className="px-3 py-2 font-medium">Status</th>
+              <th className="px-3 py-2 font-medium">{t('common.fields.period')}</th>
+              <th className="px-3 py-2 font-medium">{t('common.fields.category')}</th>
+              <th className="px-3 py-2 font-medium">{t('common.fields.description')}</th>
+              <th className="px-3 py-2 font-medium text-right">{t('common.fields.expected')}</th>
+              <th className="px-3 py-2 font-medium text-right">{t('common.fields.actual')}</th>
+              <th className="px-3 py-2 font-medium">{t('common.fields.status')}</th>
               <th className="px-3 py-2"></th>
             </tr>
           </thead>

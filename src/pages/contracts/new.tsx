@@ -9,6 +9,7 @@
  */
 
 import { ArrowLeft } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 
@@ -29,6 +30,7 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 
 export function NewContractPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
   const [searchParams] = useSearchParams()
@@ -104,7 +106,7 @@ export function NewContractPage() {
       </header>
 
       <div>
-        <h1 className="text-2xl font-semibold">Novo contrato</h1>
+        <h1 className="text-2xl font-semibold">{t('contracts.newTitle')}</h1>
         <p className="text-sm text-muted-foreground">
           Cliente vinculado: <strong>{String(user?.clientName || 'tenant atual')}</strong> ·
           Responsável: <strong>{String(user?.name || '')}</strong>
@@ -132,7 +134,7 @@ export function NewContractPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Status inicial</Label>
+              <Label>{t('opportunities.initialStatus')}</Label>
               <Combobox
                 value={status}
                 onChange={(v) => setStatus(v as ContractStatus)}
@@ -140,7 +142,7 @@ export function NewContractPage() {
               />
             </div>
             <div>
-              <Label htmlFor="contractType">Tipo de contrato</Label>
+              <Label htmlFor="contractType">{t('common.fields.contractType')}</Label>
               <Input
                 id="contractType"
                 value={contractTypeKey}
@@ -164,7 +166,7 @@ export function NewContractPage() {
               />
             </div>
             <div>
-              <Label htmlFor="currency">Moeda</Label>
+              <Label htmlFor="currency">{t('common.fields.currency')}</Label>
               <Input
                 id="currency"
                 value={currency}
@@ -176,7 +178,7 @@ export function NewContractPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="start">Início da vigência</Label>
+              <Label htmlFor="start">{t('common.fields.contractStart')}</Label>
               <Input
                 id="start"
                 type="date"
@@ -185,7 +187,7 @@ export function NewContractPage() {
               />
             </div>
             <div>
-              <Label htmlFor="end">Fim da vigência</Label>
+              <Label htmlFor="end">{t('common.fields.contractEnd')}</Label>
               <Input
                 id="end"
                 type="date"
@@ -197,7 +199,7 @@ export function NewContractPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Tipo de renovação</Label>
+              <Label>{t('common.fields.renewalType')}</Label>
               <Combobox
                 value={renewalType}
                 onChange={(v) => setRenewalType(v as RenewalType)}
@@ -217,7 +219,7 @@ export function NewContractPage() {
           </div>
 
           <div>
-            <Label htmlFor="payment">Termos de pagamento</Label>
+            <Label htmlFor="payment">{t('common.fields.paymentTerms')}</Label>
             <textarea
               id="payment"
               value={paymentTerms}
@@ -229,7 +231,7 @@ export function NewContractPage() {
 
           <div className="flex gap-2 justify-end pt-2 border-t">
             <Button asChild variant="outline" type="button">
-              <Link to="/contracts">Cancelar</Link>
+              <Link to="/contracts">{t('common.actions.cancel')}</Link>
             </Button>
             <Button type="submit" disabled={create.isPending}>
               {create.isPending ? 'Salvando…' : 'Criar contrato'}

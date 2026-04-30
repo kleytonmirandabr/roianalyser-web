@@ -9,6 +9,7 @@
  */
 
 import { ArrowLeft, ExternalLink, Plus, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
@@ -36,6 +37,7 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { CustomFieldsCard } from '@/features/form-fields/components/custom-fields-card'
 
 export function ContractDetailPage() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { data: ctr, isLoading, error } = useContract(id)
@@ -193,7 +195,7 @@ export function ContractDetailPage() {
         <Card className="p-4 bg-muted/30">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-xs text-muted-foreground uppercase">Oportunidade origem</span>
+              <span className="text-xs text-muted-foreground uppercase">{t('common.entity.sourceOpp')}</span>
               <p className="text-sm font-medium">Oportunidade #{ctr.opportunityId}</p>
             </div>
             <Button asChild variant="ghost" size="sm">
@@ -207,10 +209,10 @@ export function ContractDetailPage() {
       )}
 
       <Card className="p-6 space-y-5">
-        <h2 className="text-lg font-semibold">Informações</h2>
+        <h2 className="text-lg font-semibold">{t('common.entity.sectionInfo')}</h2>
 
         <div>
-          <Label htmlFor="name">Nome</Label>
+          <Label htmlFor="name">{t('common.fields.name')}</Label>
           <Input
             id="name"
             value={name}
@@ -220,7 +222,7 @@ export function ContractDetailPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label>Status</Label>
+            <Label>{t('common.fields.status')}</Label>
             <Combobox
               value={status}
               onChange={(v) => { setStatus(v as ContractStatus); setDirty(true) }}
@@ -249,7 +251,7 @@ export function ContractDetailPage() {
             />
           </div>
           <div>
-            <Label htmlFor="currency">Moeda</Label>
+            <Label htmlFor="currency">{t('common.fields.currency')}</Label>
             <Input
               id="currency"
               value={currency}
@@ -264,7 +266,7 @@ export function ContractDetailPage() {
 
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <Label htmlFor="start">Início</Label>
+            <Label htmlFor="start">{t('common.fields.contractStart')}</Label>
             <Input
               id="start"
               type="date"
@@ -273,7 +275,7 @@ export function ContractDetailPage() {
             />
           </div>
           <div>
-            <Label htmlFor="end">Fim</Label>
+            <Label htmlFor="end">{t('common.fields.contractEnd')}</Label>
             <Input
               id="end"
               type="date"
@@ -282,7 +284,7 @@ export function ContractDetailPage() {
             />
           </div>
           <div>
-            <Label htmlFor="signed">Assinatura</Label>
+            <Label htmlFor="signed">{t('common.fields.signing')}</Label>
             <Input
               id="signed"
               type="date"
@@ -294,7 +296,7 @@ export function ContractDetailPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label>Renovação</Label>
+            <Label>{t('common.fields.renewal')}</Label>
             <Combobox
               value={renewalType}
               onChange={(v) => { setRenewalType(v as RenewalType); setDirty(true) }}
@@ -314,7 +316,7 @@ export function ContractDetailPage() {
         </div>
 
         <div>
-          <Label htmlFor="payment">Termos de pagamento</Label>
+          <Label htmlFor="payment">{t('common.fields.paymentTerms')}</Label>
           <textarea
             id="payment"
             value={paymentTerms}
