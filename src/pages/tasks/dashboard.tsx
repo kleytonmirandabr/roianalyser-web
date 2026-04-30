@@ -717,10 +717,7 @@ export function TasksDashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-semibold">{t('tasks.dashboard.flowTitle')}</h3>
-            <p className="text-xs text-muted-foreground">
-              Tarefas em aberto no fim de cada dia (cumulative flow). Linha azul subindo = backlog crescendo,
-              linha caindo = equipe drenando.
-            </p>
+            <p className="text-xs text-muted-foreground">{t('tasks.dashboard.flowSub')}</p>
           </div>
           <Activity className="h-4 w-4 text-muted-foreground" />
         </div>
@@ -968,6 +965,7 @@ interface KpiCardProps {
 }
 
 function KpiCard(props: KpiCardProps) {
+  const { t } = useTranslation()
   const tones: Record<string, string> = {
     emerald: 'from-emerald-50 to-emerald-100/40 dark:from-emerald-950/40 dark:to-emerald-900/20 border-emerald-200/50 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400',
     red:     'from-red-50 to-red-100/40 dark:from-red-950/40 dark:to-red-900/20 border-red-200/50 dark:border-red-900/50 text-red-700 dark:text-red-400',
@@ -980,7 +978,7 @@ function KpiCard(props: KpiCardProps) {
   const delta = useMemo(() => {
     if (props.prev == null || props.current == null) return null
     if (props.prev === 0 && props.current === 0) return null
-    if (props.prev === 0) return { dir: 'up' as const, label: 'novo' }
+    if (props.prev === 0) return { dir: 'up' as const, label: t('tasks.dashboard.deltaNew') }
     const diff = props.current - props.prev
     if (Math.abs(diff) < 1e-6) return { dir: 'flat' as const, label: '0%' }
     const dir = diff > 0 ? 'up' : 'down'
@@ -1012,7 +1010,7 @@ function KpiCard(props: KpiCardProps) {
           {delta && (
             <div className={`inline-flex items-center gap-0.5 text-[11px] font-medium ${deltaTone}`}>
               {delta.dir === 'up' ? <ArrowUp className="h-3 w-3" /> : delta.dir === 'down' ? <ArrowDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-              {delta.label} <span className="opacity-60 font-normal">vs anterior</span>
+              {delta.label} <span className="opacity-60 font-normal">{t('tasks.dashboard.deltaVsPrev')}</span>
             </div>
           )}
         </div>
