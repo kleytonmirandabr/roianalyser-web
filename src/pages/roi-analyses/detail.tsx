@@ -100,6 +100,13 @@ export function RoiAnalysisDetailPage() {
     [items, draft.catalogItemId],
   )
 
+  const currencyMismatch = useMemo(() => {
+    if (!selectedItem || !roi) return null
+    const itemCur = String((selectedItem as any).currency || 'BRL').toUpperCase()
+    const roiCur = String(roi.currency || 'BRL').toUpperCase()
+    return itemCur !== roiCur ? { itemCur, roiCur } : null
+  }, [selectedItem, roi])
+
   const categoryOptions = categories.map((c: any) => ({ value: String(c.id), label: String(c.name) }))
   const itemOptions = itemsForCategory.map((i: any) => ({ value: String(i.id), label: `${i.code ? i.code + ' · ' : ''}${i.name}` }))
   const comportamentoOptions = COMPORTAMENTOS.map(c => ({
@@ -138,6 +145,12 @@ export function RoiAnalysisDetailPage() {
   async function handleAddEntry() {
     if (!roi) return
     if (!draft.catalogItemId) return toastError(t('roiAnalyses.entry.itemRequired', 'Selecione um item do catálogo'))
+    if (currencyMismatch) {
+      return toastError(t(
+        'roiAnalyses.entry.currencyMismatch',
+        `Moeda incompatível: item está em ${currencyMismatch.itemCur}, análise em ${currencyMismatch.roiCur}.`,
+      ))
+    }
     const qty = Number(draft.quantity)
     const unit = Number(draft.unitValue)
     if (!Number.isFinite(qty) || qty <= 0) return toastError(t('roiAnalyses.entry.qtyInvalid', 'Quantidade precisa ser positiva'))
@@ -434,6 +447,11 @@ export function RoiAnalysisDetailPage() {
                       {String((selectedItem as any).description || '')}
                     </div>
                   )}
+                  {currencyMismatch && (
+                    <div className="text-[11px] mt-1 rounded-md border border-rose-300 bg-rose-50 dark:border-rose-900/50 dark:bg-rose-950/30 px-2 py-1 text-rose-700 dark:text-rose-300">
+                      {t('roiAnalyses.entry.currencyMismatchHint', 'Moeda incompatível')}: {currencyMismatch.itemCur} ≠ {currencyMismatch.roiCur}
+                    </div>
+                  )}
                 </div>
                 <div className="md:col-span-3">
                   <label className="text-xs text-muted-foreground">{t('admin.catalogItems.fields.comportamento', 'Comportamento')}</label>
@@ -477,7 +495,7 @@ export function RoiAnalysisDetailPage() {
                     placeholder={t('roiAnalyses.entry.descriptionPlaceholder', 'opcional')} />
                 </div>
                 <div className="md:col-span-1 flex items-end">
-                  <Button onClick={handleAddEntry} disabled={addEntry.isPending || !draft.catalogItemId} className="w-full">
+                  <Button onClick={handleAddEntry} disabled={addEntry.isPending || !draft.catalogItemId || !!currencyMismatch} className="w-full">
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
