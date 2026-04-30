@@ -35,6 +35,7 @@ import { Combobox } from '@/shared/ui/combobox'
 import { Input } from '@/shared/ui/input'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { CustomFieldsCard } from '@/features/form-fields/components/custom-fields-card'
+import { CumulativeCashFlowChart, MonthlyCashFlowChart } from './charts'
 
 type Draft = {
   categoryId: string
@@ -322,6 +323,25 @@ export function RoiAnalysisDetailPage() {
               <div className="text-xs text-muted-foreground mt-1">{t('roiAnalyses.ticket.hint', 'Média por linha de receita mensal lançada.')}</div>
             </Card>
           )}
+        </div>
+      )}
+
+      {/* ─────────── Charts (Sprint #238) ─────────── */}
+      {metrics && metrics.monthlyFlow.length > 0 && (
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <Card className="p-4">
+            <CumulativeCashFlowChart
+              data={metrics.monthlyFlow}
+              currency={cur}
+              paybackMonth={paybackMonths}
+            />
+          </Card>
+          <Card className="p-4">
+            <MonthlyCashFlowChart
+              data={metrics.monthlyFlow}
+              currency={cur}
+            />
+          </Card>
         </div>
       )}
 

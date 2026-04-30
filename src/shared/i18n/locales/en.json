@@ -1748,6 +1748,16 @@
     },
     "summary": {
       "byBehavior": "Summary by behavior"
+    },
+    "charts": {
+      "empty": "No data to display.",
+      "cumulative": {
+        "title": "Cumulative cash flow",
+        "paybackAt": "Payback at month"
+      },
+      "monthly": {
+        "title": "Monthly cash flow"
+      }
     }
   },
   "forecasts": {

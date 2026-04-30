@@ -1748,6 +1748,16 @@
     },
     "summary": {
       "byBehavior": "Resumo por comportamento"
+    },
+    "charts": {
+      "empty": "Sem dados pra exibir.",
+      "cumulative": {
+        "title": "Saldo acumulado",
+        "paybackAt": "Payback no mês"
+      },
+      "monthly": {
+        "title": "Fluxo mensal"
+      }
     }
   },
   "forecasts": {
