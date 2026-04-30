@@ -113,6 +113,11 @@ export function AdminCatalogItemsPage() {
   }
   async function handleSave() {
     if (!draft.name.trim()) return toastError(new Error('Informe o nome'))
+    if (!draft.categoryId) return toastError(new Error('Selecione a categoria'))
+    if (!draft.billingUnitId) return toastError(new Error('Selecione a unidade de cobrança'))
+    if (draft.defaultValue === '' || !Number.isFinite(Number(draft.defaultValue)) || Number(draft.defaultValue) < 0) {
+      return toastError(new Error('Informe um valor padrão válido (>= 0)'))
+    }
     const payload = {
       key: (draft.key.trim() || slugify(draft.name)),
       name: draft.name.trim(),
@@ -136,8 +141,8 @@ export function AdminCatalogItemsPage() {
     } catch (e) { toastError(e) }
   }
 
-  const catOptions = [{ value: '', label: '— sem categoria —' }, ...categories.filter(c => c.active).map(c => ({ value: c.id, label: c.name }))]
-  const buOptions = [{ value: '', label: '— sem unidade —' }, ...billingUnits.filter(c => c.active).map(c => ({ value: c.id, label: c.name }))]
+  const catOptions = categories.filter(c => c.active).map(c => ({ value: c.id, label: c.name }))
+  const buOptions = billingUnits.filter(c => c.active).map(c => ({ value: c.id, label: c.name }))
 
   return (
     <div className="space-y-6">
@@ -237,10 +242,10 @@ export function AdminCatalogItemsPage() {
               <div className="space-y-1 col-span-2"><Label>{t('common.fields.description')}</Label>
                 <Input value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
               </div>
-              <div className="space-y-1"><Label>{t('common.fields.category')}</Label>
+              <div className="space-y-1"><Label>{t('common.fields.category')} <span className="text-destructive">*</span></Label>
                 <Combobox options={catOptions} value={draft.categoryId} onChange={(v) => setDraft({ ...draft, categoryId: v })} />
               </div>
-              <div className="space-y-1"><Label>{t('admin.catalogItems.billingUnit')}</Label>
+              <div className="space-y-1"><Label>{t('admin.catalogItems.billingUnit')} <span className="text-destructive">*</span></Label>
                 <Combobox options={buOptions} value={draft.billingUnitId} onChange={(v) => setDraft({ ...draft, billingUnitId: v })} />
               </div>
               <div className="space-y-1 col-span-2"><Label>{t('admin.catalogItems.behaviorLabel')}</Label>
@@ -251,7 +256,7 @@ export function AdminCatalogItemsPage() {
                 />
                 <p className="text-[11px] text-muted-foreground">{t('admin.catalogItems.behaviorHelp')}</p>
               </div>
-              <div className="space-y-1"><Label>{t('common.fields.defaultValue')}</Label>
+              <div className="space-y-1"><Label>{t('common.fields.defaultValue')} <span className="text-destructive">*</span></Label>
                 <Input type="number" step="0.01" value={draft.defaultValue} onChange={(e) => setDraft({ ...draft, defaultValue: e.target.value })} />
               </div>
               {draft.comportamento.endsWith('_INSTALLMENT') && (
