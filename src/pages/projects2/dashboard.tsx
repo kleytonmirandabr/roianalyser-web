@@ -4,6 +4,7 @@
  */
 
 import { AlertTriangle, CheckCircle2, Rocket, Timer } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -38,6 +39,7 @@ function daysSinceLastUpdate(updatedAt: string): number {
 }
 
 export function Projects2DashboardPage() {
+  const { t } = useTranslation()
   const { data: items = [], isLoading, error } = useProjects2()
 
   const stats = useMemo(() => {
@@ -127,21 +129,21 @@ export function Projects2DashboardPage() {
         <div className="flex items-center gap-3">
           <Rocket className="h-6 w-6 text-indigo-600" />
           <div>
-            <h1 className="text-2xl font-semibold">Dashboard — Projetos</h1>
+            <h1 className="text-2xl font-semibold">{t('projects2.dashboard.title')}</h1>
             <p className="text-sm text-muted-foreground">
               Execução operacional · {stats.total} {stats.total === 1 ? 'projeto' : 'projetos'}
             </p>
           </div>
         </div>
         <Button asChild variant="outline">
-          <Link to="/projects">Ver lista</Link>
+          <Link to="/projects">{t('projects2.dashboard.seeList')}</Link>
         </Button>
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground uppercase">Saúde geral</span>
+            <span className="text-xs text-muted-foreground uppercase">{t('projects2.dashboard.overallHealth')}</span>
             <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className={`text-2xl font-semibold tabular-nums mt-1 ${stats.healthPct >= 70 ? 'text-emerald-700' : stats.healthPct >= 40 ? 'text-amber-700' : 'text-rose-700'}`}>
@@ -155,7 +157,7 @@ export function Projects2DashboardPage() {
         <Link to="/projects?status=execution" className="block group">
           <Card className="p-4 group-hover:border-indigo-300 transition">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground uppercase">Em execução</span>
+              <span className="text-xs text-muted-foreground uppercase">{t('projects2.dashboard.inExecution')}</span>
               <Rocket className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="text-2xl font-semibold tabular-nums mt-1 text-blue-700">
@@ -169,7 +171,7 @@ export function Projects2DashboardPage() {
 
         <Card className="p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground uppercase">Progresso médio</span>
+            <span className="text-xs text-muted-foreground uppercase">{t('projects2.dashboard.avgProgress')}</span>
             <Timer className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="text-2xl font-semibold tabular-nums mt-1">
@@ -180,7 +182,7 @@ export function Projects2DashboardPage() {
 
         <Card className="p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground uppercase">Orçamento total</span>
+            <span className="text-xs text-muted-foreground uppercase">{t('projects2.dashboard.totalBudget')}</span>
             <Timer className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="text-2xl font-semibold tabular-nums mt-1">
@@ -222,8 +224,8 @@ export function Projects2DashboardPage() {
       {stats.topLate.length > 0 && (
         <Card className="p-6 space-y-3">
           <div>
-            <h2 className="font-semibold">Top atrasos</h2>
-            <p className="text-xs text-muted-foreground">Projetos que mais ultrapassaram o prazo</p>
+            <h2 className="font-semibold">{t('projects2.dashboard.topDelays')}</h2>
+            <p className="text-xs text-muted-foreground">{t('projects2.dashboard.mostOverdue')}</p>
           </div>
           <ul className="space-y-2">
             {stats.topLate.map(p => {
@@ -250,8 +252,8 @@ export function Projects2DashboardPage() {
       {/* Top 5 por orçamento */}
       <Card className="p-6 space-y-3">
         <div>
-          <h2 className="font-semibold">Top projetos por orçamento</h2>
-          <p className="text-xs text-muted-foreground">Maiores compromissos financeiros</p>
+          <h2 className="font-semibold">{t('projects2.dashboard.topByBudget')}</h2>
+          <p className="text-xs text-muted-foreground">{t('projects2.dashboard.biggestFinCommit')}</p>
         </div>
         {(() => {
           const top = items
@@ -259,7 +261,7 @@ export function Projects2DashboardPage() {
             .sort((a, b) => Number(b.budget) - Number(a.budget))
             .slice(0, 5)
           if (top.length === 0) {
-            return <p className="text-sm text-muted-foreground">Sem orçamentos definidos.</p>
+            return <p className="text-sm text-muted-foreground">{t('common.empty.items')}</p>
           }
           const max = Math.max(1, ...top.map(p => Number(p.budget)))
           return (
@@ -284,8 +286,8 @@ export function Projects2DashboardPage() {
       {/* Por responsável */}
       <Card className="p-6 space-y-3">
         <div>
-          <h2 className="font-semibold">Carga por gestor</h2>
-          <p className="text-xs text-muted-foreground">Projetos por gestor</p>
+          <h2 className="font-semibold">{t('projects2.dashboard.loadByManager')}</h2>
+          <p className="text-xs text-muted-foreground">{t('projects2.dashboard.projectsByManager')}</p>
         </div>
         {(() => {
           const byResp = new Map<string, number>()
@@ -295,7 +297,7 @@ export function Projects2DashboardPage() {
           }
           const arr = Array.from(byResp.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8)
           if (arr.length === 0) {
-            return <p className="text-sm text-muted-foreground">Sem responsáveis atribuídos.</p>
+            return <p className="text-sm text-muted-foreground">{t('common.empty.items')}</p>
           }
           const max = Math.max(1, ...arr.map(([_, c]) => c))
           return (
@@ -319,8 +321,8 @@ export function Projects2DashboardPage() {
       {/* Distribuição por status */}
       <Card className="p-6 space-y-4">
         <div>
-          <h2 className="font-semibold">Distribuição por status</h2>
-          <p className="text-xs text-muted-foreground">Clique pra filtrar a lista</p>
+          <h2 className="font-semibold">{t('projects2.dashboard.statusDistribution')}</h2>
+          <p className="text-xs text-muted-foreground">{t('projects2.dashboard.clickToFilter')}</p>
         </div>
         <div className="space-y-3">
           {statusData.map(d => (

@@ -4,6 +4,7 @@
  */
 
 import { BarChart3, Plus, Rocket } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
@@ -40,6 +41,7 @@ function daysLate(plannedEnd: string | null, status: ProjectStatus): number | nu
 }
 
 export function Projects2ListPage() {
+  const { t } = useTranslation()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
   const initialStatus = (searchParams.get('status') as ProjectStatus) || 'all'
@@ -77,7 +79,7 @@ export function Projects2ListPage() {
         <div className="flex items-center gap-3">
           <Rocket className="h-6 w-6 text-indigo-600" />
           <div>
-            <h1 className="text-2xl font-semibold">Projetos</h1>
+            <h1 className="text-2xl font-semibold">{t('projects2.title')}</h1>
             <p className="text-sm text-muted-foreground">
               Execução operacional — cronograma, marcos, time alocado
             </p>
@@ -135,12 +137,12 @@ export function Projects2ListPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr className="text-left">
-                <th className="px-4 py-3 font-medium">Código</th>
-                <th className="px-4 py-3 font-medium">Nome</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium text-right">Progresso</th>
-                <th className="px-4 py-3 font-medium">Cronograma</th>
-                <th className="px-4 py-3 font-medium">Saúde</th>
+                <th className="px-4 py-3 font-medium">{t('common.fields.code')}</th>
+                <th className="px-4 py-3 font-medium">{t('common.fields.name')}</th>
+                <th className="px-4 py-3 font-medium">{t('common.fields.status')}</th>
+                <th className="px-4 py-3 font-medium text-right">{t('common.fields.progress')}</th>
+                <th className="px-4 py-3 font-medium">{t('common.fields.schedule')}</th>
+                <th className="px-4 py-3 font-medium">{t('common.fields.health')}</th>
               </tr>
             </thead>
             <tbody>

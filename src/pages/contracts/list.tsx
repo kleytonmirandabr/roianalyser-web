@@ -8,6 +8,7 @@
  */
 
 import { BarChart3, FileText, Plus } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
@@ -47,6 +48,7 @@ function daysUntil(dateStr: string | null): number | null {
 }
 
 export function ContractsListPage() {
+  const { t } = useTranslation()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
   const initialStatus = (searchParams.get('status') as ContractStatus) || 'all'
@@ -92,7 +94,7 @@ export function ContractsListPage() {
         <div className="flex items-center gap-3">
           <FileText className="h-6 w-6 text-indigo-600" />
           <div>
-            <h1 className="text-2xl font-semibold">Contratos</h1>
+            <h1 className="text-2xl font-semibold">{t('nav.contracts')}</h1>
             <p className="text-sm text-muted-foreground">
               Gestão jurídica — vigência, renovações, anexos
             </p>
@@ -164,12 +166,12 @@ export function ContractsListPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr className="text-left">
-                <th className="px-4 py-3 font-medium">Número</th>
-                <th className="px-4 py-3 font-medium">Nome</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium text-right">Valor total</th>
-                <th className="px-4 py-3 font-medium">Vigência</th>
-                <th className="px-4 py-3 font-medium">Vencimento</th>
+                <th className="px-4 py-3 font-medium">{t('common.fields.number')}</th>
+                <th className="px-4 py-3 font-medium">{t('common.fields.name')}</th>
+                <th className="px-4 py-3 font-medium">{t('common.fields.status')}</th>
+                <th className="px-4 py-3 font-medium text-right">{t('common.fields.totalValue')}</th>
+                <th className="px-4 py-3 font-medium">{t('common.fields.validity')}</th>
+                <th className="px-4 py-3 font-medium">{t('common.fields.dueDate')}</th>
               </tr>
             </thead>
             <tbody>

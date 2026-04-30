@@ -73,7 +73,17 @@
       "linkedin": "LinkedIn",
       "instagram": "Instagram",
       "address": "Dirección",
-      "addressUf": "Provincia"
+      "addressUf": "Provincia",
+      "number": "Número",
+      "status": "Estado",
+      "totalValue": "Valor total",
+      "estimatedValue": "Valor estimado",
+      "validity": "Vigencia",
+      "dueDate": "Vencimiento",
+      "progress": "Progreso",
+      "schedule": "Cronograma",
+      "health": "Salud",
+      "currency": "Moneda"
     },
     "table": {
       "actions": "Acciones"
@@ -1434,7 +1444,26 @@
   },
   "opportunities": {
     "subtitle": "Funnel comercial — leads en movimiento",
-    "visibleColumns": "Columnas visibles"
+    "visibleColumns": "Columnas visibles",
+    "newOpp": "Nueva oportunidad",
+    "createOpp": "Crear oportunidad",
+    "expectedClosing": "Cierre previsto",
+    "initialStatus": "Estado inicial",
+    "dashboard": {
+      "title": "Panel — Oportunidades",
+      "globalFilters": "Filtros globales",
+      "salesFunnel": "Funnel de ventas",
+      "pipelineByCurrency": "Pipeline por moneda",
+      "won": "Ganadas",
+      "lost": "Perdidas",
+      "winRate": "Tasa de éxito",
+      "total": "Total",
+      "monthlyCreation": "Tendencia mensual de creación",
+      "byProbability": "Distribución por probabilidad",
+      "byResponsible": "Distribución por responsable",
+      "orderedByValue": "Ordenadas por valor estimado",
+      "orderedByTotal": "Ordenadas por valor total estimado"
+    }
   },
   "tasks": {
     "dashboard": {
@@ -1550,6 +1579,40 @@
         "months": "{{n}} meses",
         "years": "{{n}} años"
       }
+    }
+  },
+  "contracts": {
+    "subtitle": "Instrumentos jurídicos vigentes",
+    "dashboard": {
+      "title": "Panel — Contratos",
+      "activePortfolio": "Cartera activa",
+      "statusDistribution": "Distribución por estado",
+      "valueDistribution": "Distribución por valor",
+      "topByValue": "Mayor valor contratado",
+      "upcomingDue": "Próximos vencimientos",
+      "contractTypes": "Tipos de contrato",
+      "clickToFilter": "Haga clic para filtrar la lista",
+      "seeList": "Ver lista"
+    }
+  },
+  "projects2": {
+    "title": "Proyectos",
+    "subtitle": "Ejecución de contratos en curso",
+    "dashboard": {
+      "title": "Panel — Proyectos",
+      "inExecution": "En ejecución",
+      "totalBudget": "Presupuesto total",
+      "avgProgress": "Progreso promedio",
+      "overallHealth": "Salud general",
+      "statusDistribution": "Distribución por estado",
+      "topByBudget": "Top proyectos por presupuesto",
+      "topDelays": "Mayores atrasos",
+      "mostOverdue": "Proyectos más atrasados",
+      "projectsByManager": "Proyectos por gestor",
+      "loadByManager": "Carga por gestor",
+      "biggestFinCommit": "Mayores compromisos financieros",
+      "clickToFilter": "Haga clic para filtrar la lista",
+      "seeList": "Ver lista"
     }
   }
 }

@@ -4,6 +4,7 @@
  */
 
 import { AlertTriangle, Calendar, FileText, TrendingUp } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -37,6 +38,7 @@ function daysUntil(dateStr: string | null): number | null {
 }
 
 export function ContractsDashboardPage() {
+  const { t } = useTranslation()
   const { data: items = [], isLoading, error } = useContracts()
 
   const stats = useMemo(() => {
@@ -143,14 +145,14 @@ export function ContractsDashboardPage() {
         <div className="flex items-center gap-3">
           <FileText className="h-6 w-6 text-indigo-600" />
           <div>
-            <h1 className="text-2xl font-semibold">Dashboard — Contratos</h1>
+            <h1 className="text-2xl font-semibold">{t('contracts.dashboard.title')}</h1>
             <p className="text-sm text-muted-foreground">
               Gestão jurídica · {stats.total} {stats.total === 1 ? 'contrato' : 'contratos'} no total
             </p>
           </div>
         </div>
         <Button asChild variant="outline">
-          <Link to="/contracts">Ver lista</Link>
+          <Link to="/contracts">{t('contracts.dashboard.seeList')}</Link>
         </Button>
       </header>
 
@@ -159,7 +161,7 @@ export function ContractsDashboardPage() {
         <Link to="/contracts?status=active" className="block group">
           <Card className="p-4 group-hover:border-indigo-300 transition">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground uppercase">Carteira ativa</span>
+              <span className="text-xs text-muted-foreground uppercase">{t('contracts.dashboard.activePortfolio')}</span>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="text-2xl font-semibold tabular-nums mt-1">
@@ -227,7 +229,7 @@ export function ContractsDashboardPage() {
       {(stats.expiring30.length + stats.expiring60.length + stats.expiring90.length) > 0 && (
         <Card className="p-6 space-y-3">
           <div>
-            <h2 className="font-semibold">Próximos vencimentos</h2>
+            <h2 className="font-semibold">{t('contracts.dashboard.upcomingDue')}</h2>
             <p className="text-xs text-muted-foreground">
               Contratos vigentes ordenados por data de fim
             </p>
@@ -268,8 +270,8 @@ export function ContractsDashboardPage() {
       {/* Distribuição por status */}
       <Card className="p-6 space-y-4">
         <div>
-          <h2 className="font-semibold">Distribuição por status</h2>
-          <p className="text-xs text-muted-foreground">Clique pra filtrar a lista</p>
+          <h2 className="font-semibold">{t('contracts.dashboard.statusDistribution')}</h2>
+          <p className="text-xs text-muted-foreground">{t('contracts.dashboard.clickToFilter')}</p>
         </div>
         <div className="space-y-3">
           {statusData.map(d => (
@@ -299,7 +301,7 @@ export function ContractsDashboardPage() {
         <Card className="p-6 space-y-3">
           <div>
             <h2 className="font-semibold">Top clientes (carteira ativa)</h2>
-            <p className="text-xs text-muted-foreground">Maior valor contratado</p>
+            <p className="text-xs text-muted-foreground">{t('contracts.dashboard.topByValue')}</p>
           </div>
           <ul className="space-y-2">
             {stats.topClients.map(([clientId, data]) => {
@@ -331,8 +333,8 @@ export function ContractsDashboardPage() {
       {stats.topTypes.length > 0 && (
         <Card className="p-6 space-y-3">
           <div>
-            <h2 className="font-semibold">Tipos de contrato</h2>
-            <p className="text-xs text-muted-foreground">Distribuição por valor</p>
+            <h2 className="font-semibold">{t('contracts.dashboard.contractTypes')}</h2>
+            <p className="text-xs text-muted-foreground">{t('contracts.dashboard.valueDistribution')}</p>
           </div>
           <ul className="space-y-2">
             {stats.topTypes.map(([typeKey, data]) => {

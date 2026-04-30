@@ -73,7 +73,17 @@
       "linkedin": "LinkedIn",
       "instagram": "Instagram",
       "address": "Address",
-      "addressUf": "State"
+      "addressUf": "State",
+      "number": "Number",
+      "status": "Status",
+      "totalValue": "Total value",
+      "estimatedValue": "Estimated value",
+      "validity": "Validity",
+      "dueDate": "Due date",
+      "progress": "Progress",
+      "schedule": "Schedule",
+      "health": "Health",
+      "currency": "Currency"
     },
     "table": {
       "actions": "Actions"
@@ -1434,7 +1444,26 @@
   },
   "opportunities": {
     "subtitle": "Sales funnel — leads in motion",
-    "visibleColumns": "Visible columns"
+    "visibleColumns": "Visible columns",
+    "newOpp": "New opportunity",
+    "createOpp": "Create opportunity",
+    "expectedClosing": "Expected closing",
+    "initialStatus": "Initial status",
+    "dashboard": {
+      "title": "Dashboard — Opportunities",
+      "globalFilters": "Global filters",
+      "salesFunnel": "Sales funnel",
+      "pipelineByCurrency": "Pipeline by currency",
+      "won": "Won",
+      "lost": "Lost",
+      "winRate": "Win rate",
+      "total": "Total",
+      "monthlyCreation": "Monthly creation trend",
+      "byProbability": "Distribution by probability",
+      "byResponsible": "Distribution by assignee",
+      "orderedByValue": "Ordered by estimated value",
+      "orderedByTotal": "Ordered by total estimated value"
+    }
   },
   "tasks": {
     "dashboard": {
@@ -1550,6 +1579,40 @@
         "months": "{{n}} months",
         "years": "{{n}} years"
       }
+    }
+  },
+  "contracts": {
+    "subtitle": "Active legal instruments",
+    "dashboard": {
+      "title": "Dashboard — Contracts",
+      "activePortfolio": "Active portfolio",
+      "statusDistribution": "Status distribution",
+      "valueDistribution": "Value distribution",
+      "topByValue": "Highest contract value",
+      "upcomingDue": "Upcoming due dates",
+      "contractTypes": "Contract types",
+      "clickToFilter": "Click to filter the list",
+      "seeList": "See list"
+    }
+  },
+  "projects2": {
+    "title": "Projects",
+    "subtitle": "Execution of contracts in progress",
+    "dashboard": {
+      "title": "Dashboard — Projects",
+      "inExecution": "In execution",
+      "totalBudget": "Total budget",
+      "avgProgress": "Average progress",
+      "overallHealth": "Overall health",
+      "statusDistribution": "Status distribution",
+      "topByBudget": "Top projects by budget",
+      "topDelays": "Top delays",
+      "mostOverdue": "Projects most over schedule",
+      "projectsByManager": "Projects by manager",
+      "loadByManager": "Load by manager",
+      "biggestFinCommit": "Biggest financial commitments",
+      "clickToFilter": "Click to filter the list",
+      "seeList": "See list"
     }
   }
 }

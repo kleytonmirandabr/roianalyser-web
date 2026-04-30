@@ -1,4 +1,5 @@
 import { ChevronLeft } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -14,6 +15,7 @@ import { Label } from '@/shared/ui/label'
 import { toastError, toastSaved } from '@/shared/lib/toasts'
 
 export function NewOpportunityPage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const navigate = useNavigate()
   const create = useCreateOpportunity()
@@ -57,7 +59,7 @@ export function NewOpportunityPage() {
         <ChevronLeft className="h-4 w-4" /> Oportunidades
       </Link>
       <div>
-        <h1 className="text-2xl font-bold">Nova oportunidade</h1>
+        <h1 className="text-2xl font-bold">{t('opportunities.newOpp')}</h1>
         <p className="text-sm text-muted-foreground">
           Cliente vinculado: <strong>{String(user?.clientName || 'tenant atual')}</strong> · Responsável:{' '}
           <strong>{String(user?.name || 'Você')}</strong>
@@ -74,7 +76,7 @@ export function NewOpportunityPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label>Status inicial</Label>
+              <Label>{t('opportunities.initialStatus')}</Label>
               <Combobox
                 options={[{ value: '', label: '— sem status —' }, ...statusOptions]}
                 value={statusId} onChange={setStatusId}
@@ -82,7 +84,7 @@ export function NewOpportunityPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label>Tipo</Label>
+              <Label>{t('common.fields.type')}</Label>
               <Combobox
                 options={[{ value: '', label: '— sem tipo —' }, ...typeOptions]}
                 value={opportunityTypeId} onChange={setOpportunityTypeId}
@@ -93,23 +95,23 @@ export function NewOpportunityPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label>Fechamento previsto</Label>
+              <Label>{t('opportunities.expectedClosing')}</Label>
               <Input type="date" value={expectedCloseDate} onChange={e => setExpectedCloseDate(e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label>Moeda</Label>
+              <Label>{t('common.fields.currency')}</Label>
               <Input value={currency} onChange={e => setCurrency(e.target.value)} />
             </div>
           </div>
 
           <div className="space-y-1">
-            <Label>Valor estimado</Label>
+            <Label>{t('common.fields.estimatedValue')}</Label>
             <Input type="number" step="0.01" value={estimatedValue}
               onChange={e => setEstimatedValue(e.target.value)} placeholder="0,00" />
           </div>
 
           <div className="space-y-1">
-            <Label>Descrição</Label>
+            <Label>{t('common.fields.description')}</Label>
             <textarea
               className="w-full rounded-md border px-3 py-2 text-sm min-h-[80px]"
               value={description} onChange={e => setDescription(e.target.value)}
@@ -118,8 +120,8 @@ export function NewOpportunityPage() {
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => navigate('/opportunities')}>Cancelar</Button>
-            <Button type="submit" disabled={create.isPending}>Criar oportunidade</Button>
+            <Button type="button" variant="outline" onClick={() => navigate('/opportunities')}>{t('common.actions.cancel')}</Button>
+            <Button type="submit" disabled={create.isPending}>{t('opportunities.createOpp')}</Button>
           </div>
         </form>
       </Card>

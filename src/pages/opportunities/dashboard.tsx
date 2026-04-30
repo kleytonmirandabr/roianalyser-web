@@ -18,6 +18,7 @@
  *   8. Mix de empresas (top 10 por valor)
  */
 import { ChevronLeft, BarChart3, Filter, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
@@ -52,6 +53,7 @@ function periodCutoff(p: string): Date | null {
 }
 
 export function OpportunitiesDashboardPage() {
+  const { t } = useTranslation()
   const [, setParams] = useSearchParams()
   const { data: items = [], isLoading } = useOpportunities()
   const { data: statuses = [] } = useOpportunityStatuses()
@@ -241,7 +243,7 @@ export function OpportunitiesDashboardPage() {
       <div className="flex items-center gap-3">
         <BarChart3 className="h-7 w-7 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold">Dashboard — Oportunidades</h1>
+          <h1 className="text-2xl font-bold">{t('opportunities.dashboard.title')}</h1>
           <p className="text-sm text-muted-foreground">Funil comercial · {filtered.length} de {items.length} oportunidades</p>
         </div>
       </div>
@@ -250,14 +252,14 @@ export function OpportunitiesDashboardPage() {
       <Card className="p-3">
         <div className="flex items-center gap-2 mb-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Filtros globais</span>
+          <span className="text-sm font-medium">{t('opportunities.dashboard.globalFilters')}</span>
           {hasFilter && (
             <Button size="sm" variant="ghost" onClick={clearFilters} className="ml-auto"><X className="h-3 w-3 mr-1" /> Limpar</Button>
           )}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Moeda</label>
+            <label className="text-xs text-muted-foreground">{t('common.fields.currency')}</label>
             <Combobox options={currencyOptions} value={currency} onChange={setCurrency} />
           </div>
           <div className="space-y-1">
@@ -265,11 +267,11 @@ export function OpportunitiesDashboardPage() {
             <Combobox options={PERIOD_OPTIONS} value={period} onChange={setPeriod} />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Responsável</label>
+            <label className="text-xs text-muted-foreground">{t('common.fields.responsible')}</label>
             <Combobox options={responsibleOptions} value={responsibleId} onChange={setResponsibleId} />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Empresa</label>
+            <label className="text-xs text-muted-foreground">{t('common.fields.company')}</label>
             <Combobox options={companyOptions} value={companyId} onChange={setCompanyId} />
           </div>
         </div>
@@ -278,21 +280,21 @@ export function OpportunitiesDashboardPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4 space-y-1">
-          <div className="text-xs uppercase text-muted-foreground">Total</div>
+          <div className="text-xs uppercase text-muted-foreground">{t('opportunities.dashboard.total')}</div>
           <div className="text-2xl font-bold">{totals.count}</div>
           <div className="text-xs text-muted-foreground">{totals.inProgress} em negociação</div>
         </Card>
         <Card className="p-4 space-y-1">
-          <div className="text-xs uppercase text-muted-foreground">Win rate</div>
+          <div className="text-xs uppercase text-muted-foreground">{t('opportunities.dashboard.winRate')}</div>
           <div className="text-2xl font-bold text-green-600">{totals.winRate.toFixed(0)}%</div>
           <div className="text-xs text-muted-foreground">{totals.gain} ganhas / {totals.loss} perdidas</div>
         </Card>
         <Card className="p-4 space-y-1">
-          <div className="text-xs uppercase text-muted-foreground">Ganhas</div>
+          <div className="text-xs uppercase text-muted-foreground">{t('opportunities.dashboard.won')}</div>
           <div className="text-2xl font-bold text-green-600">{totals.gain}</div>
         </Card>
         <Card className="p-4 space-y-1">
-          <div className="text-xs uppercase text-muted-foreground">Perdidas</div>
+          <div className="text-xs uppercase text-muted-foreground">{t('opportunities.dashboard.lost')}</div>
           <div className="text-2xl font-bold text-red-600">{totals.loss}</div>
         </Card>
       </div>
@@ -300,7 +302,7 @@ export function OpportunitiesDashboardPage() {
       {/* Pipeline por moeda */}
       <Card className="p-4 space-y-3">
         <div>
-          <h3 className="font-semibold">Pipeline por moeda</h3>
+          <h3 className="font-semibold">{t('opportunities.dashboard.pipelineByCurrency')}</h3>
           <p className="text-xs text-muted-foreground">Sem consolidação cambial — cada moeda tem seu total isolado.</p>
         </div>
         {totalsByCurrency.length === 0 ? (
@@ -322,7 +324,7 @@ export function OpportunitiesDashboardPage() {
         {/* Funil */}
         <Card className="p-4 space-y-3">
           <div>
-            <h3 className="font-semibold">Funil comercial</h3>
+            <h3 className="font-semibold">{t('opportunities.dashboard.salesFunnel')}</h3>
             <p className="text-xs text-muted-foreground">Volume e valor por status (clique para filtrar lista)</p>
           </div>
           {isLoading ? <Skeleton className="h-32 w-full" /> : byStatus.length === 0 ? (
@@ -351,7 +353,7 @@ export function OpportunitiesDashboardPage() {
         {/* Tendência mensal */}
         <Card className="p-4 space-y-3">
           <div>
-            <h3 className="font-semibold">Tendência mensal de criação</h3>
+            <h3 className="font-semibold">{t('opportunities.dashboard.monthlyCreation')}</h3>
             <p className="text-xs text-muted-foreground">Últimos 6 meses</p>
           </div>
           <div className="flex items-end justify-between gap-2 h-32 px-2">
@@ -370,7 +372,7 @@ export function OpportunitiesDashboardPage() {
         <Card className="p-4 space-y-3">
           <div>
             <h3 className="font-semibold">Top 10 maiores ({filterCurrency})</h3>
-            <p className="text-xs text-muted-foreground">Ordenadas por valor estimado</p>
+            <p className="text-xs text-muted-foreground">{t('opportunities.dashboard.orderedByValue')}</p>
           </div>
           {top10.length === 0 ? (
             <div className="text-sm text-muted-foreground py-4">Nenhuma oportunidade em {filterCurrency}.</div>
@@ -392,7 +394,7 @@ export function OpportunitiesDashboardPage() {
         {/* Buckets de probabilidade */}
         <Card className="p-4 space-y-3">
           <div>
-            <h3 className="font-semibold">Distribuição por probabilidade</h3>
+            <h3 className="font-semibold">{t('opportunities.dashboard.byProbability')}</h3>
           </div>
           <div className="grid grid-cols-4 gap-2">
             <div className="rounded-md border bg-red-50 dark:bg-red-950/20 p-3 text-center">
@@ -417,7 +419,7 @@ export function OpportunitiesDashboardPage() {
         {/* Top 10 responsáveis */}
         <Card className="p-4 space-y-3">
           <div>
-            <h3 className="font-semibold">Distribuição por responsável</h3>
+            <h3 className="font-semibold">{t('opportunities.dashboard.byResponsible')}</h3>
             <p className="text-xs text-muted-foreground">Top 10 (volume)</p>
           </div>
           {byResponsible.length === 0 ? (
@@ -443,7 +445,7 @@ export function OpportunitiesDashboardPage() {
         <Card className="p-4 space-y-3">
           <div>
             <h3 className="font-semibold">Top 10 empresas ({filterCurrency})</h3>
-            <p className="text-xs text-muted-foreground">Ordenadas por valor total estimado</p>
+            <p className="text-xs text-muted-foreground">{t('opportunities.dashboard.orderedByTotal')}</p>
           </div>
           {byCompany.length === 0 ? (
             <div className="text-sm text-muted-foreground py-4">Sem dados em {filterCurrency}.</div>
