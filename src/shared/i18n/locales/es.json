@@ -22,7 +22,8 @@
       "export": "Exportar",
       "import": "Importar",
       "clear": "Limpiar",
-      "select": "Seleccionar..."
+      "select": "Seleccionar...",
+      "exportCsv": "Exportar CSV"
     },
     "fields": {
       "name": "Nombre",
@@ -111,7 +112,8 @@
       "months": "meses",
       "month": "mes",
       "quantity": "Cantidad",
-      "items": "ítems"
+      "items": "ítems",
+      "total": "Total"
     },
     "table": {
       "actions": "Acciones"
@@ -1747,7 +1749,8 @@
       "totalImpact": "Impacto"
     },
     "summary": {
-      "byBehavior": "Resumen por comportamiento"
+      "byBehavior": "Resumen por comportamiento",
+      "empty": "Aún no hay ítems registrados. Ve a la pestaña Entradas para empezar."
     },
     "charts": {
       "empty": "Sin datos para mostrar.",
@@ -1758,6 +1761,24 @@
       "monthly": {
         "title": "Flujo mensual"
       }
+    },
+    "tabs": {
+      "summary": "Resumen",
+      "entries": "Entradas",
+      "table": "Mes a mes"
+    },
+    "rail": {
+      "monthlyRevenue": "Ingreso mensual"
+    },
+    "table": {
+      "title": "Tabla mes a mes por categoría",
+      "hint": "Cada columna es una categoría. Ingresos en verde, costos/inversiones en rojo.",
+      "netMonth": "Neto del mes",
+      "cumulative": "Acumulado",
+      "compareSummary": "Resumen Comparativo",
+      "projectTotals": "Totales del Proyecto",
+      "indicator": "Indicador",
+      "margin": "Margen"
     }
   },
   "forecasts": {

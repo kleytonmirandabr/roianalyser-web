@@ -22,7 +22,8 @@
       "export": "Exportar",
       "import": "Importar",
       "clear": "Limpar",
-      "select": "Selecionar..."
+      "select": "Selecionar...",
+      "exportCsv": "Exportar CSV"
     },
     "fields": {
       "name": "Nome",
@@ -111,7 +112,8 @@
       "months": "meses",
       "month": "mês",
       "quantity": "Quantidade",
-      "items": "itens"
+      "items": "itens",
+      "total": "Total"
     },
     "table": {
       "actions": "Ações"
@@ -1747,7 +1749,8 @@
       "totalImpact": "Impacto"
     },
     "summary": {
-      "byBehavior": "Resumo por comportamento"
+      "byBehavior": "Resumo por comportamento",
+      "empty": "Nenhum item lançado ainda. Vá pra aba Lançamentos pra começar."
     },
     "charts": {
       "empty": "Sem dados pra exibir.",
@@ -1758,6 +1761,24 @@
       "monthly": {
         "title": "Fluxo mensal"
       }
+    },
+    "tabs": {
+      "summary": "Resumo",
+      "entries": "Lançamentos",
+      "table": "Tabela mês a mês"
+    },
+    "rail": {
+      "monthlyRevenue": "Receita mensal"
+    },
+    "table": {
+      "title": "Tabela mês a mês por categoria",
+      "hint": "Cada coluna é uma categoria. Receitas em verde, custos/investimentos em vermelho.",
+      "netMonth": "Líquido do mês",
+      "cumulative": "Acumulado",
+      "compareSummary": "Resumo Comparativo",
+      "projectTotals": "Totais do Projeto",
+      "indicator": "Indicador",
+      "margin": "Margem"
     }
   },
   "forecasts": {

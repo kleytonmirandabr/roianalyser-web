@@ -22,7 +22,8 @@
       "export": "Export",
       "import": "Import",
       "clear": "Clear",
-      "select": "Select..."
+      "select": "Select...",
+      "exportCsv": "Export CSV"
     },
     "fields": {
       "name": "Name",
@@ -111,7 +112,8 @@
       "months": "months",
       "month": "month",
       "quantity": "Quantity",
-      "items": "items"
+      "items": "items",
+      "total": "Total"
     },
     "table": {
       "actions": "Actions"
@@ -1747,7 +1749,8 @@
       "totalImpact": "Impact"
     },
     "summary": {
-      "byBehavior": "Summary by behavior"
+      "byBehavior": "Summary by behavior",
+      "empty": "No items entered yet. Go to the Entries tab to get started."
     },
     "charts": {
       "empty": "No data to display.",
@@ -1758,6 +1761,24 @@
       "monthly": {
         "title": "Monthly cash flow"
       }
+    },
+    "tabs": {
+      "summary": "Summary",
+      "entries": "Entries",
+      "table": "Month by month"
+    },
+    "rail": {
+      "monthlyRevenue": "Monthly revenue"
+    },
+    "table": {
+      "title": "Month-by-month table by category",
+      "hint": "Each column is a category. Revenues in green, costs/investments in red.",
+      "netMonth": "Net of month",
+      "cumulative": "Cumulative",
+      "compareSummary": "Comparative Summary",
+      "projectTotals": "Project Totals",
+      "indicator": "Indicator",
+      "margin": "Margin"
     }
   },
   "forecasts": {
