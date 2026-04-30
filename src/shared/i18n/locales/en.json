@@ -1172,7 +1172,21 @@
       "titleEdit": "Edit item",
       "titleNew": "New catalog item",
       "newButton": "New item",
-      "subtitle": "HW, software, mob, capex, cogs, services — used in Dynamic Entries."
+      "subtitle": "HW, software, mob, capex, cogs, services — used in Dynamic Entries.",
+      "behaviorLabel": "Behavior *",
+      "behaviorHelp": "Income = adds to cash flow (green); Cost = subtracts (red). One-time = single month; Monthly = every month until end of contract; Installment = N equal installments.",
+      "allowsQty": "Allows qty.",
+      "allowsDiscount": "Allows discount %",
+      "billingUnit": "Billing unit",
+      "unitPlaceholder": "unit, month, hour",
+      "behavior": {
+        "INCOME_ONE_TIME": "One-time Income",
+        "INCOME_MONTHLY": "Monthly Recurring Income",
+        "INCOME_INSTALLMENT": "Income in Installments",
+        "EXPENSE_ONE_TIME": "One-time Cost",
+        "EXPENSE_MONTHLY": "Monthly Recurring Cost",
+        "EXPENSE_INSTALLMENT": "Cost in Installments"
+      }
     },
     "itemCategories": {
       "titleEdit": "Edit category",
@@ -1184,7 +1198,13 @@
     },
     "financialTypes": {
       "titleEdit": "Edit financial type",
-      "titleNew": "New financial type"
+      "titleNew": "New financial type",
+      "pageSubtitle": "Fixed system types that determine the sign of entries in the ROI calculation.",
+      "banner": "These two types are hard-coded and cannot be created, edited or deleted. Each catalog item must reference one of them via the Behavior field. Any change here would silently break ROI math, so the surface is read-only by design.",
+      "income": "Income",
+      "incomeDesc": "Revenues — add to the cash flow of ROI.",
+      "expense": "Expense",
+      "expenseDesc": "Costs and investments — subtract from the cash flow of ROI."
     },
     "taskTemplates": {
       "titleEdit": "Edit task type",

@@ -51,6 +51,11 @@ const EMPTY: Draft = {
 }
 function asStr(v: unknown): string { return v == null ? '' : String(v) }
 
+const BEHAVIOR_KEYS = [
+  'INCOME_ONE_TIME', 'INCOME_MONTHLY', 'INCOME_INSTALLMENT',
+  'EXPENSE_ONE_TIME', 'EXPENSE_MONTHLY', 'EXPENSE_INSTALLMENT',
+] as const
+
 export function AdminCatalogItemsPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
@@ -70,6 +75,7 @@ export function AdminCatalogItemsPage() {
     { key: 'name', label: 'Nome', getValue: (r: any) => r.name },
     { key: 'code', label: 'Código', getValue: (r: any) => r.code ?? "" },
     { key: 'categoryId', label: 'Categoria', getValue: (r: any) => r.categoryId ? (categoryById.get(String(r.categoryId)) ?? "") : "" },
+    { key: 'comportamento', label: 'Comportamento', getValue: (r: any) => t(`admin.catalogItems.behavior.${r.comportamento || 'EXPENSE_ONE_TIME'}`) },
     { key: 'unit', label: 'Unidade', getValue: (r: any) => r.unit ?? "" },
   ], [])
   const dt = useDataTable(items, columns)
@@ -181,6 +187,18 @@ export function AdminCatalogItemsPage() {
                       <TableCell className="font-medium">{String(o.name)}</TableCell>
                       <TableCell className="text-xs"><code className="text-xs bg-muted/50 px-1 rounded">{asStr(o.code) || '—'}</code></TableCell>
                       <TableCell className="text-xs">{o.categoryId ? (categoryById.get(String(o.categoryId)) || '—') : <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="text-xs">
+                        {(() => {
+                          const c = String(o.comportamento || 'EXPENSE_ONE_TIME')
+                          const isIncome = c.startsWith('INCOME_')
+                          const tone = isIncome ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
+                          return (
+                            <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${tone}`}>
+                              {t(`admin.catalogItems.behavior.${c}`)}
+                            </span>
+                          )
+                        })()}
+                      </TableCell>
                       <TableCell className="text-xs">{asStr(o.unit) || <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell className="text-center space-x-1">
                         <Button size="icon" variant="ghost" onClick={() => openEdit(i)}><Pencil className="h-4 w-4" /></Button>
@@ -208,7 +226,7 @@ export function AdminCatalogItemsPage() {
                 <Input value={draft.code} onChange={(e) => setDraft({ ...draft, code: e.target.value })} />
               </div>
               <div className="space-y-1"><Label>{t('common.fields.unit')}</Label>
-                <Input value={draft.unit} onChange={(e) => setDraft({ ...draft, unit: e.target.value })} placeholder="unid, mês, hora" />
+                <Input value={draft.unit} onChange={(e) => setDraft({ ...draft, unit: e.target.value })} placeholder={t('admin.catalogItems.unitPlaceholder')} />
               </div>
               <div className="space-y-1 col-span-2"><Label>{t('common.fields.description')}</Label>
                 <Input value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
@@ -216,26 +234,16 @@ export function AdminCatalogItemsPage() {
               <div className="space-y-1"><Label>{t('common.fields.category')}</Label>
                 <Combobox options={catOptions} value={draft.categoryId} onChange={(v) => setDraft({ ...draft, categoryId: v })} />
               </div>
-              <div className="space-y-1"><Label>Unidade de Cobrança</Label>
+              <div className="space-y-1"><Label>{t('admin.catalogItems.billingUnit')}</Label>
                 <Combobox options={buOptions} value={draft.billingUnitId} onChange={(v) => setDraft({ ...draft, billingUnitId: v })} />
               </div>
-              <div className="space-y-1 col-span-2"><Label>Comportamento *</Label>
+              <div className="space-y-1 col-span-2"><Label>{t('admin.catalogItems.behaviorLabel')}</Label>
                 <Combobox
-                  options={[
-                    { value: 'INCOME_ONE_TIME',     label: 'Receita Pontual' },
-                    { value: 'INCOME_MONTHLY',      label: 'Receita Mensal Recorrente' },
-                    { value: 'INCOME_INSTALLMENT',  label: 'Receita Parcelada' },
-                    { value: 'EXPENSE_ONE_TIME',    label: 'Custo Pontual' },
-                    { value: 'EXPENSE_MONTHLY',     label: 'Custo Mensal Recorrente' },
-                    { value: 'EXPENSE_INSTALLMENT', label: 'Custo Parcelado' },
-                  ]}
+                  options={BEHAVIOR_KEYS.map(b => ({ value: b, label: t(`admin.catalogItems.behavior.${b}`) }))}
                   value={draft.comportamento}
                   onChange={(v) => setDraft({ ...draft, comportamento: (v as Draft['comportamento']) || 'EXPENSE_ONE_TIME' })}
                 />
-                <p className="text-[11px] text-muted-foreground">
-                  Receita = soma no fluxo (verde); Custo = subtrai (vermelho).
-                  Pontual = mês único; Mensal = todo mês até fim do contrato; Parcelado = N parcelas iguais.
-                </p>
+                <p className="text-[11px] text-muted-foreground">{t('admin.catalogItems.behaviorHelp')}</p>
               </div>
               <div className="space-y-1"><Label>{t('common.fields.defaultValue')}</Label>
                 <Input type="number" step="0.01" value={draft.defaultValue} onChange={(e) => setDraft({ ...draft, defaultValue: e.target.value })} />
@@ -247,11 +255,11 @@ export function AdminCatalogItemsPage() {
               <div className="col-span-2 grid grid-cols-3 gap-3 pt-2 border-t">
                 <div className="flex items-center gap-2">
                   <Checkbox checked={draft.allowsQuantity} onCheckedChange={(c) => setDraft({ ...draft, allowsQuantity: c === true })} />
-                  <Label>Permite qtd.</Label>
+                  <Label>{t('admin.catalogItems.allowsQty')}</Label>
                 </div>
                 <div className="flex items-center gap-2">
                   <Checkbox checked={draft.allowsDiscountPct} onCheckedChange={(c) => setDraft({ ...draft, allowsDiscountPct: c === true })} />
-                  <Label>Permite desconto %</Label>
+                  <Label>{t('admin.catalogItems.allowsDiscount')}</Label>
                 </div>
                 <div className="flex items-center gap-2">
                   <Checkbox checked={draft.active} onCheckedChange={(c) => setDraft({ ...draft, active: c === true })} />
