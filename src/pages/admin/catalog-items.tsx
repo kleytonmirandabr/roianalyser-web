@@ -180,7 +180,6 @@ export function AdminCatalogItemsPage() {
                     <TableRow key={String(o.id)}>
                       <TableCell className="font-medium">{String(o.name)}</TableCell>
                       <TableCell className="text-xs"><code className="text-xs bg-muted/50 px-1 rounded">{asStr(o.code) || '—'}</code></TableCell>
-                      <TableCell className="text-xs">{asStr(o.cat) || <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell className="text-xs">{o.categoryId ? (categoryById.get(String(o.categoryId)) || '—') : <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell className="text-xs">{asStr(o.unit) || <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell className="text-center space-x-1">
