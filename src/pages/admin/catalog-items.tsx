@@ -257,46 +257,67 @@ export function AdminCatalogItemsPage() {
             <DataTablePagination state={dt} />
           </>
         ) : (
-          /* ─────────── Cards View ─────────── */
-          <div className="p-4">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {items.map((i) => {
+          /* ─────────── Cards View — agrupada por categoria + scroll ─────────── */
+          <div className="max-h-[70vh] overflow-y-auto p-4 space-y-6">
+            {(() => {
+              // Agrupa items por categoryId. Items sem categoria caem em "Sem categoria".
+              const grouped = new Map<string, { catName: string; items: CatalogItem[] }>()
+              for (const i of items) {
                 const o = i as unknown as Record<string, unknown>
-                const cur = String(o.currency || 'BRL').toUpperCase()
-                const dv = Number(o.defaultValue) || 0
-                const code = asStr(o.code)
-                const catName = o.categoryId ? (categoryById.get(String(o.categoryId)) || '—') : null
-                const buName = o.billingUnitId ? (billingUnitById.get(String(o.billingUnitId)) || '—') : null
-                const comp = asStr(o.comportamento) || 'EXPENSE_ONE_TIME'
-                const isInactive = o.active === false
-                return (
-                  <div key={String(o.id)} className={`rounded-lg border bg-card p-3 hover:shadow-sm transition ${isInactive ? 'opacity-60' : ''}`}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-semibold truncate">{String(o.name)}</div>
-                        {code && <code className="text-[10px] bg-muted/50 px-1 rounded inline-block mt-0.5">{code}</code>}
-                      </div>
-                      <div className="flex items-center gap-0.5">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(i)}>
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(i)}>
-                          <Trash2 className="h-3 w-3 text-red-600" />
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="mt-2 space-y-1">
-                      {catName && <div className="text-[11px] text-muted-foreground">{catName}{buName ? ` · ${buName}` : ''}</div>}
-                      <div><BehaviorBadge c={comp} /></div>
-                    </div>
-                    <div className="mt-3 pt-2 border-t flex items-baseline justify-between">
-                      <span className="text-[10px] text-muted-foreground">{t('common.fields.defaultValue')}</span>
-                      <span className="tabular-nums font-semibold">{formatCurrency(dv, cur)}</span>
-                    </div>
+                const catId = o.categoryId ? String(o.categoryId) : '__none__'
+                const catName = catId === '__none__'
+                  ? t('common.uncategorized', 'Sem categoria')
+                  : (categoryById.get(catId) || '—')
+                if (!grouped.has(catId)) grouped.set(catId, { catName, items: [] })
+                grouped.get(catId)!.items.push(i)
+              }
+              const sorted = Array.from(grouped.entries()).sort((a, b) => a[1].catName.localeCompare(b[1].catName, 'pt-BR'))
+              return sorted.map(([catId, { catName, items: groupItems }]) => (
+                <section key={catId}>
+                  <header className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 mb-2 pb-1 border-b flex items-center justify-between">
+                    <h3 className="text-sm font-semibold">{catName}</h3>
+                    <span className="text-xs text-muted-foreground">{groupItems.length} {groupItems.length === 1 ? 'item' : 'itens'}</span>
+                  </header>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {groupItems.map((i) => {
+                      const o = i as unknown as Record<string, unknown>
+                      const cur = String(o.currency || 'BRL').toUpperCase()
+                      const dv = Number(o.defaultValue) || 0
+                      const code = asStr(o.code)
+                      const buName = o.billingUnitId ? (billingUnitById.get(String(o.billingUnitId)) || '—') : null
+                      const comp = asStr(o.comportamento) || 'EXPENSE_ONE_TIME'
+                      const isInactive = o.active === false
+                      return (
+                        <div key={String(o.id)} className={`rounded-lg border bg-card p-3 hover:shadow-sm transition ${isInactive ? 'opacity-60' : ''}`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-semibold truncate">{String(o.name)}</div>
+                              {code && <code className="text-[10px] bg-muted/50 px-1 rounded inline-block mt-0.5">{code}</code>}
+                            </div>
+                            <div className="flex items-center gap-0.5">
+                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(i)}>
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(i)}>
+                                <Trash2 className="h-3 w-3 text-red-600" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="mt-2 space-y-1">
+                            {buName && <div className="text-[11px] text-muted-foreground">{buName}</div>}
+                            <div><BehaviorBadge c={comp} /></div>
+                          </div>
+                          <div className="mt-3 pt-2 border-t flex items-baseline justify-between">
+                            <span className="text-[10px] text-muted-foreground">{t('common.fields.defaultValue')}</span>
+                            <span className="tabular-nums font-semibold">{formatCurrency(dv, cur)}</span>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
-                )
-              })}
-            </div>
+                </section>
+              ))
+            })()}
           </div>
         )}
       </Card>

@@ -1,6 +1,12 @@
 /**
  * CurrencyInput — campo numérico com máscara baseada na moeda selecionada.
  * Internamente armazena como Number; mostra formatado (ex: R$ 1.234,56).
+ *
+ * Regras de digitação:
+ *   - Em foco, o input mostra o número "raw" (ex: "1234,56" pt-BR / "1234.56" en-US).
+ *   - Aceita apenas: dígitos, vírgula, ponto e sinal de menos.
+ *   - Caracteres inválidos são silenciosamente descartados durante a digitação.
+ *   - Em blur, parseia → onChange(Number) → reformat com símbolo da moeda.
  */
 import { useEffect, useState } from 'react'
 
@@ -43,6 +49,14 @@ function parseInput(text: string, currency: string): number | null {
   return Number.isFinite(n) ? n : null
 }
 
+/**
+ * Filtra caracteres permitidos durante a edição: dígitos, vírgula, ponto e sinal.
+ * Tudo o resto é descartado (não aparece no input).
+ */
+function filterDuringEdit(text: string): string {
+  return text.replace(/[^\d,.\-]/g, '')
+}
+
 export function CurrencyInput({ value, currency, onChange, placeholder }: Props) {
   const [text, setText] = useState<string>(
     value != null ? formatForCurrency(value, currency) : ''
@@ -59,12 +73,17 @@ export function CurrencyInput({ value, currency, onChange, placeholder }: Props)
   return (
     <Input
       value={text}
+      inputMode="decimal"
       onFocus={() => {
         setEditing(true)
         // Show raw number for edit
         setText(value != null ? String(value).replace('.', LOCALE_BY_CCY[currency] === 'en-US' ? '.' : ',') : '')
       }}
-      onChange={(e) => setText(e.target.value)}
+      onChange={(e) => {
+        // Filtra caracteres inválidos no momento da digitação — input só
+        // aceita dígitos, vírgula, ponto e sinal de menos.
+        setText(filterDuringEdit(e.target.value))
+      }}
       onBlur={() => {
         setEditing(false)
         const n = parseInput(text, currency)
