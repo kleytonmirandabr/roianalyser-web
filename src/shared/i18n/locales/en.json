@@ -1779,6 +1779,11 @@
       "projectTotals": "Project Totals",
       "indicator": "Indicator",
       "margin": "Margin"
+    },
+    "irr": {
+      "noFlow": "No cash flow inversion — IRR undefined.",
+      "veryHigh": "Very high IRR",
+      "veryHighHint": "highly profitable project (small invested capital vs. high return)."
     }
   },
   "forecasts": {

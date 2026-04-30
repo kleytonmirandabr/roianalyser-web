@@ -1779,6 +1779,11 @@
       "projectTotals": "Totales del Proyecto",
       "indicator": "Indicador",
       "margin": "Margen"
+    },
+    "irr": {
+      "noFlow": "Sin inversión de flujo de caja — TIR no definida.",
+      "veryHigh": "TIR muy alta",
+      "veryHighHint": "proyecto altamente rentable (capital invertido pequeño vs. retorno alto)."
     }
   },
   "forecasts": {

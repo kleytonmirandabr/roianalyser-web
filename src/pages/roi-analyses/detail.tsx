@@ -34,6 +34,7 @@ import { Combobox } from '@/shared/ui/combobox'
 import { Input } from '@/shared/ui/input'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 import { CustomFieldsCard } from '@/features/form-fields/components/custom-fields-card'
 import { CumulativeCashFlowChart, MonthlyCashFlowChart } from './charts'
 import { MonthlyByCategoryTable } from './monthly-table'
@@ -282,7 +283,7 @@ export function RoiAnalysisDetailPage() {
           <RailCell label={t('roiAnalyses.rail.monthlyRevenue', 'Receita mensal')} value={formatCurrency(monthlyRevenue, cur)} tone="emerald" />
           <RailCell label={t('common.fields.netValue', 'Resultado')} value={formatCurrency(netValue, cur)} tone={netValue >= 0 ? 'emerald' : 'rose'} />
           <RailCell label={t('common.fields.payback')} value={paybackMonths != null ? `${paybackMonths} ${t('common.fields.months', 'meses')}` : '—'} tone="neutral" />
-          <RailCell label="TIR a.a." value={irr != null ? formatPercent(irr * 100, 2) : '—'} tone="neutral" />
+          <RailCellIrr label="TIR a.a." irr={irr} />
         </div>
       </div>
 
@@ -315,7 +316,7 @@ export function RoiAnalysisDetailPage() {
             <Card className="p-4">
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between"><span className="text-muted-foreground">NPV</span><span className="tabular-nums font-medium">{formatCurrency(npv, cur)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">TIR a.a.</span><span className="tabular-nums font-medium">{irr != null ? formatPercent(irr * 100, 2) : '—'}</span></div>
+                <div className="flex justify-between items-center"><span className="text-muted-foreground">TIR a.a.</span><IrrDisplay irr={irr} /></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">{t('common.fields.payback')}</span><span className="tabular-nums font-medium">{paybackMonths != null ? `${paybackMonths} ${t('common.fields.months', 'meses')}` : '—'}</span></div>
               </div>
             </Card>
@@ -658,3 +659,72 @@ function BehaviorBadge({ c }: { c: string | null }) {
       : 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
   return <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] ${cls}`}>{t(`admin.catalogItems.behavior.${c}`, c)}</span>
 }
+function IrrDisplay({ irr }: { irr: number | null }) {
+  const { t } = useTranslation()
+  if (irr == null) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="tabular-nums font-medium text-muted-foreground cursor-help underline decoration-dotted underline-offset-2">—</span>
+        </TooltipTrigger>
+        <TooltipContent>{t('roiAnalyses.irr.noFlow', 'Sem inversão de fluxo de caixa — TIR não definida.')}</TooltipContent>
+      </Tooltip>
+    )
+  }
+  if (irr > 1.0) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="tabular-nums font-medium text-emerald-700 cursor-help underline decoration-dotted underline-offset-2">&gt;100% a.a.</span>
+        </TooltipTrigger>
+        <TooltipContent>
+          {t('roiAnalyses.irr.veryHigh', 'TIR muito alta')}: {formatPercent(irr * 100, 2)} — {t('roiAnalyses.irr.veryHighHint', 'projeto altamente rentável (capital investido pequeno vs. retorno alto).')}
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+  if (irr < 0) {
+    return <span className="tabular-nums font-medium text-rose-700">{formatPercent(irr * 100, 2)}</span>
+  }
+  return <span className="tabular-nums font-medium">{formatPercent(irr * 100, 2)}</span>
+}
+
+function RailCellIrr({ label, irr }: { label: string; irr: number | null }) {
+  const { t } = useTranslation()
+  if (irr == null) {
+    return (
+      <div>
+        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="text-lg font-semibold tabular-nums text-muted-foreground cursor-help underline decoration-dotted underline-offset-2 inline-block">—</div>
+          </TooltipTrigger>
+          <TooltipContent>{t('roiAnalyses.irr.noFlow', 'Sem inversão de fluxo de caixa — TIR não definida.')}</TooltipContent>
+        </Tooltip>
+      </div>
+    )
+  }
+  if (irr > 1.0) {
+    return (
+      <div>
+        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="text-lg font-semibold tabular-nums text-emerald-700 cursor-help underline decoration-dotted underline-offset-2 inline-block">&gt;100% a.a.</div>
+          </TooltipTrigger>
+          <TooltipContent>
+            {t('roiAnalyses.irr.veryHigh', 'TIR muito alta')}: {formatPercent(irr * 100, 2)}
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    )
+  }
+  const tone = irr < 0 ? 'text-rose-700' : ''
+  return (
+    <div>
+      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className={`text-lg font-semibold tabular-nums ${tone}`}>{formatPercent(irr * 100, 2)}</div>
+    </div>
+  )
+}
+
