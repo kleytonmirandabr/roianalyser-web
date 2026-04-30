@@ -69,7 +69,6 @@ export function AdminCatalogItemsPage() {
   const columns = useMemo<DataTableColumn<CatalogItem>[]>(() => [
     { key: 'name', label: 'Nome', getValue: (r: any) => r.name },
     { key: 'code', label: 'Código', getValue: (r: any) => r.code ?? "" },
-    { key: 'cat', label: 'Cat', getValue: (r: any) => r.cat ?? "" },
     { key: 'categoryId', label: 'Categoria', getValue: (r: any) => r.categoryId ? (categoryById.get(String(r.categoryId)) ?? "") : "" },
     { key: 'unit', label: 'Unidade', getValue: (r: any) => r.unit ?? "" },
   ], [])

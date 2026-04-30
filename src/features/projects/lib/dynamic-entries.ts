@@ -24,6 +24,26 @@ import { clamp } from './money'
  * Dinâmicas. Lê do `CatalogItem` genérico (index signature) e tipa só os
  * campos relevantes pra herança de defaults / policies.
  */
+export type Comportamento =
+  | 'INCOME_ONE_TIME'  | 'INCOME_MONTHLY'  | 'INCOME_INSTALLMENT'
+  | 'EXPENSE_ONE_TIME' | 'EXPENSE_MONTHLY' | 'EXPENSE_INSTALLMENT'
+
+/** Mapeia comportamento → calculation_mode legado pra manter compat. */
+function comportamentoToCalcMode(c?: Comportamento | string | null): string {
+  if (!c) return 'one_time'
+  if (c.endsWith('_MONTHLY'))     return 'recurring'
+  if (c.endsWith('_INSTALLMENT')) return 'installment'
+  return 'one_time'
+}
+
+/** Mapeia comportamento → flags revenue/cost. Investment fica false. */
+function comportamentoToFlowFlags(c?: Comportamento | string | null): { revenue: boolean; cost: boolean } {
+  if (!c) return { revenue: false, cost: false }
+  if (c.startsWith('INCOME_'))  return { revenue: true,  cost: false }
+  if (c.startsWith('EXPENSE_')) return { revenue: false, cost: true  }
+  return { revenue: false, cost: false }
+}
+
 export type DynamicEntryCatalogItem = {
   id: string
   name?: string
@@ -32,6 +52,7 @@ export type DynamicEntryCatalogItem = {
   financialTypeId?: string
   billingUnitId?: string
   calculationMode?: string
+  comportamento?: Comportamento | string
   defaultValue?: number
   /** Valor legado — usado como fallback de `defaultValue`. */
   valHw?: number
@@ -270,18 +291,31 @@ export function entryFromCatalogItem(
   financialType?: DynamicEntryFinancialType | null,
 ): DynamicEntry {
   const policy = getFieldPolicy(item)
-  const flags = resolveEntryFlags(
-    { affectsRevenue: false, affectsCost: false, affectsInvestment: false },
-    financialType,
-    item,
-  )
+  /* Sprint #231/#233: comportamento é fonte da verdade pra calc mode + sinal.
+     Quando item.comportamento existe, ignora financialType + calculationMode
+     legados. Pra catálogos antigos sem comportamento, mantém a lógica anterior. */
+  const comp = item.comportamento as Comportamento | undefined
+  let derivedCalcMode: string
+  let flags: { affectsRevenue: boolean; affectsCost: boolean; affectsInvestment: boolean }
+  if (comp) {
+    derivedCalcMode = comportamentoToCalcMode(comp)
+    const f = comportamentoToFlowFlags(comp)
+    flags = { affectsRevenue: f.revenue, affectsCost: f.cost, affectsInvestment: false }
+  } else {
+    derivedCalcMode = item.calculationMode ?? 'one_time'
+    flags = resolveEntryFlags(
+      { affectsRevenue: false, affectsCost: false, affectsInvestment: false },
+      financialType,
+      item,
+    )
+  }
   return makeDynamicEntry({
     itemId: item.id,
     itemName: item.name ?? '',
     categoryId: item.categoryId ?? '',
     financialTypeId: item.financialTypeId ?? '',
     billingUnitId: item.billingUnitId ?? '',
-    calculationMode: item.calculationMode ?? 'one_time',
+    calculationMode: derivedCalcMode,
     quantity: policy.quantity ? 1 : 1,
     unitValue: numberOr(item.defaultValue, numberOr(item.valHw, 0)),
     discountPct: 0,
