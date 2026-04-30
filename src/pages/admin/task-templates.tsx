@@ -126,7 +126,7 @@ export function AdminTaskTemplatesPage() {
         {isLoading ? (
           <div className="p-6"><Skeleton className="h-5 w-1/2" /></div>
         ) : items.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">Nenhum tipo de tarefa configurado.</div>
+          <div className="p-8 text-center text-sm text-muted-foreground">{t('common.empty.taskType')}</div>
         ) : (
           <>
             <DataTableActiveFilters state={dt} columns={columns} />

@@ -107,7 +107,7 @@ export function AdminSalesGoalsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{t('nav.adminSalesGoals')}</h1>
-          <p className="text-sm text-muted-foreground">Catálogo configurável.</p>
+          <p className="text-sm text-muted-foreground">{t('admin.shared.configurable')}</p>
         </div>
         <div className="flex items-center gap-2">
           <CsvExportButton
@@ -128,7 +128,7 @@ export function AdminSalesGoalsPage() {
         {isLoading ? (
           <div className="p-6"><Skeleton className="h-5 w-1/2" /></div>
         ) : items.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">Nenhum item.</div>
+          <div className="p-8 text-center text-sm text-muted-foreground">{t('common.empty.items')}</div>
         ) : (
           <>
             <DataTableActiveFilters state={dt} columns={columns} />

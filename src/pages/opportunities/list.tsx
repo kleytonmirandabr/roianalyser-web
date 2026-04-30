@@ -11,6 +11,7 @@
  * - Seleção múltipla com bulk-delete (dialog de motivo obrigatório)
  */
 import { Plus, BarChart3, Settings2, Trash2, Pencil, Search, Filter, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
@@ -94,6 +95,7 @@ function saveVisibleColumns(userId: string, cols: Set<ColumnId>): void {
 }
 
 export function OpportunitiesListPage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const tz = useUserTimezone()
   const [params, setParams] = useSearchParams()
@@ -267,8 +269,8 @@ export function OpportunitiesListPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Oportunidades</h1>
-          <p className="text-sm text-muted-foreground">Funil comercial — leads em movimento</p>
+          <h1 className="text-2xl font-bold">{t('nav.opportunities')}</h1>
+          <p className="text-sm text-muted-foreground">{t('opportunities.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild><Link to="/opportunities/dashboard"><BarChart3 className="h-4 w-4 mr-2" /> Dashboard</Link></Button>
@@ -361,7 +363,7 @@ export function OpportunitiesListPage() {
           </Button>
           {colsOpen && (
             <div className="absolute right-0 top-full mt-1 z-10 bg-popover text-popover-foreground border rounded-md shadow-lg p-3 w-64">
-              <div className="text-xs font-semibold text-muted-foreground mb-2">Colunas visíveis</div>
+              <div className="text-xs font-semibold text-muted-foreground mb-2">{t('opportunities.visibleColumns')}</div>
               <div className="space-y-1.5 max-h-80 overflow-y-auto">
                 {ALL_COLUMNS.map(col => (
                   <label key={col.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/30 rounded px-1.5 py-1">
@@ -378,7 +380,7 @@ export function OpportunitiesListPage() {
                 ))}
               </div>
               <div className="mt-2 pt-2 border-t flex justify-end">
-                <Button size="sm" variant="ghost" onClick={() => setColsOpen(false)}>Fechar</Button>
+                <Button size="sm" variant="ghost" onClick={() => setColsOpen(false)}>{t('common.actions.close')}</Button>
               </div>
             </div>
           )}

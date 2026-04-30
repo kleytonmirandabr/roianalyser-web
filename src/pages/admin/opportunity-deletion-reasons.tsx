@@ -115,7 +115,7 @@ export function AdminOpportunityDeletionReasonsPage() {
         {isLoading ? (
           <div className="p-6"><Skeleton className="h-5 w-1/2" /></div>
         ) : items.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">Nenhum motivo cadastrado.</div>
+          <div className="p-8 text-center text-sm text-muted-foreground">{t('common.empty.reason')}</div>
         ) : (
           <>
             <DataTableActiveFilters state={dt} columns={columns} />

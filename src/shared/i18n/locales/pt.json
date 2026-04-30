@@ -77,6 +77,16 @@
     },
     "table": {
       "actions": "Ações"
+    },
+    "empty": {
+      "items": "Nenhum item.",
+      "company": "Nenhuma empresa cadastrada.",
+      "contact": "Nenhum contato cadastrado.",
+      "reason": "Nenhum motivo cadastrado.",
+      "type": "Nenhum tipo configurado.",
+      "status": "Nenhum status configurado.",
+      "taskType": "Nenhum tipo de tarefa configurado.",
+      "item": "Nenhum item cadastrado."
     }
   },
   "entryTable": {
@@ -1047,12 +1057,14 @@
     "companies": {
       "titleEdit": "Editar empresa",
       "titleNew": "Nova empresa",
-      "newButton": "Nova empresa"
+      "newButton": "Nova empresa",
+      "subtitle": "Clientes e parceiros — endereço, setor e redes."
     },
     "contacts": {
       "titleEdit": "Editar contato",
       "titleNew": "Novo contato",
-      "newButton": "Novo contato"
+      "newButton": "Novo contato",
+      "subtitle": "Pessoas vinculadas a empresas — comercial, técnico, etc."
     },
     "sectors": {
       "titleEdit": "Editar setor",
@@ -1084,7 +1096,8 @@
     "catalogItems": {
       "titleEdit": "Editar item",
       "titleNew": "Novo item do catálogo",
-      "newButton": "Novo item"
+      "newButton": "Novo item",
+      "subtitle": "HW, software, mob, capex, cogs, serviços — usados nas Entradas Dinâmicas."
     },
     "itemCategories": {
       "titleEdit": "Editar categoria",
@@ -1105,6 +1118,9 @@
     "userGroups": {
       "titleEdit": "Editar grupo",
       "titleNew": "Novo grupo"
+    },
+    "shared": {
+      "configurable": "Catálogo configurável."
     }
   },
   "imports": {
@@ -1384,5 +1400,9 @@
     "adminOpportunityDeletionReasons": "Motivos de Exclusão",
     "tasks": "Tarefas",
     "adminEmailLog": "Logs de Email"
+  },
+  "opportunities": {
+    "subtitle": "Funil comercial — leads em movimento",
+    "visibleColumns": "Colunas visíveis"
   }
 }

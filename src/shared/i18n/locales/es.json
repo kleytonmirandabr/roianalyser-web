@@ -77,6 +77,16 @@
     },
     "table": {
       "actions": "Acciones"
+    },
+    "empty": {
+      "items": "Sin elementos.",
+      "company": "No hay empresas registradas.",
+      "contact": "No hay contactos registrados.",
+      "reason": "No hay razones registradas.",
+      "type": "No hay tipos configurados.",
+      "status": "No hay estados configurados.",
+      "taskType": "No hay tipos de tarea configurados.",
+      "item": "No hay elementos registrados."
     }
   },
   "entryTable": {
@@ -1047,12 +1057,14 @@
     "companies": {
       "titleEdit": "Editar empresa",
       "titleNew": "Nueva empresa",
-      "newButton": "Nueva empresa"
+      "newButton": "Nueva empresa",
+      "subtitle": "Clientes y socios — dirección, sector y redes."
     },
     "contacts": {
       "titleEdit": "Editar contacto",
       "titleNew": "Nuevo contacto",
-      "newButton": "Nuevo contacto"
+      "newButton": "Nuevo contacto",
+      "subtitle": "Personas vinculadas a empresas — comercial, técnico, etc."
     },
     "sectors": {
       "titleEdit": "Editar sector",
@@ -1084,7 +1096,8 @@
     "catalogItems": {
       "titleEdit": "Editar artículo",
       "titleNew": "Nuevo artículo del catálogo",
-      "newButton": "Nuevo artículo"
+      "newButton": "Nuevo artículo",
+      "subtitle": "HW, software, mob, capex, cogs, servicios — usados en las Entradas Dinámicas."
     },
     "itemCategories": {
       "titleEdit": "Editar categoría",
@@ -1105,6 +1118,9 @@
     "userGroups": {
       "titleEdit": "Editar grupo",
       "titleNew": "Nuevo grupo"
+    },
+    "shared": {
+      "configurable": "Catálogo configurable."
     }
   },
   "imports": {
@@ -1384,5 +1400,9 @@
     "adminOpportunityDeletionReasons": "Motivos de Exclusión",
     "tasks": "Tareas",
     "adminEmailLog": "Logs de Correo"
+  },
+  "opportunities": {
+    "subtitle": "Funnel comercial — leads en movimiento",
+    "visibleColumns": "Columnas visibles"
   }
 }

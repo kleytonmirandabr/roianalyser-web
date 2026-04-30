@@ -116,7 +116,7 @@ export function AdminOpportunityTypesPage() {
         {isLoading ? (
           <div className="p-6"><Skeleton className="h-5 w-1/2" /></div>
         ) : items.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">Nenhum tipo configurado.</div>
+          <div className="p-8 text-center text-sm text-muted-foreground">{t('common.empty.type')}</div>
         ) : (
           <>
             <DataTableActiveFilters state={dt} columns={columns} />

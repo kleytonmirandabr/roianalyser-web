@@ -148,7 +148,7 @@ export function AdminCompaniesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{t('nav.adminCompanies')}</h1>
-          <p className="text-sm text-muted-foreground">Clientes e parceiros — endereço, setor e redes.</p>
+          <p className="text-sm text-muted-foreground">{t('admin.companies.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <CsvExportButton
@@ -175,7 +175,7 @@ export function AdminCompaniesPage() {
         {isLoading ? (
           <div className="p-6"><Skeleton className="h-5 w-1/2" /></div>
         ) : items.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">Nenhuma empresa cadastrada.</div>
+          <div className="p-8 text-center text-sm text-muted-foreground">{t('common.empty.company')}</div>
         ) : (
           <>
             <DataTableActiveFilters state={dt} columns={columns} />

@@ -77,6 +77,16 @@
     },
     "table": {
       "actions": "Actions"
+    },
+    "empty": {
+      "items": "No items.",
+      "company": "No companies registered.",
+      "contact": "No contacts registered.",
+      "reason": "No reasons registered.",
+      "type": "No types configured.",
+      "status": "No statuses configured.",
+      "taskType": "No task types configured.",
+      "item": "No items registered."
     }
   },
   "entryTable": {
@@ -1047,12 +1057,14 @@
     "companies": {
       "titleEdit": "Edit company",
       "titleNew": "New company",
-      "newButton": "New company"
+      "newButton": "New company",
+      "subtitle": "Clients and partners — address, sector and networks."
     },
     "contacts": {
       "titleEdit": "Edit contact",
       "titleNew": "New contact",
-      "newButton": "New contact"
+      "newButton": "New contact",
+      "subtitle": "People linked to companies — sales, technical, etc."
     },
     "sectors": {
       "titleEdit": "Edit sector",
@@ -1084,7 +1096,8 @@
     "catalogItems": {
       "titleEdit": "Edit item",
       "titleNew": "New catalog item",
-      "newButton": "New item"
+      "newButton": "New item",
+      "subtitle": "HW, software, mob, capex, cogs, services — used in Dynamic Entries."
     },
     "itemCategories": {
       "titleEdit": "Edit category",
@@ -1105,6 +1118,9 @@
     "userGroups": {
       "titleEdit": "Edit group",
       "titleNew": "New group"
+    },
+    "shared": {
+      "configurable": "Configurable catalog."
     }
   },
   "imports": {
@@ -1384,5 +1400,9 @@
     "adminOpportunityDeletionReasons": "Deletion Reasons",
     "tasks": "Tasks",
     "adminEmailLog": "Email Logs"
+  },
+  "opportunities": {
+    "subtitle": "Sales funnel — leads in motion",
+    "visibleColumns": "Visible columns"
   }
 }

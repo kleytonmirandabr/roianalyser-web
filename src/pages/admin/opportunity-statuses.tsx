@@ -159,7 +159,7 @@ export function AdminOpportunityStatusesPage() {
         {isLoading ? (
           <div className="p-6 space-y-3"><Skeleton className="h-5 w-1/2" /><Skeleton className="h-5 w-2/3" /></div>
         ) : items.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">Nenhum status configurado.</div>
+          <div className="p-8 text-center text-sm text-muted-foreground">{t('common.empty.status')}</div>
         ) : (
           <>
             <DataTableActiveFilters state={dt} columns={columns} />
