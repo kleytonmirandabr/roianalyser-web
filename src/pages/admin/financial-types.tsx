@@ -1,169 +1,98 @@
-/** Admin → Tipo Financeiro (master only). */
-import { Pencil, Plus, Save, Trash2 } from 'lucide-react'
+/**
+ * Admin → Tipos Financeiros (Sprint #231).
+ *
+ * Read-only. Os 2 tipos (INCOME / EXPENSE) são fixos do sistema e governam
+ * o sinal das entradas no cálculo do ROI. Não são editáveis nem deletáveis.
+ */
+import { ArrowDownCircle, ArrowUpCircle, Info } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 
 import { useAuth } from '@/features/auth/hooks/use-auth'
-import {
-  useCreateFinancialType, useDeleteFinancialType,
-  useFinancialTypes, useUpdateFinancialType,
-} from '@/features/financial-types/hooks/use-financial-types'
-import type { FinancialType } from '@/features/financial-types/types'
-import { confirm } from '@/shared/ui/confirm-dialog'
-import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
-import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
-import { Checkbox } from '@/shared/ui/checkbox'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
-import { Skeleton } from '@/shared/ui/skeleton'
-import {
-  DataTableActiveFilters, DataTableHeaderCell, DataTablePagination,
-  useDataTable, type DataTableColumn,
-} from '@/shared/ui/data-table'
-import { slugify } from '@/shared/lib/slugify'
-import { AuditInfoFooter } from '@/shared/ui/audit-info-footer'
-import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
-import { CsvExportButton } from '@/shared/ui/csv-export-button'
-interface Draft {
-  id?: string; key: string; name: string;
-  displayOrder: number; active: boolean;
-}
-const EMPTY: Draft = { key: '', name: '', displayOrder: 0, active: true }
+const TYPES = [
+  {
+    key: 'INCOME',
+    name: 'Entrada',
+    nameEn: 'Income',
+    nameEs: 'Entrada',
+    sign: '+',
+    desc: 'Receitas — somam no fluxo de caixa do ROI.',
+    descEn: 'Revenues — add to the cash flow.',
+    descEs: 'Ingresos — suman al flujo de caja.',
+    color: 'emerald',
+    Icon: ArrowUpCircle,
+  },
+  {
+    key: 'EXPENSE',
+    name: 'Saída',
+    nameEn: 'Expense',
+    nameEs: 'Salida',
+    sign: '−',
+    desc: 'Custos e investimentos — subtraem no fluxo de caixa do ROI.',
+    descEn: 'Costs and investments — subtract from the cash flow.',
+    descEs: 'Costos e inversiones — restan del flujo de caja.',
+    color: 'rose',
+    Icon: ArrowDownCircle,
+  },
+] as const
 
 export function AdminFinancialTypesPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { user } = useAuth()
-  const [open, setOpen] = useState(false)
-  const [draft, setDraft] = useState<Draft>(EMPTY)
-  const { data, isLoading } = useFinancialTypes()
-  const create = useCreateFinancialType()
-  const update = useUpdateFinancialType(draft.id)
-  const del = useDeleteFinancialType()
-
   if (user && !user.isMaster) return <Navigate to="/admin" replace />
-  const items = (data ?? []) as FinancialType[]
-  const columns = useMemo<DataTableColumn<FinancialType>[]>(() => [
-    { key: 'name', label: 'Nome', getValue: (r: any) => r.name },
-  ], [])
-  const dt = useDataTable(items, columns)
 
-  function openCreate() { setDraft(EMPTY); setOpen(true) }
-  function openEdit(item: FinancialType) {
-    const it = item as unknown as Record<string, unknown>
-    setDraft({
-      id: String(it.id), key: String(it.key), name: String(it.name),
-      displayOrder: Number(it.displayOrder ?? 0), active: it.active !== false,
-    createdAt: (it.createdAt as string) || null,
-    updatedAt: (it.updatedAt as string) || null,
-    } as any)
-    setOpen(true)
-  }
-  async function handleDelete(item: FinancialType) {
-    const it = item as unknown as Record<string, unknown>
-    const ok = await confirm({ title: `Excluir "${String(it.name)}"?`, destructive: true })
-    if (!ok) return
-    try { await del.mutateAsync(String(it.id)); toastDeleted('Removido') } catch (e) { toastError(e) }
-  }
-  async function handleSave() {
-    if (!draft.name.trim()) return toastError(new Error('Informe o nome'))
-    try {
-      if (draft.id) {
-        await update.mutateAsync({ name: draft.name.trim(), displayOrder: draft.displayOrder, active: draft.active })
-      } else {
-        await create.mutateAsync({ key: (draft.key.trim() || slugify(draft.name)), name: draft.name.trim(), displayOrder: draft.displayOrder, active: draft.active })
-      }
-      toastSaved('Salvo'); setOpen(false)
-    } catch (e) { toastError(e) }
-  }
+  const lang = i18n.language?.startsWith('en') ? 'en' : i18n.language?.startsWith('es') ? 'es' : 'pt'
+  const nameKey = lang === 'en' ? 'nameEn' : lang === 'es' ? 'nameEs' : 'name'
+  const descKey = lang === 'en' ? 'descEn' : lang === 'es' ? 'descEs' : 'desc'
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{t('nav.adminFinancialTypes')}</h1>
-          <p className="text-sm text-muted-foreground">{t('admin.shared.configurable')}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <CsvExportButton
-            filename="tipos-financeiros"
-            rows={(dt.rows as any[])}
-            columns={[
-              { key: 'id', label: 'ID', getValue: (r) => (r as any).id },
-              { key: 'name', label: 'Nome', getValue: (r) => (r as any).name },
-              { key: 'active', label: 'Ativo', getValue: (r) => (r as any).active !== false },
-              { key: 'createdAt', label: 'Criado em', getValue: (r) => (r as any).createdAt },
-              { key: 'updatedAt', label: 'Atualizado em', getValue: (r) => (r as any).updatedAt },
-            ]}
-          />
-          <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Novo</Button>
-        </div>
+    <div className="mx-auto w-full max-w-3xl space-y-4 p-6">
+      <div>
+        <h1 className="text-2xl font-bold">{t('nav.adminFinancialTypes')}</h1>
+        <p className="text-sm text-muted-foreground">
+          {lang === 'en'
+            ? 'Fixed system types that determine the sign of entries in the ROI calculation.'
+            : lang === 'es'
+            ? 'Tipos fijos del sistema que determinan el signo de las entradas en el cálculo del ROI.'
+            : 'Tipos fixos do sistema que determinam o sinal das entradas no cálculo do ROI.'}
+        </p>
       </div>
-      <Card className="p-0 overflow-hidden">
-        {isLoading ? (
-          <div className="p-6"><Skeleton className="h-5 w-1/2" /></div>
-        ) : items.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">{t('common.empty.items')}</div>
-        ) : (
-          <>
-            <DataTableActiveFilters state={dt} columns={columns} />
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {columns.map(col => (
-                    <DataTableHeaderCell key={col.key} column={col} state={dt} />
-                  ))}
-                  <TableHead className="w-32 text-center">{t('common.table.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {dt.paginatedRows.map((t) => {
-                  const it = t as unknown as Record<string, unknown>
-                  return (
-                    <TableRow key={String(it.id)}>
-                      <TableCell className="font-medium">{String(it.name)}</TableCell>
-                      <TableCell className="text-center space-x-1">
-                        <Button size="icon" variant="ghost" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
-                        <Button size="icon" variant="ghost" onClick={() => handleDelete(t)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-            <DataTablePagination state={dt} />
-          </>
-        )}
+
+      <Card className="flex items-start gap-3 border-blue-200/60 bg-blue-50/40 p-3 text-sm dark:border-blue-900/50 dark:bg-blue-950/20">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-700 dark:text-blue-400" />
+        <p className="text-xs text-muted-foreground">
+          {lang === 'en'
+            ? 'These two types are hard-coded and cannot be created, edited or deleted. Each catalog item must reference one of them via the Behavior field. Any change here would silently break ROI math, so the surface is read-only by design.'
+            : lang === 'es'
+            ? 'Estos dos tipos son fijos del sistema y no pueden crearse, editarse ni eliminarse. Cada elemento del catálogo debe hacer referencia a uno de ellos mediante el campo Comportamiento. Cualquier cambio aquí rompería silenciosamente el cálculo del ROI, por eso la pantalla es de solo lectura.'
+            : 'Estes dois tipos são fixos do sistema e não podem ser criados, editados ou removidos. Cada item de catálogo deve referenciar um deles via o campo Comportamento. Qualquer mudança aqui quebraria silenciosamente o cálculo do ROI, então a tela é read-only por design.'}
+        </p>
       </Card>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent className="sm:max-w-lg">
-          <SheetHeader><SheetTitle>{draft.id ? t('admin.financialTypes.titleEdit') : t('admin.financialTypes.titleNew')}</SheetTitle></SheetHeader>
-          <SheetBody className="space-y-4">
-            <div className="space-y-1"><Label>{t('common.fields.name')}</Label>
-              <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox checked={draft.active} onCheckedChange={(c) => setDraft({ ...draft, active: c === true })} />
-              <Label>{t('common.fields.active')}</Label>
-            </div>
-            {draft.id && (
-              <AuditInfoFooter
-                createdAt={(draft as any).createdAt}
-                updatedAt={(draft as any).updatedAt}
-              />
-            )}
-          </SheetBody>
-          <SheetFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>{t('common.actions.cancel')}</Button>
-            <Button onClick={handleSave} disabled={create.isPending || update.isPending}>
-              <Save className="h-4 w-4 mr-2" /> {t('common.actions.save')}
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {TYPES.map((it) => {
+          const tones: Record<string, string> = {
+            emerald: 'border-emerald-200 bg-emerald-50/60 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300',
+            rose: 'border-rose-200 bg-rose-50/60 text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300',
+          }
+          const Icon = it.Icon
+          return (
+            <Card key={it.key} className={`flex flex-col gap-2 border p-4 ${tones[it.color]}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Icon className="h-5 w-5" />
+                  <span className="font-mono text-xs uppercase opacity-70">{it.key}</span>
+                </div>
+                <span className="text-2xl font-bold tabular-nums opacity-80">{it.sign}</span>
+              </div>
+              <div className="text-lg font-semibold">{it[nameKey as 'name' | 'nameEn' | 'nameEs']}</div>
+              <p className="text-xs leading-snug opacity-80">{it[descKey as 'desc' | 'descEn' | 'descEs']}</p>
+            </Card>
+          )
+        })}
+      </div>
     </div>
   )
 }

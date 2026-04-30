@@ -11,7 +11,6 @@ import {
 import type { CatalogItem } from '@/features/catalog-items/types'
 import { useItemCategories } from '@/features/item-categories/hooks/use-item-categories'
 import { useBillingUnits } from '@/features/billing-units/hooks/use-billing-units'
-import { useFinancialTypes } from '@/features/financial-types/hooks/use-financial-types'
 import { confirm } from '@/shared/ui/confirm-dialog'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
 import { Button } from '@/shared/ui/button'
@@ -33,30 +32,24 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { CsvExportButton } from '@/shared/ui/csv-export-button'
 interface Draft {
   id?: string; key: string; name: string
-  code: string; description: string; cat: string; unit: string; groupKey: string
-  categoryId: string; billingUnitId: string; financialTypeId: string
-  entryBehavior: string; calculationMode: string
-  defaultValue: string; defaultDurationMonths: string
-  defaultInstallments: string; defaultStartMonth: string
-  valHw: string; valMob: string
-  allowsQuantity: boolean; allowsDiscountPct: boolean; allowsInstallments: boolean
+  code: string; description: string; unit: string
+  categoryId: string; billingUnitId: string
+  comportamento: 'INCOME_ONE_TIME' | 'INCOME_MONTHLY' | 'INCOME_INSTALLMENT' | 'EXPENSE_ONE_TIME' | 'EXPENSE_MONTHLY' | 'EXPENSE_INSTALLMENT'
+  defaultValue: string
+  defaultInstallments: string
+  allowsQuantity: boolean; allowsDiscountPct: boolean
   displayOrder: number; active: boolean
 }
 const EMPTY: Draft = {
-  key: '', name: '', code: '', description: '', cat: '', unit: '', groupKey: '',
-  categoryId: '', billingUnitId: '', financialTypeId: '',
-  entryBehavior: '', calculationMode: '',
-  defaultValue: '', defaultDurationMonths: '',
-  defaultInstallments: '', defaultStartMonth: '',
-  valHw: '', valMob: '',
-  allowsQuantity: false, allowsDiscountPct: false, allowsInstallments: false,
+  key: '', name: '', code: '', description: '', unit: '',
+  categoryId: '', billingUnitId: '',
+  comportamento: 'EXPENSE_ONE_TIME',
+  defaultValue: '',
+  defaultInstallments: '',
+  allowsQuantity: false, allowsDiscountPct: false,
   displayOrder: 0, active: true,
 }
 function asStr(v: unknown): string { return v == null ? '' : String(v) }
-function asNumStr(v: unknown): string {
-  if (v == null) return ''
-  return String(v)
-}
 
 export function AdminCatalogItemsPage() {
   const { t } = useTranslation()
@@ -66,7 +59,6 @@ export function AdminCatalogItemsPage() {
   const { data, isLoading } = useCatalogItems()
   const { data: categories = [] } = useItemCategories()
   const { data: billingUnits = [] } = useBillingUnits()
-  const { data: financialTypes = [] } = useFinancialTypes()
   const create = useCreateCatalogItem()
   const update = useUpdateCatalogItem(draft.id)
   const del = useDeleteCatalogItem()
@@ -88,21 +80,24 @@ export function AdminCatalogItemsPage() {
   function openEdit(c: CatalogItem) {
     const o = c as unknown as Record<string, unknown>
     setDraft({
-      id: String(o.id), key: String(o.key), name: String(o.name),
-      code: asStr(o.code), description: asStr(o.description), cat: asStr(o.cat),
-      unit: asStr(o.unit), groupKey: asStr(o.groupKey),
-      categoryId: asStr(o.categoryId), billingUnitId: asStr(o.billingUnitId),
-      financialTypeId: asStr(o.financialTypeId),
-      entryBehavior: asStr(o.entryBehavior), calculationMode: asStr(o.calculationMode),
-      defaultValue: asNumStr(o.defaultValue),
-      defaultDurationMonths: asNumStr(o.defaultDurationMonths),
-      defaultInstallments: asNumStr(o.defaultInstallments),
-      defaultStartMonth: asNumStr(o.defaultStartMonth),
-      valHw: asNumStr(o.valHw), valMob: asNumStr(o.valMob),
-      allowsQuantity: !!o.allowsQuantity, allowsDiscountPct: !!o.allowsDiscountPct,
-      allowsInstallments: !!o.allowsInstallments,
-      displayOrder: Number(o.displayOrder ?? 0), active: o.active !== false,
-    })
+      id: String(o.id),
+      key: asStr(o.key),
+      name: asStr(o.name),
+      code: asStr(o.code),
+      description: asStr(o.description),
+      unit: asStr(o.unit),
+      categoryId: asStr(o.categoryId),
+      billingUnitId: asStr(o.billingUnitId),
+      comportamento: (asStr(o.comportamento) || 'EXPENSE_ONE_TIME') as Draft['comportamento'],
+      defaultValue: asStr(o.defaultValue),
+      defaultInstallments: asStr(o.defaultInstallments),
+      allowsQuantity: !!o.allowsQuantity,
+      allowsDiscountPct: !!o.allowsDiscountPct,
+      displayOrder: Number(o.displayOrder ?? 0),
+      active: o.active !== false,
+      createdAt: (o.createdAt as string) || null,
+      updatedAt: (o.updatedAt as string) || null,
+    } as any)
     setOpen(true)
   }
   async function handleDelete(c: CatalogItem) {
@@ -112,27 +107,21 @@ export function AdminCatalogItemsPage() {
   }
   async function handleSave() {
     if (!draft.name.trim()) return toastError(new Error('Informe o nome'))
-        const num = (s: string) => s ? Number(s) : null
     const payload = {
+      key: (draft.key.trim() || slugify(draft.name)),
+      name: draft.name.trim(),
       code: draft.code.trim() || null,
       description: draft.description.trim() || null,
-      cat: draft.cat.trim() || null,
       unit: draft.unit.trim() || null,
-      groupKey: draft.groupKey.trim() || null,
       categoryId: draft.categoryId || null,
       billingUnitId: draft.billingUnitId || null,
-      financialTypeId: draft.financialTypeId || null,
-      entryBehavior: draft.entryBehavior.trim() || null,
-      calculationMode: draft.calculationMode.trim() || null,
-      defaultValue: num(draft.defaultValue),
-      defaultDurationMonths: num(draft.defaultDurationMonths),
-      defaultInstallments: num(draft.defaultInstallments),
-      defaultStartMonth: num(draft.defaultStartMonth),
-      valHw: num(draft.valHw), valMob: num(draft.valMob),
+      comportamento: draft.comportamento,
+      defaultValue: draft.defaultValue !== '' ? Number(draft.defaultValue) : null,
+      defaultInstallments: draft.defaultInstallments !== '' ? Number(draft.defaultInstallments) : null,
       allowsQuantity: draft.allowsQuantity,
       allowsDiscountPct: draft.allowsDiscountPct,
-      allowsInstallments: draft.allowsInstallments,
-      displayOrder: draft.displayOrder, active: draft.active,
+      displayOrder: draft.displayOrder,
+      active: draft.active,
     }
     try {
       if (draft.id) await update.mutateAsync({ name: draft.name.trim(), ...payload })
@@ -143,7 +132,6 @@ export function AdminCatalogItemsPage() {
 
   const catOptions = [{ value: '', label: '— sem categoria —' }, ...categories.filter(c => c.active).map(c => ({ value: c.id, label: c.name }))]
   const buOptions = [{ value: '', label: '— sem unidade —' }, ...billingUnits.filter(c => c.active).map(c => ({ value: c.id, label: c.name }))]
-  const ftOptions = [{ value: '', label: '— sem tipo —' }, ...financialTypes.filter(c => c.active).map(c => ({ value: c.id, label: c.name }))]
 
   return (
     <div className="space-y-6">
@@ -221,14 +209,8 @@ export function AdminCatalogItemsPage() {
               <div className="space-y-1"><Label>{t('common.fields.code')}</Label>
                 <Input value={draft.code} onChange={(e) => setDraft({ ...draft, code: e.target.value })} />
               </div>
-              <div className="space-y-1"><Label>Cat (livre)</Label>
-                <Input value={draft.cat} onChange={(e) => setDraft({ ...draft, cat: e.target.value })} placeholder="hw, sw, mob, capex, cogs" />
-              </div>
               <div className="space-y-1"><Label>{t('common.fields.unit')}</Label>
                 <Input value={draft.unit} onChange={(e) => setDraft({ ...draft, unit: e.target.value })} placeholder="unid, mês, hora" />
-              </div>
-              <div className="space-y-1"><Label>{t('common.fields.groupKey')}</Label>
-                <Input value={draft.groupKey} onChange={(e) => setDraft({ ...draft, groupKey: e.target.value })} />
               </div>
               <div className="space-y-1 col-span-2"><Label>{t('common.fields.description')}</Label>
                 <Input value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
@@ -239,33 +221,31 @@ export function AdminCatalogItemsPage() {
               <div className="space-y-1"><Label>Unidade de Cobrança</Label>
                 <Combobox options={buOptions} value={draft.billingUnitId} onChange={(v) => setDraft({ ...draft, billingUnitId: v })} />
               </div>
-              <div className="space-y-1 col-span-2"><Label>Tipo Financeiro</Label>
-                <Combobox options={ftOptions} value={draft.financialTypeId} onChange={(v) => setDraft({ ...draft, financialTypeId: v })} />
-              </div>
-              <div className="space-y-1"><Label>{t('common.fields.behavior')}</Label>
-                <Input value={draft.entryBehavior} onChange={(e) => setDraft({ ...draft, entryBehavior: e.target.value })} placeholder="amortized, recurring" />
-              </div>
-              <div className="space-y-1"><Label>{t('common.fields.calculationMode')}</Label>
-                <Input value={draft.calculationMode} onChange={(e) => setDraft({ ...draft, calculationMode: e.target.value })} placeholder="amortized" />
+              <div className="space-y-1 col-span-2"><Label>Comportamento *</Label>
+                <Combobox
+                  options={[
+                    { value: 'INCOME_ONE_TIME',     label: 'Receita Pontual' },
+                    { value: 'INCOME_MONTHLY',      label: 'Receita Mensal Recorrente' },
+                    { value: 'INCOME_INSTALLMENT',  label: 'Receita Parcelada' },
+                    { value: 'EXPENSE_ONE_TIME',    label: 'Custo Pontual' },
+                    { value: 'EXPENSE_MONTHLY',     label: 'Custo Mensal Recorrente' },
+                    { value: 'EXPENSE_INSTALLMENT', label: 'Custo Parcelado' },
+                  ]}
+                  value={draft.comportamento}
+                  onChange={(v) => setDraft({ ...draft, comportamento: (v as Draft['comportamento']) || 'EXPENSE_ONE_TIME' })}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Receita = soma no fluxo (verde); Custo = subtrai (vermelho).
+                  Pontual = mês único; Mensal = todo mês até fim do contrato; Parcelado = N parcelas iguais.
+                </p>
               </div>
               <div className="space-y-1"><Label>{t('common.fields.defaultValue')}</Label>
                 <Input type="number" step="0.01" value={draft.defaultValue} onChange={(e) => setDraft({ ...draft, defaultValue: e.target.value })} />
               </div>
-              <div className="space-y-1"><Label>Duração padrão (meses)</Label>
-                <Input type="number" value={draft.defaultDurationMonths} onChange={(e) => setDraft({ ...draft, defaultDurationMonths: e.target.value })} />
-              </div>
+              {draft.comportamento.endsWith('_INSTALLMENT') && (
               <div className="space-y-1"><Label>{t('common.fields.defaultInstallments')}</Label>
                 <Input type="number" value={draft.defaultInstallments} onChange={(e) => setDraft({ ...draft, defaultInstallments: e.target.value })} />
-              </div>
-              <div className="space-y-1"><Label>{t('common.fields.defaultStartMonth')}</Label>
-                <Input type="number" value={draft.defaultStartMonth} onChange={(e) => setDraft({ ...draft, defaultStartMonth: e.target.value })} />
-              </div>
-              <div className="space-y-1"><Label>Valor HW</Label>
-                <Input type="number" step="0.01" value={draft.valHw} onChange={(e) => setDraft({ ...draft, valHw: e.target.value })} />
-              </div>
-              <div className="space-y-1"><Label>Valor Mobilização</Label>
-                <Input type="number" step="0.01" value={draft.valMob} onChange={(e) => setDraft({ ...draft, valMob: e.target.value })} />
-              </div>
+              </div>)}
               <div className="col-span-2 grid grid-cols-3 gap-3 pt-2 border-t">
                 <div className="flex items-center gap-2">
                   <Checkbox checked={draft.allowsQuantity} onCheckedChange={(c) => setDraft({ ...draft, allowsQuantity: c === true })} />
@@ -276,13 +256,9 @@ export function AdminCatalogItemsPage() {
                   <Label>Permite desconto %</Label>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Checkbox checked={draft.allowsInstallments} onCheckedChange={(c) => setDraft({ ...draft, allowsInstallments: c === true })} />
-                  <Label>{t('common.fields.allowsInstallments')}</Label>
+                  <Checkbox checked={draft.active} onCheckedChange={(c) => setDraft({ ...draft, active: c === true })} />
+                  <Label>{t('common.fields.active')}</Label>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 mt-6">
-                <Checkbox checked={draft.active} onCheckedChange={(c) => setDraft({ ...draft, active: c === true })} />
-                <Label>{t('common.fields.active')}</Label>
               </div>
             </div>
             {draft.id && (
