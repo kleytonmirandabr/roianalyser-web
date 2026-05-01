@@ -43,6 +43,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 import { CustomFieldsCard } from '@/features/form-fields/components/custom-fields-card'
 import { CumulativeCashFlowChart, MonthlyCashFlowChart } from './charts'
 import { MonthlyByCategoryTable } from './monthly-table'
+import { exportRoiToPdf } from './roi-pdf-export'
 
 type Draft = {
   categoryId: string
@@ -109,6 +110,12 @@ export function RoiAnalysisDetailPage() {
     for (const c of categories) m.set(String(c.id), String(c.name))
     return m
   }, [categories])
+
+  const itemsById = useMemo(() => {
+    const m = new Map<string, { name?: string; code?: string }>()
+    for (const it of items) m.set(String((it as any).id), { name: (it as any).name, code: (it as any).code })
+    return m
+  }, [items])
 
   const itemsForCategory = useMemo(() => {
     if (!draft.categoryId) return [] as any[]
@@ -293,8 +300,8 @@ export function RoiAnalysisDetailPage() {
   const irr = metrics?.irr ?? roi.irr ?? null
   const paybackMonths = metrics?.paybackMonths ?? roi.paybackMonths ?? null
 
-  // Mini-rail: receita mensal média (recurringRevenueAvg) + resultado + payback
-  const monthlyRevenue = metrics?.recurringRevenueAvg ?? 0
+  // Mini-rail: SOMA das receitas mensais recorrentes (não a média)
+  const monthlyRevenue = metrics?.monthlyRevenueTotal ?? 0
 
   // Agrupa entries por categoria pra renderizar a lista
   const groups = new Map<string, { name: string; entries: RoiEntry[]; total: number }>()
@@ -375,7 +382,24 @@ export function RoiAnalysisDetailPage() {
             </p>
           </div>
           <div className="flex items-center gap-2 print:hidden">
-            <Button variant="outline" size="sm" onClick={() => window.print()} title={t('roiAnalyses.export.pdfTitle', 'Exportar PDF')}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (!metrics) return
+                exportRoiToPdf({
+                  roi,
+                  metrics,
+                  entries,
+                  categoryById,
+                  itemsById,
+                  tenantName: printSubject,
+                  tenantLogoDataUrl: printLogo,
+                }).catch(err => toastError(err))
+              }}
+              title={t('roiAnalyses.export.pdfTitle', 'Exportar PDF')}
+              disabled={!metrics || entries.length === 0}
+            >
               <Printer className="h-4 w-4" /> {t('roiAnalyses.export.pdf', 'Exportar PDF')}
             </Button>
             <span className="text-sm text-muted-foreground">Status:</span>

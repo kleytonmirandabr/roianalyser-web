@@ -148,7 +148,9 @@ export type RoiMetrics = {
     byCategory: CategorySummary[]
     byComportamento: ComportamentoSummary[]
   }
+  monthlyRevenueTotal: number
   recurringRevenueAvg: number
+  recurringLineCount: number
   discountStats: {
     grossRevenue: number
     netRevenue: number
