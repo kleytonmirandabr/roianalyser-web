@@ -139,10 +139,10 @@ export function CumulativeCashFlowChart({
           </g>
         ))}
 
-        {/* X axis ticks (a cada 3 meses) */}
-        {data.filter((_, i) => i === 0 || data[i].month % 3 === 0 || i === data.length - 1).map((d, i) => (
+        {/* X axis ticks — TODOS os meses */}
+        {data.map((d, i) => (
           <text key={i} x={points.xScale(d.month)} y={VB_H - PAD_B + 14}
-            className="fill-muted-foreground text-[10px]" textAnchor="middle">
+            className="fill-muted-foreground text-[9px]" textAnchor="middle">
             m{d.month}
           </text>
         ))}
@@ -246,10 +246,10 @@ export function MonthlyCashFlowChart({
           </g>
         ))}
 
-        {/* X axis ticks */}
-        {data.filter((_, i) => i === 0 || data[i].month % 3 === 0 || i === data.length - 1).map((d, i) => (
+        {/* X axis ticks — TODOS os meses */}
+        {data.map((d, i) => (
           <text key={i} x={points.xCenter(d.month)} y={VB_H - PAD_B + 14}
-            className="fill-muted-foreground text-[10px]" textAnchor="middle">
+            className="fill-muted-foreground text-[9px]" textAnchor="middle">
             m{d.month}
           </text>
         ))}
