@@ -427,9 +427,9 @@ export function RoiAnalysisDetailPage() {
             </div>
           )}
 
-          {/* Charts */}
+          {/* Charts — cada um ocupa a linha toda pra melhor visibilidade */}
           {metrics && metrics.monthlyFlow.length > 0 && (
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <div className="space-y-3">
               <Card className="p-4">
                 <CumulativeCashFlowChart
                   data={metrics.monthlyFlow}
@@ -600,12 +600,12 @@ export function RoiAnalysisDetailPage() {
                   <thead className="bg-muted/10 text-xs">
                     <tr className="text-left">
                       <th className="px-3 py-2 font-medium">{t('common.entity.item', 'Item')}</th>
-                      <th className="px-3 py-2 font-medium">{t('admin.catalogItems.fields.comportamento', 'Comportamento')}</th>
-                      <th className="px-3 py-2 font-medium text-right">{t('common.fields.quantity', 'Qtd')}</th>
-                      <th className="px-3 py-2 font-medium text-right">{t('roiAnalyses.entry.unitValue', 'Val. unit.')}</th>
-                      <th className="px-3 py-2 font-medium text-right">{t('roiAnalyses.entry.discountPct', 'Desc.')}</th>
+                      <th className="px-3 py-2 font-medium text-center">{t('admin.catalogItems.fields.comportamento', 'Comportamento')}</th>
+                      <th className="px-3 py-2 font-medium text-center">{t('common.fields.quantity', 'Qtd')}</th>
+                      <th className="px-3 py-2 font-medium text-center">{t('roiAnalyses.entry.unitValue', 'Val. unit.')}</th>
+                      <th className="px-3 py-2 font-medium text-center">{t('roiAnalyses.entry.discountPct', 'Desc.')}</th>
                       <th className="px-3 py-2 font-medium text-center">{t('roiAnalyses.entry.startMonth', 'Início')}</th>
-                      <th className="px-3 py-2 font-medium text-right">{t('roiAnalyses.entries.totalImpact', 'Impacto')}</th>
+                      <th className="px-3 py-2 font-medium text-center">{t('roiAnalyses.entries.totalImpact', 'Impacto')}</th>
                       <th className="px-3 py-2"></th>
                     </tr>
                   </thead>
@@ -630,15 +630,15 @@ export function RoiAnalysisDetailPage() {
                             <div className="font-medium">{it?.name || e.description || '—'}</div>
                             {it?.code && <div className="text-[11px] text-muted-foreground">{it.code}</div>}
                           </td>
-                          <td className="px-3 py-2"><BehaviorBadge c={e.comportamento} /></td>
-                          <td className="px-3 py-2 text-right tabular-nums">{qty.toLocaleString('pt-BR')}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{formatCurrency(unit, cur)}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{disc > 0 ? `${disc.toFixed(2)}%` : '—'}</td>
+                          <td className="px-3 py-2 text-center"><BehaviorBadge c={e.comportamento} /></td>
+                          <td className="px-3 py-2 text-center tabular-nums">{qty.toLocaleString('pt-BR')}</td>
+                          <td className="px-3 py-2 text-center tabular-nums">{formatCurrency(unit, cur)}</td>
+                          <td className="px-3 py-2 text-center tabular-nums">{disc > 0 ? `${disc.toFixed(2)}%` : '—'}</td>
                           <td className="px-3 py-2 text-center tabular-nums text-xs">
                             m{start}
                             {suf === 'INSTALLMENT' && e.installments ? `/${e.installments}` : suf === 'MONTHLY' ? `–m${dur}` : ''}
                           </td>
-                          <td className={`px-3 py-2 text-right tabular-nums font-medium ${toneCls}`}>{sign}{formatCurrency(impact, cur)}</td>
+                          <td className={`px-3 py-2 text-center tabular-nums font-medium ${toneCls}`}>{sign}{formatCurrency(impact, cur)}</td>
                           <td className="px-3 py-2 text-right whitespace-nowrap">
                             {!isFrozen && (
                               <>

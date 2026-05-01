@@ -191,7 +191,7 @@ export function MonthlyByCategoryTable({
                   : c.family === 'EXPENSE' ? 'text-rose-700 dark:text-rose-400'
                   : ''
                 return (
-                  <th key={c.categoryId} className="px-3 py-2.5 font-semibold text-right whitespace-nowrap">
+                  <th key={c.categoryId} className="px-3 py-2.5 font-semibold text-center whitespace-nowrap">
                     <span className={`inline-flex items-center gap-1 ${tone}`}>
                       {Icon && <Icon className="h-3 w-3" />}
                       {c.categoryName}
@@ -199,10 +199,10 @@ export function MonthlyByCategoryTable({
                   </th>
                 )
               })}
-              <th className="px-3 py-2.5 font-semibold text-right border-l text-xs uppercase tracking-wide text-muted-foreground">
+              <th className="px-3 py-2.5 font-semibold text-center border-l text-xs uppercase tracking-wide text-muted-foreground">
                 {t('roiAnalyses.table.netMonth', 'Líquido do mês')}
               </th>
-              <th className="px-3 py-2.5 font-semibold text-right text-xs uppercase tracking-wide text-muted-foreground">
+              <th className="px-3 py-2.5 font-semibold text-center text-xs uppercase tracking-wide text-muted-foreground">
                 {t('roiAnalyses.table.cumulative', 'Acumulado')}
               </th>
             </tr>
@@ -230,7 +230,7 @@ export function MonthlyByCategoryTable({
                   {columns.map(c => {
                     const v = c.perMonth[i]
                     if (v === 0) {
-                      return <td key={c.categoryId} className="px-3 py-2 text-right tabular-nums text-muted-foreground/30">—</td>
+                      return <td key={c.categoryId} className="px-3 py-2 text-center tabular-nums text-muted-foreground/30">—</td>
                     }
                     // Heatmap: intensidade do background proporcional a |v| / heatScale (cap 0..1)
                     const intensity = Math.min(1, Math.abs(v) / heatScale)
@@ -242,15 +242,15 @@ export function MonthlyByCategoryTable({
                       ? 'text-emerald-800 dark:text-emerald-300 font-medium'
                       : 'text-rose-800 dark:text-rose-300 font-medium'
                     return (
-                      <td key={c.categoryId} className={`px-3 py-2 text-right tabular-nums ${textCls}`} style={bgStyle}>
+                      <td key={c.categoryId} className={`px-3 py-2 text-center tabular-nums ${textCls}`} style={bgStyle}>
                         {formatCurrency(Math.abs(v), currency)}
                       </td>
                     )
                   })}
-                  <td className={`px-3 py-2 text-right tabular-nums font-semibold border-l ${net >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
+                  <td className={`px-3 py-2 text-center tabular-nums font-semibold border-l ${net >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
                     {net === 0 ? '—' : formatCurrency(net, currency)}
                   </td>
-                  <td className={`px-3 py-2 text-right tabular-nums font-semibold ${acc >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
+                  <td className={`px-3 py-2 text-center tabular-nums font-semibold ${acc >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
                     {formatCurrency(acc, currency)}
                   </td>
                 </tr>
@@ -261,16 +261,16 @@ export function MonthlyByCategoryTable({
             <tr className="border-t-2 border-foreground/20">
               <td className="sticky left-0 z-30 bg-muted/95 px-3 py-2.5 font-bold border-r text-xs uppercase tracking-wide">{t('common.fields.total', 'Total')}</td>
               {columns.map(c => (
-                <td key={c.categoryId} className="px-3 py-2 text-right tabular-nums font-semibold">
+                <td key={c.categoryId} className="px-3 py-2 text-center tabular-nums font-semibold">
                   <span className={c.total > 0 ? 'text-emerald-700' : c.total < 0 ? 'text-rose-700' : ''}>
                     {c.total === 0 ? '—' : formatCurrency(Math.abs(c.total), currency)}
                   </span>
                 </td>
               ))}
-              <td className="px-3 py-2 text-right tabular-nums font-semibold border-l">
+              <td className="px-3 py-2 text-center tabular-nums font-semibold border-l">
                 {formatCurrency(totals.perMonth.reduce((a, v) => a + v, 0), currency)}
               </td>
-              <td className="px-3 py-2 text-right tabular-nums font-semibold">
+              <td className="px-3 py-2 text-center tabular-nums font-semibold">
                 {formatCurrency(totals.cumulative[totals.cumulative.length - 1] || 0, currency)}
               </td>
             </tr>
@@ -334,7 +334,7 @@ export function MonthlyByCategoryTable({
               {metrics.totalRevenue > 0 && (
                 <tr className="border-t bg-emerald-50/40">
                   <td className="px-3 py-2 font-semibold">{t('roiAnalyses.table.margin', 'Margem')}</td>
-                  <td className="px-3 py-2 text-right tabular-nums font-semibold">
+                  <td className="px-3 py-2 text-center tabular-nums font-semibold">
                     {((metrics.netValue / metrics.totalRevenue) * 100).toFixed(2)}%
                   </td>
                 </tr>

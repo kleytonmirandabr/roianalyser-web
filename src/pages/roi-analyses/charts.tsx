@@ -14,8 +14,8 @@ import { useTranslation } from 'react-i18next'
 import { formatCurrency } from '@/shared/lib/format'
 import type { MonthlyFlow } from '@/features/roi-analyses/types'
 
-const VB_W = 880
-const VB_H = 320
+const VB_W = 1200
+const VB_H = 360
 const PAD_L = 64
 const PAD_R = 16
 const PAD_T = 16
@@ -69,10 +69,43 @@ export function CumulativeCashFlowChart({
     const xScale = (x: number) => PAD_L + ((x - xMin) / Math.max(1, xMax - xMin)) * innerW
     const yScale = (y: number) => PAD_T + (1 - (y - yMin) / Math.max(1, yMax - yMin)) * innerH
     const yZero = yScale(0)
-    const path = data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${xScale(d.month).toFixed(1)} ${yScale(d.cumulative).toFixed(1)}`).join(' ')
-    const areaPath = `${path} L ${xScale(xMax).toFixed(1)} ${yZero.toFixed(1)} L ${xScale(xMin).toFixed(1)} ${yZero.toFixed(1)} Z`
+    // Gera segmentos coloridos: verde quando cumulativo >= 0, vermelho quando negativo.
+    // Cada segmento entre dois pontos consecutivos é um <path> separado.
+    const segments: { d: string; positive: boolean }[] = []
+    const areaSegments: { d: string; positive: boolean }[] = []
+    for (let i = 1; i < data.length; i++) {
+      const a = data[i - 1]
+      const b = data[i]
+      const x1 = xScale(a.month)
+      const x2 = xScale(b.month)
+      const y1 = yScale(a.cumulative)
+      const y2 = yScale(b.cumulative)
+      const aPos = a.cumulative >= 0
+      const bPos = b.cumulative >= 0
+      if (aPos === bPos) {
+        segments.push({ d: `M ${x1.toFixed(1)} ${y1.toFixed(1)} L ${x2.toFixed(1)} ${y2.toFixed(1)}`, positive: aPos })
+        areaSegments.push({
+          d: `M ${x1.toFixed(1)} ${y1.toFixed(1)} L ${x2.toFixed(1)} ${y2.toFixed(1)} L ${x2.toFixed(1)} ${yZero.toFixed(1)} L ${x1.toFixed(1)} ${yZero.toFixed(1)} Z`,
+          positive: aPos,
+        })
+      } else {
+        // Cruzou o zero — calcular ponto de cruzamento por interpolação linear
+        const t = a.cumulative / (a.cumulative - b.cumulative)
+        const xc = x1 + (x2 - x1) * t
+        segments.push({ d: `M ${x1.toFixed(1)} ${y1.toFixed(1)} L ${xc.toFixed(1)} ${yZero.toFixed(1)}`, positive: aPos })
+        segments.push({ d: `M ${xc.toFixed(1)} ${yZero.toFixed(1)} L ${x2.toFixed(1)} ${y2.toFixed(1)}`, positive: bPos })
+        areaSegments.push({
+          d: `M ${x1.toFixed(1)} ${y1.toFixed(1)} L ${xc.toFixed(1)} ${yZero.toFixed(1)} L ${x1.toFixed(1)} ${yZero.toFixed(1)} Z`,
+          positive: aPos,
+        })
+        areaSegments.push({
+          d: `M ${xc.toFixed(1)} ${yZero.toFixed(1)} L ${x2.toFixed(1)} ${y2.toFixed(1)} L ${x2.toFixed(1)} ${yZero.toFixed(1)} Z`,
+          positive: bPos,
+        })
+      }
+    }
     const yTicks = niceTicks(yMin, yMax, 4)
-    return { xScale, yScale, yZero, path, areaPath, yMin, yMax, xMin, xMax, yTicks }
+    return { xScale, yScale, yZero, segments, areaSegments, yMin, yMax, xMin, xMax, yTicks }
   }, [data])
 
   if (!points || data.length === 0) {
@@ -93,7 +126,7 @@ export function CumulativeCashFlowChart({
           </span>
         )}
       </div>
-      <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="w-full" style={{ maxHeight: 360 }}
+      <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="w-full" style={{ maxHeight: 420 }}
         onMouseLeave={() => setHover(null)}>
         {/* grid + Y ticks */}
         {points.yTicks.map((y, i) => (
@@ -120,10 +153,14 @@ export function CumulativeCashFlowChart({
             className="stroke-emerald-600/60" strokeDasharray="3 3" strokeWidth={1} />
         )}
 
-        {/* Area fill */}
-        <path d={points.areaPath} className="fill-blue-500/15" />
-        {/* Line */}
-        <path d={points.path} className="stroke-blue-600 fill-none" strokeWidth={1.8} />
+        {/* Area fill — verde quando saldo positivo, vermelho quando negativo */}
+        {points.areaSegments.map((s, i) => (
+          <path key={`a${i}`} d={s.d} className={s.positive ? 'fill-emerald-500/15' : 'fill-rose-500/20'} />
+        ))}
+        {/* Line — mesmo esquema */}
+        {points.segments.map((s, i) => (
+          <path key={`s${i}`} d={s.d} className={s.positive ? 'stroke-emerald-600 fill-none' : 'stroke-rose-600 fill-none'} strokeWidth={2} />
+        ))}
 
         {/* Hover overlay (transparent rects pra capturar mouse) */}
         {data.map((d, i) => (
@@ -136,7 +173,7 @@ export function CumulativeCashFlowChart({
         {hovered && (
           <>
             <line x1={hoverX} x2={hoverX} y1={PAD_T} y2={VB_H - PAD_B} className="stroke-foreground/30" strokeWidth={1} />
-            <circle cx={hoverX} cy={hoverY} r={4} className="fill-blue-600 stroke-background" strokeWidth={1.5} />
+            <circle cx={hoverX} cy={hoverY} r={4} className={hovered.cumulative >= 0 ? "fill-emerald-600 stroke-background" : "fill-rose-600 stroke-background"} strokeWidth={1.5} />
             <g transform={`translate(${Math.min(hoverX + 8, VB_W - 140)},${Math.max(hoverY - 38, PAD_T)})`}>
               <rect width={132} height={34} rx={4} className="fill-background stroke-border" />
               <text x={6} y={14} className="fill-muted-foreground text-[10px]">m{hovered.month}</text>
@@ -196,7 +233,7 @@ export function MonthlyCashFlowChart({
           <Legend color="bg-blue-500"    label={t('roiAnalyses.kpi.investment', 'Investimento')} />
         </div>
       </div>
-      <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="w-full" style={{ maxHeight: 360 }}
+      <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="w-full" style={{ maxHeight: 420 }}
         onMouseLeave={() => setHover(null)}>
         {/* Y grid */}
         {points.yTicks.map((y, i) => (
