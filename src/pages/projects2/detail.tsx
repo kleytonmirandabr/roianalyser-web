@@ -1,11 +1,17 @@
 /**
- * Detalhe de Projeto NOVO (Sprint 4 Batch B).
- * Edit inline + card "Forecasts" com revisões + soft delete.
+ * Detalhe de Projeto NOVO — DOSSIÊ (Sprint A.1).
+ *
+ * Layout consistente com o detail de Contrato:
+ *   1) Hero: código + nome + datas + timeline de status + KPIs
+ *   2) Origem: Contrato vinculado + Cliente + Manager
+ *   3) Documentos: ProjectAttachmentsCard
+ *   4) Forecasts (preserva o que existia)
+ *   5) Editar dados — accordion no fim
  */
 
-import { ArrowLeft, ExternalLink, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp, ExternalLink, FileText, Plus, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { useCreateForecast } from '@/features/forecasts/hooks/use-create-forecast'
@@ -17,6 +23,10 @@ import { useUpdateProject2 } from '@/features/projects2/hooks/use-update-project
 import {
   PROJECT_STATUSES, PROJECT_STATUS_LABELS, type ProjectStatus,
 } from '@/features/projects2/types'
+import { useContract } from '@/features/contracts2/hooks/use-contract'
+import { useCompanies } from '@/features/companies/hooks/use-companies'
+import { useAppState } from '@/features/admin/hooks/use-app-state'
+import { ProjectAttachmentsCard } from '@/features/projects2/components/ProjectAttachmentsCard'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
@@ -27,6 +37,78 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { CustomFieldsCard } from '@/features/form-fields/components/custom-fields-card'
+import { formatCurrency } from '@/shared/lib/format'
+
+// Status terminais cancelled fica off-path; paused também; planning→execution→done é o caminho feliz
+const TIMELINE_STATUSES: ProjectStatus[] = ['planning', 'execution', 'done']
+
+function daysBetween(a: string | null, b: string | null): number | null {
+  if (!a || !b) return null
+  const d1 = new Date(a).getTime()
+  const d2 = new Date(b).getTime()
+  if (Number.isNaN(d1) || Number.isNaN(d2)) return null
+  return Math.round((d2 - d1) / (24 * 3600 * 1000))
+}
+
+function fmtShortDate(iso: string | null): string {
+  if (!iso) return '—'
+  try {
+    return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+  } catch { return iso }
+}
+
+function StatusTimeline({ current }: { current: ProjectStatus }) {
+  const isOffPath = current === 'paused' || current === 'cancelled'
+  const idx = TIMELINE_STATUSES.indexOf(current)
+  return (
+    <div className="space-y-2">
+      {isOffPath && (
+        <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
+          current === 'cancelled' ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400'
+          : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+        }`}>
+          {PROJECT_STATUS_LABELS[current]}
+        </div>
+      )}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+        {TIMELINE_STATUSES.map((s, i) => {
+          const isPast = !isOffPath && i < idx
+          const isCurrent = !isOffPath && i === idx
+          const tone = isPast ? 'bg-emerald-500 text-white'
+            : isCurrent ? 'bg-primary text-primary-foreground ring-4 ring-primary/20'
+            : 'bg-muted text-muted-foreground'
+          return (
+            <div key={s} className="flex items-center gap-1.5 flex-shrink-0">
+              <div className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${tone}`}>
+                <span className="text-[10px] font-mono opacity-70">{i + 1}</span>
+                <span>{PROJECT_STATUS_LABELS[s]}</span>
+              </div>
+              {i < TIMELINE_STATUSES.length - 1 && (
+                <div className={`h-0.5 w-4 ${isPast ? 'bg-emerald-500' : 'bg-muted'}`} />
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function KpiTile({ label, value, hint, tone = 'neutral' }: {
+  label: string; value: string; hint?: string; tone?: 'neutral' | 'pos' | 'neg' | 'warn'
+}) {
+  const toneCls = tone === 'pos' ? 'text-emerald-700 dark:text-emerald-400'
+    : tone === 'neg' ? 'text-rose-700 dark:text-rose-400'
+    : tone === 'warn' ? 'text-amber-700 dark:text-amber-400'
+    : 'text-foreground'
+  return (
+    <div className="rounded-md border bg-card p-3">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">{label}</div>
+      <div className={`mt-1 text-xl font-bold tabular-nums ${toneCls}`}>{value}</div>
+      {hint && <div className="text-[11px] text-muted-foreground mt-0.5">{hint}</div>}
+    </div>
+  )
+}
 
 export function Project2DetailPage() {
   const { t } = useTranslation()
@@ -37,6 +119,16 @@ export function Project2DetailPage() {
   const update = useUpdateProject2(id)
   const remove = useDeleteProject2()
   const createForecast = useCreateForecast()
+
+  const { data: contract } = useContract(prj?.contractId || undefined)
+  const { data: companies = [] } = useCompanies()
+  const appState = useAppState()
+  const company = prj?.clientId
+    ? (companies as any[]).find((c) => String(c.id) === String(prj.clientId))
+    : null
+  const manager = prj?.managerId
+    ? (appState.data?.users || []).find((u: any) => String(u.id) === String(prj.managerId))
+    : null
 
   const [name, setName] = useState('')
   const [status, setStatus] = useState<ProjectStatus>('planning')
@@ -49,6 +141,7 @@ export function Project2DetailPage() {
   const [currency, setCurrency] = useState('BRL')
   const [description, setDescription] = useState('')
   const [dirty, setDirty] = useState(false)
+  const [editorOpen, setEditorOpen] = useState(false)
 
   useEffect(() => {
     if (!prj) return
@@ -58,20 +151,38 @@ export function Project2DetailPage() {
     setPlannedEnd(prj.plannedEnd || '')
     setActualStart(prj.actualStart || '')
     setActualEnd(prj.actualEnd || '')
-    setProgressPct(String(prj.progressPct || 0))
-    setBudget(prj.budget != null ? String(prj.budget) : '')
+    setProgressPct(String(prj.progressPct ?? 0))
+    setBudget(String(prj.budget ?? ''))
     setCurrency(prj.currency || 'BRL')
     setDescription(prj.description || '')
     setDirty(false)
   }, [prj])
 
-  const statusOptions = PROJECT_STATUSES.map(s => ({ value: s, label: PROJECT_STATUS_LABELS[s] }))
+  const kpis = useMemo(() => {
+    if (!prj) return null
+    const today = new Date().toISOString().slice(0, 10)
+    const totalDays = daysBetween(prj.plannedStart, prj.plannedEnd)
+    const elapsed = daysBetween(prj.plannedStart, today)
+    const remaining = daysBetween(today, prj.plannedEnd)
+    const elapsedPct = totalDays && totalDays > 0
+      ? Math.max(0, Math.min(100, ((elapsed || 0) / totalDays) * 100))
+      : null
+    // Lag: % esperado - % executado. Positivo = atrasado.
+    const lag = elapsedPct != null ? Math.round(elapsedPct - (prj.progressPct || 0)) : null
+    return { remainingDays: remaining, elapsedPct, totalDays, lag }
+  }, [prj])
+
+  if (isLoading || !id) return <Skeleton className="h-64" />
+  if (error) return <Alert variant="destructive"><AlertDescription>{(error as Error).message}</AlertDescription></Alert>
+  if (!prj) return <Alert variant="destructive"><AlertDescription>Projeto não encontrado.</AlertDescription></Alert>
+
+  const statusOptions = PROJECT_STATUSES.map((s) => ({ value: s, label: PROJECT_STATUS_LABELS[s] }))
 
   async function handleSave() {
     if (!prj) return
     try {
       await update.mutateAsync({
-        name: name.trim() || prj.name,
+        name,
         status,
         plannedStart: plannedStart || null,
         plannedEnd: plannedEnd || null,
@@ -80,21 +191,21 @@ export function Project2DetailPage() {
         progressPct: Number(progressPct) || 0,
         budget: budget ? Number(budget) : null,
         currency,
-        description: description.trim() || null,
+        description: description || null,
       })
-      toastSaved('Projeto atualizado')
+      toastSaved(t('common.actions.savedSuccessfully'))
       setDirty(false)
     } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
   }
 
   async function handleDelete() {
-    if (!prj) return
     const ok = await confirm({
-      title: 'Excluir projeto?',
-      description: `${prj.projectCode} — ${prj.name} será excluído.`,
-      confirmLabel: 'Excluir', destructive: true,
+      title: 'Excluir projeto',
+      description: 'Esta ação é irreversível. Confirma?',
+      confirmLabel: 'Excluir',
+      destructive: true,
     })
-    if (!ok) return
+    if (!ok || !prj) return
     try {
       await remove.mutateAsync(prj.id)
       toastDeleted('Projeto excluído')
@@ -102,146 +213,154 @@ export function Project2DetailPage() {
     } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
   }
 
-  async function handleNewForecast() {
+  async function handleCreateForecast() {
     if (!prj) return
     try {
-      const fc = await createForecast.mutateAsync({
+      const created = await createForecast.mutateAsync({
         projectId: prj.id,
-        name: `Revisão ${new Date().toLocaleDateString('pt-BR')}`,
+        name: `Revisão ${(forecasts.length || 0) + 1}`,
       })
-      toastSaved(`Forecast v${fc.version} criado`)
-      navigate(`/forecasts/${fc.id}`)
+      toastSaved('Revisão criada')
+      navigate(`/forecasts/${created.id}`)
     } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
   }
 
-  if (isLoading) return <div className="space-y-4 p-6"><Skeleton className="h-8 w-1/3" /><Skeleton className="h-64 w-full" /></div>
-  if (error) return <div className="p-6"><Alert variant="destructive"><AlertDescription>{(error as Error).message}</AlertDescription></Alert></div>
-  if (!prj) return <div className="p-6"><Alert><AlertDescription>Projeto não encontrado.</AlertDescription></Alert></div>
-
   return (
-    <div className="space-y-6 p-6 max-w-3xl">
-      <header className="flex items-center gap-3">
+    <div className="space-y-4 p-6 max-w-7xl mx-auto">
+      <header className="flex items-center justify-between gap-3">
         <Button asChild variant="ghost" size="sm">
-          <Link to="/projects"><ArrowLeft className="h-4 w-4" />Projetos</Link>
+          <Link to="/projects">
+            <ArrowLeft className="h-4 w-4" />Projetos
+          </Link>
+        </Button>
+        <Button variant="ghost" size="sm" onClick={handleDelete} disabled={remove.isPending}>
+          <Trash2 className="h-4 w-4 text-rose-600" /> Excluir
         </Button>
       </header>
 
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">
-            <span className="font-mono text-base text-muted-foreground mr-2">{prj.projectCode}</span>
-            {prj.name}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Criado {new Date(prj.createdAt).toLocaleDateString('pt-BR')}
-            {prj.actualStart && ` · Iniciado ${new Date(prj.actualStart).toLocaleDateString('pt-BR')}`}
-            {prj.actualEnd && ` · Concluído ${new Date(prj.actualEnd).toLocaleDateString('pt-BR')}`}
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={handleDelete}>
-          <Trash2 className="h-4 w-4" />Excluir
-        </Button>
-      </div>
-
-      {prj.contractId && (
-        <Card className="p-4 bg-muted/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-xs text-muted-foreground uppercase">{t('common.entity.sourceContract')}</span>
-              <p className="text-sm font-medium">Contrato #{prj.contractId}</p>
-            </div>
-            <Button asChild variant="ghost" size="sm">
-              <Link to={`/contracts/${prj.contractId}`}><ExternalLink className="h-4 w-4" />Ver contrato</Link>
-            </Button>
-          </div>
-        </Card>
-      )}
-
+      {/* HERO */}
       <Card className="p-6 space-y-5">
-        <h2 className="text-lg font-semibold">{t('common.entity.sectionInfo')}</h2>
-        <div>
-          <Label htmlFor="name">{t('common.fields.name')}</Label>
-          <Input id="name" value={name} onChange={e => { setName(e.target.value); setDirty(true) }} />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <Label>Status</Label>
-            <Combobox value={status} onChange={v => { setStatus(v as ProjectStatus); setDirty(true) }} options={statusOptions} />
+            <div className="text-xs text-muted-foreground font-mono mb-1">{prj.projectCode}</div>
+            <h1 className="text-2xl font-bold tracking-tight">{prj.name}</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {fmtShortDate(prj.plannedStart)} {prj.plannedEnd ? `→ ${fmtShortDate(prj.plannedEnd)}` : ''}
+              {prj.actualStart && <span> · Iniciado {fmtShortDate(prj.actualStart)}</span>}
+              {prj.actualEnd && <span> · Concluído {fmtShortDate(prj.actualEnd)}</span>}
+            </p>
           </div>
-          <div>
-            <Label htmlFor="prog">Progresso (%)</Label>
-            <Input id="prog" type="number" min="0" max="100" value={progressPct}
-              onChange={e => { setProgressPct(e.target.value); setDirty(true) }} />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="ps">{t('common.fields.plannedStart')}</Label>
-            <Input id="ps" type="date" value={plannedStart} onChange={e => { setPlannedStart(e.target.value); setDirty(true) }} />
-          </div>
-          <div>
-            <Label htmlFor="pe">{t('common.fields.plannedEnd')}</Label>
-            <Input id="pe" type="date" value={plannedEnd} onChange={e => { setPlannedEnd(e.target.value); setDirty(true) }} />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="as">{t('common.fields.actualStart')}</Label>
-            <Input id="as" type="date" value={actualStart} onChange={e => { setActualStart(e.target.value); setDirty(true) }} />
-          </div>
-          <div>
-            <Label htmlFor="ae">{t('common.fields.actualEnd')}</Label>
-            <Input id="ae" type="date" value={actualEnd} onChange={e => { setActualEnd(e.target.value); setDirty(true) }} />
+          <div className="flex items-center gap-2">
+            <Label className="text-xs text-muted-foreground">Mudar status:</Label>
+            <div className="w-48">
+              <Combobox
+                value={status}
+                onChange={(v) => {
+                  const ns = v as ProjectStatus
+                  setStatus(ns)
+                  if (prj && ns !== prj.status) {
+                    update.mutateAsync({ status: ns })
+                      .then(() => toastSaved('Status atualizado'))
+                      .catch((err) => toastError(`Erro: ${(err as Error).message}`))
+                  }
+                }}
+                options={statusOptions}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="bud">{t('common.fields.budget')}</Label>
-            <Input id="bud" type="number" step="0.01" value={budget} onChange={e => { setBudget(e.target.value); setDirty(true) }} />
-          </div>
-          <div>
-            <Label htmlFor="cur">{t('common.fields.currency')}</Label>
-            <Input id="cur" value={currency} onChange={e => { setCurrency(e.target.value.toUpperCase().slice(0, 3)); setDirty(true) }} maxLength={3} />
-          </div>
-        </div>
+        <StatusTimeline current={prj.status} />
 
-        <div>
-          <Label htmlFor="desc">{t('common.fields.description')}</Label>
-          <textarea id="desc" value={description} onChange={e => { setDescription(e.target.value); setDirty(true) }}
-            className="w-full min-h-[80px] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
-        </div>
-
-        <div className="flex gap-2 justify-end pt-2 border-t">
-          <Button onClick={handleSave} disabled={!dirty || update.isPending}>
-            {update.isPending ? 'Salvando…' : 'Salvar'}
-          </Button>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 pt-2 border-t">
+          <KpiTile
+            label="Orçamento"
+            value={prj.budget != null ? formatCurrency(prj.budget, prj.currency) : '—'}
+          />
+          <KpiTile
+            label="% executado"
+            value={`${(prj.progressPct || 0).toFixed(0)}%`}
+            hint={kpis?.lag != null ? (kpis.lag > 5 ? `${kpis.lag}p atrás do esperado` : kpis.lag < -5 ? `${Math.abs(kpis.lag)}p adiantado` : 'Em dia') : undefined}
+            tone={kpis?.lag == null ? 'neutral' : kpis.lag > 15 ? 'neg' : kpis.lag > 5 ? 'warn' : 'pos'}
+          />
+          <KpiTile
+            label={kpis?.remainingDays != null && kpis.remainingDays >= 0 ? 'Encerra em' : kpis?.remainingDays != null ? 'Encerrado há' : 'Prazo'}
+            value={kpis?.remainingDays == null ? '—' : kpis.remainingDays >= 0 ? `${kpis.remainingDays} dias` : `${Math.abs(kpis.remainingDays)} dias`}
+            hint={kpis?.totalDays ? `de ${kpis.totalDays} dias totais` : undefined}
+            tone={kpis?.remainingDays == null ? 'neutral' : kpis.remainingDays < 0 ? 'neg' : kpis.remainingDays <= 14 ? 'warn' : 'pos'}
+          />
+          <KpiTile
+            label="% prazo decorrido"
+            value={kpis?.elapsedPct != null ? `${kpis.elapsedPct.toFixed(0)}%` : '—'}
+            tone="neutral"
+          />
         </div>
       </Card>
 
+      {/* ORIGEM */}
+      <Card className="p-6 space-y-3">
+        <h2 className="text-lg font-semibold">Origem</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="rounded-md border p-3">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Contrato</div>
+            {prj.contractId && contract ? (
+              <Link to={`/contracts/${contract.id}`} className="mt-1 inline-flex items-center gap-1 text-sm font-medium hover:underline">
+                <FileText className="h-3 w-3" /> {contract.contractNumber} · {contract.name} <ExternalLink className="h-3 w-3" />
+              </Link>
+            ) : prj.contractId ? (
+              <div className="mt-1 text-sm text-muted-foreground italic">Carregando...</div>
+            ) : (
+              <div className="mt-1 text-sm text-amber-700 dark:text-amber-400 italic">Sem contrato vinculado</div>
+            )}
+          </div>
+          <div className="rounded-md border p-3">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Cliente</div>
+            {company ? (
+              <div className="mt-1 space-y-0.5">
+                <div className="text-sm font-medium">{company.name}</div>
+                {(company as any).cnpj && (
+                  <div className="text-xs text-muted-foreground font-mono">{(company as any).cnpj}</div>
+                )}
+              </div>
+            ) : (
+              <div className="mt-1 text-sm text-muted-foreground italic">—</div>
+            )}
+          </div>
+          <div className="rounded-md border p-3">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Gerente</div>
+            <div className="mt-1 text-sm font-medium">
+              {(manager as any)?.name || (manager as any)?.email || '—'}
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* DOCUMENTOS */}
+      <ProjectAttachmentsCard projectId={id} />
+
+      {/* FORECASTS */}
       <Card className="p-6 space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Forecasts ({forecasts.length})</h2>
-          <Button size="sm" onClick={handleNewForecast} disabled={createForecast.isPending}>
+          <div>
+            <h2 className="text-lg font-semibold">Forecasts ({forecasts.length})</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Revisões de previsão associadas a este projeto.</p>
+          </div>
+          <Button size="sm" onClick={handleCreateForecast} disabled={createForecast.isPending}>
             <Plus className="h-4 w-4" />Nova revisão
           </Button>
         </div>
         {forecasts.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhuma revisão ainda. Clique em "Nova revisão" pra começar.</p>
+          <p className="text-sm text-muted-foreground italic">Nenhuma revisão criada.</p>
         ) : (
           <ul className="space-y-2">
-            {forecasts.map(fc => (
-              <li key={fc.id}>
-                <Link to={`/forecasts/${fc.id}`} className="flex items-center justify-between rounded border p-3 hover:bg-muted/30">
+            {forecasts.map((f: any) => (
+              <li key={f.id}>
+                <Link to={`/forecasts/${f.id}`} className="flex items-center justify-between rounded border p-3 hover:bg-muted/30">
                   <div>
-                    <span className="font-medium">v{fc.version}</span>
-                    <span className="text-muted-foreground ml-2">— {fc.name}</span>
-                    {fc.isBaseline && <span className="ml-2 inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800">baseline</span>}
+                    <span className="font-medium">{f.name}</span>
+                    {f.versionNumber && <span className="ml-2 text-xs text-muted-foreground">v{f.versionNumber}</span>}
                   </div>
-                  <span className="text-xs text-muted-foreground">{FORECAST_STATUS_LABELS[fc.status]}</span>
+                  <span className="text-xs text-muted-foreground">{FORECAST_STATUS_LABELS[f.status as keyof typeof FORECAST_STATUS_LABELS] || f.status}</span>
                 </Link>
               </li>
             ))}
@@ -249,7 +368,99 @@ export function Project2DetailPage() {
         )}
       </Card>
 
+      {/* CUSTOM FIELDS */}
       <CustomFieldsCard scope="project" entityType="project" entityId={id} />
+
+      {/* EDITOR */}
+      <Card className="p-0 overflow-hidden">
+        <button
+          type="button"
+          className="w-full p-4 flex items-center justify-between hover:bg-muted/30 transition-colors text-left"
+          onClick={() => setEditorOpen((v) => !v)}
+        >
+          <div>
+            <h2 className="text-lg font-semibold">Editar dados do projeto</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Nome, prazos, % executado, orçamento, descrição.</p>
+          </div>
+          {editorOpen ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
+        </button>
+        {editorOpen && (
+          <div className="p-6 pt-0 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name">Nome</Label>
+                <Input id="name" value={name} onChange={(e) => { setName(e.target.value); setDirty(true) }} />
+              </div>
+              <div>
+                <Label>% executado</Label>
+                <Input type="number" min="0" max="100" value={progressPct} onChange={(e) => { setProgressPct(e.target.value); setDirty(true) }} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Orçamento</Label>
+                <Input type="number" step="0.01" value={budget} onChange={(e) => { setBudget(e.target.value); setDirty(true) }} />
+              </div>
+              <div>
+                <Label>{t('common.fields.currency')}</Label>
+                <Input value={currency} onChange={(e) => { setCurrency(e.target.value.toUpperCase().slice(0, 3)); setDirty(true) }} maxLength={3} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Início planejado</Label>
+                <Input type="date" value={plannedStart} onChange={(e) => { setPlannedStart(e.target.value); setDirty(true) }} />
+              </div>
+              <div>
+                <Label>Fim planejado</Label>
+                <Input type="date" value={plannedEnd} onChange={(e) => { setPlannedEnd(e.target.value); setDirty(true) }} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Início real</Label>
+                <Input type="date" value={actualStart} onChange={(e) => { setActualStart(e.target.value); setDirty(true) }} />
+              </div>
+              <div>
+                <Label>Fim real</Label>
+                <Input type="date" value={actualEnd} onChange={(e) => { setActualEnd(e.target.value); setDirty(true) }} />
+              </div>
+            </div>
+            <div>
+              <Label>Descrição</Label>
+              <textarea
+                value={description}
+                onChange={(e) => { setDescription(e.target.value); setDirty(true) }}
+                className="w-full min-h-[80px] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            </div>
+            <div className="flex gap-2 justify-end pt-2 border-t">
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => {
+                  if (!prj) return
+                  setName(prj.name)
+                  setStatus(prj.status)
+                  setPlannedStart(prj.plannedStart || '')
+                  setPlannedEnd(prj.plannedEnd || '')
+                  setActualStart(prj.actualStart || '')
+                  setActualEnd(prj.actualEnd || '')
+                  setProgressPct(String(prj.progressPct ?? 0))
+                  setBudget(String(prj.budget ?? ''))
+                  setCurrency(prj.currency || 'BRL')
+                  setDescription(prj.description || '')
+                  setDirty(false)
+                }}
+                disabled={!dirty}
+              >Descartar</Button>
+              <Button onClick={handleSave} disabled={!dirty || update.isPending}>
+                {update.isPending ? 'Salvando…' : 'Salvar'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Card>
     </div>
   )
 }
