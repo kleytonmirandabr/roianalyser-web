@@ -119,13 +119,30 @@ export function ContractsDashboardPage() {
     return <div className="p-6"><Alert variant="destructive"><AlertDescription>Erro: {(error as Error).message}</AlertDescription></Alert></div>
   }
 
-  if (isLoading || !stats) {
+  if (isLoading) {
     return (
       <div className="space-y-4 p-6">
         <Skeleton className="h-8 w-1/3" />
         <div className="grid grid-cols-4 gap-4">
           {[0, 1, 2, 3].map(i => <Skeleton key={i} className="h-32" />)}
         </div>
+      </div>
+    )
+  }
+  if (!stats) {
+    return (
+      <div className="space-y-4 p-6 max-w-3xl">
+        <h1 className="text-2xl font-semibold">{t('contracts.dashboard.title', 'Dashboard de Contratos')}</h1>
+        <Card className="p-12 text-center space-y-3">
+          <FileText className="h-10 w-10 text-muted-foreground mx-auto" />
+          <h2 className="text-lg font-semibold">{t('contracts.dashboard.empty.title', 'Sem contratos cadastrados')}</h2>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            {t('contracts.dashboard.empty.hint', 'Quando você criar contratos a partir de oportunidades aprovadas, as métricas vão aparecer aqui (carteira ativa, vencimentos, distribuição por status).')}
+          </p>
+          <Button asChild className="mt-2">
+            <Link to="/contracts">{t('contracts.dashboard.empty.cta', 'Ir para Contratos')}</Link>
+          </Button>
+        </Card>
       </div>
     )
   }

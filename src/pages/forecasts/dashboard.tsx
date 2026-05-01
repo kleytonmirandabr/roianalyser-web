@@ -8,7 +8,7 @@
  * Spec: PLAN_split-domain-entities.md, seção 4.8.
  */
 
-import { LineChart, TrendingDown, TrendingUp } from 'lucide-react'
+import { BarChart3, LineChart, TrendingDown, TrendingUp } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
@@ -124,7 +124,7 @@ export function ForecastsDashboardPage() {
   if (error) {
     return <div className="p-6"><Alert variant="destructive"><AlertDescription>Erro: {(error as Error).message}</AlertDescription></Alert></div>
   }
-  if (loadingList || !stats) {
+  if (loadingList || !entriesLoaded) {
     return (
       <div className="space-y-4 p-6">
         <Skeleton className="h-8 w-1/3" />
@@ -132,6 +132,20 @@ export function ForecastsDashboardPage() {
           {[0, 1, 2, 3].map(i => <Skeleton key={i} className="h-32" />)}
         </div>
         <Skeleton className="h-64" />
+      </div>
+    )
+  }
+  if (!stats) {
+    return (
+      <div className="space-y-4 p-6 max-w-3xl">
+        <h1 className="text-2xl font-semibold">{t('forecasts.dashboard.title', 'Dashboard de Forecast')}</h1>
+        <Card className="p-12 text-center space-y-3">
+          <BarChart3 className="h-10 w-10 text-muted-foreground mx-auto" />
+          <h2 className="text-lg font-semibold">{t('forecasts.dashboard.empty.title', 'Sem forecasts cadastrados')}</h2>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            {t('forecasts.dashboard.empty.hint', 'Crie um forecast a partir de uma oportunidade ou contrato para ver projeção de receita, variação esperado vs realizado e distribuição por status.')}
+          </p>
+        </Card>
       </div>
     )
   }
