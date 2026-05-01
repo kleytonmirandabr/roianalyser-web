@@ -1,20 +1,24 @@
 /**
- * Exportação ROI → PDF (v2 — design refeito).
+ * Exportação ROI → PDF (v3 — design de consultoria).
  *
- * Filosofia: parecer um relatório executivo de consultoria, não a captura de
- * uma tela web. Cada página tem propósito único, hierarquia visual forte,
- * e densidade adequada ao A4.
+ * Filosofia: relatório executivo com sistema visual coeso. Capa minimal,
+ * Sumário Executivo com narrativa, gráficos com anotações textuais,
+ * lançamentos com cards de categoria, matriz em landscape (única exceção
+ * de orientação — porque a tabela 12 meses × N categorias precisa do espaço).
  *
- * Páginas:
- *   1. Capa — logo grande, título, projeto, data, KPI cards 2x2 grandes
- *   2. Sumário executivo — indicadores em 2 colunas + receita bruto/líquido
- *   3. Gráfico saldo acumulado — desenhado nativamente no PDF (vetor crisp)
- *   4. Gráfico fluxo mensal — barras agrupadas (receita/custo/investimento)
- *   5. Lançamentos por categoria — tabelas agrupadas com totais
- *   6. Matriz mês × categoria — heatmap colorido + totais por linha/coluna
+ * Estrutura de páginas:
+ *   1. Capa — banner, logo, título 36pt, projeto, hero "Resultado projetado"
+ *   2. 01 |Sumário Executivo — narrativa + KPIs + indicadores
+ *   3. 02 |Fluxo de caixa — saldo acumulado anotado
+ *   4. 02 |Fluxo de caixa — fluxo mensal anotado
+ *   5+. 03 |Lançamentos — cards de categoria + tabelas
+ *   N (last). 04 |Matriz mensal — LANDSCAPE
  *
- * Tudo usa as primitivas do jsPDF (texto, retângulos, paths). Sem captura
- * de DOM, sem html2canvas — fica nítido em qualquer zoom.
+ * Sistema visual:
+ *   - Cinza dominante (60%), indigo de marca (20%), verde/vermelho semântico (20%)
+ *   - Tipografia Helvetica com hierarquia forte (36 → 18 → 12 → 9 → 7)
+ *   - Numeração de seção "01 |Título" como âncora
+ *   - Footer consistente com tenant + paginação
  */
 import jsPDF from 'jspdf'
 import autoTableModule from 'jspdf-autotable'
@@ -26,7 +30,7 @@ import {
 import { formatCurrency, formatPercent } from '@/shared/lib/format'
 
 // Vite/esbuild interop: jspdf-autotable é CJS com module.exports.default,
-// então o default-import pode chegar como { default: fn } em vez da função.
+// pode chegar como { default: fn } em vez da função após minify.
 const autoTable = (autoTableModule as unknown as { default?: typeof autoTableModule }).default
   ?? autoTableModule
 
@@ -40,37 +44,34 @@ interface ExportInput {
   tenantLogoDataUrl: string | null
 }
 
-// Após resolver SVG→PNG; passado internamente entre etapas do export.
 type ResolvedLogo = { data: string; fmt: 'PNG' | 'JPEG' } | null
 
 // ───────────────────────── Design tokens ─────────────────────────
 const C = {
-  // Marca
   brand:       [79,  70,  229] as [number, number, number],   // indigo-600
   brandSoft:   [238, 242, 255] as [number, number, number],   // indigo-50
-  // Sinais
-  pos:         [16, 185, 129] as [number, number, number],    // emerald-500
-  posDark:     [4, 120,  87]  as [number, number, number],    // emerald-700
+  pos:         [22, 163, 74]  as [number, number, number],    // emerald-600
+  posDark:     [21, 128,  61] as [number, number, number],    // emerald-700
   posSoft:     [220, 252, 231] as [number, number, number],   // emerald-100
-  neg:         [244,  63,  94] as [number, number, number],   // rose-500
-  negDark:     [159,  18,  57] as [number, number, number],   // rose-800
+  neg:         [220,  38,  38] as [number, number, number],   // rose-600
+  negDark:     [153,  27,  27] as [number, number, number],   // rose-800
   negSoft:     [254, 226, 226] as [number, number, number],   // rose-100
   inv:         [37,  99, 235] as [number, number, number],    // blue-600
   invSoft:     [219, 234, 254] as [number, number, number],   // blue-100
-  // Neutros
   ink:         [17,  24,  39] as [number, number, number],    // gray-900
   body:        [55,  65,  81] as [number, number, number],    // gray-700
   muted:       [107, 114, 128] as [number, number, number],   // gray-500
+  mutedLight:  [156, 163, 175] as [number, number, number],   // gray-400
   hairline:    [229, 231, 235] as [number, number, number],   // gray-200
   surface:     [249, 250, 251] as [number, number, number],   // gray-50
   white:       [255, 255, 255] as [number, number, number],
 }
 
-const PAGE = { w: 210, h: 297 }   // A4 portrait, mm
-const M    = { left: 16, right: 16, top: 24, bottom: 18 }
-const inner = () => PAGE.w - M.left - M.right
+const PAGE_PORTRAIT  = { w: 210, h: 297 }
+const PAGE_LANDSCAPE = { w: 297, h: 210 }
+const M = { left: 18, right: 18, top: 28, bottom: 22 }
 
-// ───────────────────────── Helpers de desenho ─────────────────────────
+// ───────────────────────── Utils ─────────────────────────
 function setFont(doc: jsPDF, weight: 'bold' | 'normal', size: number, color: [number, number, number] = C.ink) {
   doc.setFont('helvetica', weight)
   doc.setFontSize(size)
@@ -91,390 +92,534 @@ function rect(doc: jsPDF, x: number, y: number, w: number, h: number, opts: {
   else doc.rect(x, y, w, h, style)
 }
 
-async function ensureRasterLogo(dataUrl: string | null): Promise<{ data: string; fmt: 'PNG' | 'JPEG' } | null> {
+function fmtIrr(irr: number | null): string {
+  if (irr == null) return '-'
+  if (irr > 1) return '>100% a.a.'
+  return formatPercent(irr * 100, 2)
+}
+
+// Mapeia código ISO → símbolo amigável. jsPDF Helvetica é Latin-1, então só
+// símbolos ASCII/Latin-1 (€ é ok, mas usaremos prefixos curtos).
+function currencySymbol(code: string): string {
+  const c = (code || '').toUpperCase()
+  switch (c) {
+    case 'BRL': return 'R$'
+    case 'USD': return 'US$'
+    case 'EUR': return 'EUR'
+    case 'GBP': return 'GBP'
+    default: return c || 'R$'
+  }
+}
+
+function fmtShortCurrency(v: number, currency: string): string {
+  const abs = Math.abs(v)
+  const sign = v < 0 ? '-' : ''
+  const sym = currencySymbol(currency)
+  if (abs >= 1_000_000) return `${sign}${sym} ${(abs / 1_000_000).toFixed(1)}M`
+  if (abs >= 1_000)     return `${sign}${sym} ${(abs / 1_000).toFixed(0)}k`
+  return formatCurrency(v, currency)
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  draft: 'Rascunho',
+  submitted: 'Submetido',
+  approved: 'Aprovado',
+  rejected: 'Rejeitado',
+  archived: 'Arquivado',
+}
+
+
+async function ensureRasterLogo(dataUrl: string | null): Promise<ResolvedLogo> {
   if (!dataUrl) return null
-  // Se já é PNG/JPEG, devolve como está.
   if (dataUrl.startsWith('data:image/png')) return { data: dataUrl, fmt: 'PNG' }
   if (dataUrl.startsWith('data:image/jpeg') || dataUrl.startsWith('data:image/jpg')) {
     return { data: dataUrl, fmt: 'JPEG' }
   }
-  // SVG (data:image/svg+xml;base64,...) — jsPDF não desenha SVG. Renderiza
-  // num <canvas> off-screen e exporta PNG.
   if (!dataUrl.startsWith('data:image/svg')) return null
+  // SVG → PNG via canvas. NÃO usar crossOrigin pra data URLs (taints o canvas
+  // mesmo sendo same-origin).
   return new Promise((resolve) => {
     const img = new Image()
-    img.crossOrigin = 'anonymous'
     img.onload = () => {
       try {
-        const W = 320
-        const ratio = (img.naturalHeight || img.height) / (img.naturalWidth || img.width || W)
-        const H = Math.max(48, Math.round(W * (Number.isFinite(ratio) ? ratio : 0.4)))
+        // Tenta detectar dimensões do SVG; se não der, usa default.
+        const naturalW = img.naturalWidth || img.width || 0
+        const naturalH = img.naturalHeight || img.height || 0
+        const W = 480
+        const ratio = naturalW > 0 && naturalH > 0 ? naturalH / naturalW : 0.35
+        const H = Math.max(80, Math.round(W * ratio))
         const canvas = document.createElement('canvas')
         canvas.width = W
         canvas.height = H
         const ctx = canvas.getContext('2d')
         if (!ctx) return resolve(null)
-        // Fundo branco (SVGs com transparência ficam horríveis em PDF).
+        // Fundo branco — SVGs com transparência ficam horríveis em PDF.
         ctx.fillStyle = '#ffffff'
         ctx.fillRect(0, 0, W, H)
         ctx.drawImage(img, 0, 0, W, H)
-        resolve({ data: canvas.toDataURL('image/png'), fmt: 'PNG' })
-      } catch {
+        const png = canvas.toDataURL('image/png')
+        resolve({ data: png, fmt: 'PNG' })
+      } catch (err) {
+        console.warn('[roi-pdf] SVG logo conversion failed', err)
         resolve(null)
       }
     }
-    img.onerror = () => resolve(null)
+    img.onerror = (err) => {
+      console.warn('[roi-pdf] SVG logo failed to load', err)
+      resolve(null)
+    }
     img.src = dataUrl
   })
 }
 
-function fmtIrr(irr: number | null): string {
-  if (irr == null) return '—'
-  if (irr > 1) return '>100% a.a.'
-  return formatPercent(irr * 100, 2)
-}
-
-function fmtShortCurrency(v: number, currency: string): string {
-  const abs = Math.abs(v)
-  if (abs >= 1_000_000) return `${currency} ${(v / 1_000_000).toFixed(1)}M`
-  if (abs >= 1_000)     return `${currency} ${(v / 1_000).toFixed(0)}k`
-  return formatCurrency(v, currency)
-}
-
 // ───────────────────────── Header / Footer ─────────────────────────
-function drawHeader(doc: jsPDF, opts: ExportInput, logo: ResolvedLogo, pageNum: number, total: number) {
-  const w = PAGE.w
-  // Logo + nome tenant
-  let xCursor = M.left
+function drawHeader(doc: jsPDF, opts: ExportInput, logo: ResolvedLogo, isLandscape = false) {
+  const W = isLandscape ? PAGE_LANDSCAPE.w : PAGE_PORTRAIT.w
+  // Linha indigo discreta no topo
+  rect(doc, 0, 0, W, 1.2, { fill: C.brand })
+  // Logo (se houver) à esquerda
+  let x = M.left
   if (logo) {
     try {
       doc.addImage(logo.data, logo.fmt, M.left, 8, 22, 8, undefined, 'FAST')
-      xCursor = M.left + 25
-    } catch { /* logo opcional, não bloquear export */ }
+      x = M.left + 26
+    } catch { /* ignore */ }
   }
-  setFont(doc, 'bold', 9, C.ink)
-  doc.text(opts.tenantName, xCursor, 13)
+  setFont(doc, 'bold', 8.5, C.ink)
+  doc.text(opts.tenantName, x, 12.5)
   setFont(doc, 'normal', 7, C.muted)
-  doc.text('Análise de Retorno', xCursor, 17)
-
-  // Direita: nome análise + página
-  setFont(doc, 'normal', 8, C.muted)
-  doc.text(`${opts.roi.name} · v${opts.roi.version}`, w - M.right, 13, { align: 'right' })
-  doc.text(`${pageNum} / ${total}`, w - M.right, 17, { align: 'right' })
-
-  // Linha fina
-  doc.setDrawColor(...C.hairline).setLineWidth(0.3)
-  doc.line(M.left, 20, w - M.right, 20)
+  doc.text('Análise de Retorno |' + opts.roi.name, x, 16.5)
+  // Hairline
+  doc.setDrawColor(...C.hairline).setLineWidth(0.2)
+  doc.line(M.left, 19, W - M.right, 19)
 }
 
-function drawFooter(doc: jsPDF) {
+function drawFooter(doc: jsPDF, opts: ExportInput, pageNum: number, total: number, isLandscape = false) {
+  const W = isLandscape ? PAGE_LANDSCAPE.w : PAGE_PORTRAIT.w
+  const H = isLandscape ? PAGE_LANDSCAPE.h : PAGE_PORTRAIT.h
+  doc.setDrawColor(...C.hairline).setLineWidth(0.2)
+  doc.line(M.left, H - 14, W - M.right, H - 14)
   setFont(doc, 'normal', 7, C.muted)
+  doc.text(opts.tenantName + ' |CONFIDENCIAL', M.left, H - 8)
   doc.text(
-    `Gerado em ${new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}`,
-    M.left, PAGE.h - 8,
+    `Página ${pageNum} / ${total}`,
+    W - M.right, H - 8, { align: 'right' },
   )
-  doc.text('CONFIDENCIAL — uso interno', PAGE.w - M.right, PAGE.h - 8, { align: 'right' })
+  // Versão + data centralizado
+  doc.text(
+    `${opts.roi.name} |v${opts.roi.version} |${new Date().toLocaleDateString('pt-BR')}`,
+    W / 2, H - 8, { align: 'center' },
+  )
 }
 
-// ───────────────────────── Página 1 — Capa ─────────────────────────
+// ───────────────────────── PÁGINA 1 — Capa ─────────────────────────
 function drawCover(doc: jsPDF, opts: ExportInput, logo: ResolvedLogo) {
   const { roi, metrics } = opts
   const cur = roi.currency
+  const W = PAGE_PORTRAIT.w
+  const H = PAGE_PORTRAIT.h
 
-  // Logo grande do tenant no topo (se houver)
+  // Banner colorido topo (acento de marca)
+  rect(doc, 0, 0, W, 6, { fill: C.brand })
+
+  // Logo + nome tenant (cabeçalho da capa, mais alto que páginas internas)
   if (logo) {
     try {
       doc.addImage(logo.data, logo.fmt, M.left, 14, 50, 18, undefined, 'FAST')
     } catch { /* ignore */ }
   }
-  // Nome do tenant (label corporativo) — alinhado à direita, mesma altura do logo
-  setFont(doc, 'bold', 11, C.muted)
-  doc.text(opts.tenantName.toUpperCase(), PAGE.w - M.right, 24, { align: 'right' })
+  setFont(doc, 'bold', 11, C.ink)
+  doc.text(opts.tenantName.toUpperCase(), W - M.right, 22, { align: 'right' })
   setFont(doc, 'normal', 8, C.muted)
-  doc.text('Relatório de Análise de Retorno (ROI)', PAGE.w - M.right, 29, { align: 'right' })
+  doc.text('Relatório Confidencial |Pré-venda', W - M.right, 27, { align: 'right' })
 
-  // Banner colorido topo (acento de marca)
-  rect(doc, 0, 0, PAGE.w, 4, { fill: C.brand })
-
-  // Título grande
-  setFont(doc, 'bold', 28, C.ink)
-  doc.text('Análise de Retorno', M.left, 50)
-  // Linha decorativa abaixo do título
-  doc.setDrawColor(...C.brand).setLineWidth(0.8)
-  doc.line(M.left, 53, M.left + 40, 53)
-
+  // Bloco do título — verticalmente centrado num bloco superior
+  const titleY = 80
+  setFont(doc, 'normal', 10, C.brand)
+  doc.text('RELATÓRIO', M.left, titleY)
+  setFont(doc, 'bold', 36, C.ink)
+  doc.text('Análise de Retorno', M.left, titleY + 13)
   // Subtítulo: nome do projeto
-  setFont(doc, 'normal', 14, C.body)
-  doc.text(roi.name, M.left, 60)
+  setFont(doc, 'normal', 16, C.body)
+  const projectLines = doc.splitTextToSize(roi.name, W - M.left - M.right)
+  doc.text(projectLines, M.left, titleY + 24)
 
-  // Linha de meta (versão / moeda / data)
-  setFont(doc, 'normal', 9, C.muted)
-  const meta: string[] = [
+  // Linha decorativa
+  doc.setDrawColor(...C.brand).setLineWidth(1)
+  doc.line(M.left, titleY + 34, M.left + 50, titleY + 34)
+
+  // Meta info — sem caractere |que jsPDF não desenha bem
+  setFont(doc, 'normal', 9.5, C.muted)
+  const metaItems = [
     `Versão ${roi.version}`,
-    cur,
+    `Moeda ${currencySymbol(cur)}`,
     `${roi.durationMonths || 12} meses`,
     new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
   ]
-  doc.text(meta.join('  ·  '), M.left, 67)
+  doc.text(metaItems.join('   |   '), M.left, titleY + 42)
 
-  // Status badge (canto direito)
+  // ── KPI Hero — Resultado projetado, gigante ──
+  const heroY = 175
+  rect(doc, M.left, heroY, W - M.left - M.right, 70, {
+    fill: C.surface, stroke: C.hairline, radius: 3, lineWidth: 0.4,
+  })
+  // Faixa colorida à esquerda (tom indica sinal do resultado)
+  rect(doc, M.left, heroY, 4, 70, { fill: metrics.netValue >= 0 ? C.pos : C.neg })
+
+  setFont(doc, 'bold', 9, C.muted)
+  doc.text('RESULTADO PROJETADO', M.left + 10, heroY + 13)
+
+  setFont(doc, 'bold', 42, metrics.netValue >= 0 ? C.posDark : C.negDark)
+  doc.text(formatCurrency(metrics.netValue, cur), M.left + 10, heroY + 35)
+
+  // Sub-stats em linha
+  const subY = heroY + 50
+  setFont(doc, 'normal', 8, C.muted)
+  doc.text('PAYBACK', M.left + 10, subY)
+  doc.text('TIR a.a.', M.left + 70, subY)
+  doc.text('NPV', M.left + 130, subY)
+
+  setFont(doc, 'bold', 14, C.ink)
+  doc.text(metrics.paybackMonths != null ? `${metrics.paybackMonths} meses` : 'Não atinge', M.left + 10, subY + 8)
+  doc.text(fmtIrr(metrics.irr), M.left + 70, subY + 8)
+  doc.text(fmtShortCurrency(metrics.npv, cur), M.left + 130, subY + 8)
+
+  // Status badge (canto inferior direito da capa) — em PT
   const isApproved = roi.status === 'approved'
-  const statusLabel = (roi.status || 'draft').toUpperCase()
-  const statusW = doc.getTextWidth(statusLabel) + 8
-  rect(doc, PAGE.w - M.right - statusW, 45, statusW, 7, {
-    fill: isApproved ? C.posSoft : C.brandSoft,
-    radius: 1.5,
+  const statusLabel = (STATUS_LABELS[roi.status as string] || 'Rascunho').toUpperCase()
+  const statusW = doc.getTextWidth(statusLabel) + 10
+  rect(doc, W - M.right - statusW, H - 30, statusW, 7, {
+    fill: isApproved ? C.posSoft : C.brandSoft, radius: 1.5,
   })
   setFont(doc, 'bold', 8, isApproved ? C.posDark : C.brand)
-  doc.text(statusLabel, PAGE.w - M.right - statusW / 2, 49.5, { align: 'center' })
+  doc.text(statusLabel, W - M.right - statusW / 2, H - 25.5, { align: 'center' })
 
-  // ── KPI cards 2x2 (grandes) ─────────────────────────────
-  const kpis = [
-    { label: 'RECEITA TOTAL',  value: fmtShortCurrency(metrics.totalRevenue, cur),    accent: C.pos,  full: formatCurrency(metrics.totalRevenue, cur) },
-    { label: 'CUSTO TOTAL',    value: fmtShortCurrency(metrics.totalCost, cur),       accent: C.neg,  full: formatCurrency(metrics.totalCost, cur) },
-    { label: 'INVESTIMENTO',   value: fmtShortCurrency(metrics.totalInvestment, cur), accent: C.inv,  full: formatCurrency(metrics.totalInvestment, cur) },
-    { label: 'RESULTADO',      value: fmtShortCurrency(metrics.netValue, cur),        accent: metrics.netValue >= 0 ? C.pos : C.neg, full: formatCurrency(metrics.netValue, cur) },
+  // Footer da capa
+  setFont(doc, 'normal', 7, C.muted)
+  doc.text(opts.tenantName + ' |CONFIDENCIAL |Distribuição restrita', M.left, H - 22)
+}
+
+// ───────────────────────── Section header ─────────────────────────
+function drawSectionHeader(doc: jsPDF, num: string, title: string, subtitle?: string) {
+  const y = 32
+  setFont(doc, 'bold', 10, C.brand)
+  doc.text(num, M.left, y)
+  setFont(doc, 'bold', 18, C.ink)
+  doc.text(title, M.left + 12, y)
+  if (subtitle) {
+    setFont(doc, 'normal', 9, C.muted)
+    doc.text(subtitle, M.left + 12, y + 6)
+  }
+  // Linha indigo
+  doc.setDrawColor(...C.brand).setLineWidth(0.7)
+  doc.line(M.left, y + 11, M.left + 30, y + 11)
+}
+
+// ───────────────────────── PÁGINA 2 — Sumário Executivo ─────────────────────────
+function drawExecutiveSummary(doc: jsPDF, opts: ExportInput) {
+  const { roi, metrics } = opts
+  const cur = roi.currency
+  doc.addPage()
+  drawSectionHeader(doc, '01', 'Sumário Executivo', 'Visão consolidada da análise de retorno')
+
+  // ── Narrativa textual gerada ──
+  let y = 56
+  const dur = roi.durationMonths || 12
+  const margemPct = metrics.totalRevenue > 0 ? (metrics.netValue / metrics.totalRevenue) * 100 : 0
+  const paybackText = metrics.paybackMonths != null
+    ? `O payback ocorre no mês ${metrics.paybackMonths}, indicando retorno do investimento em ${
+        metrics.paybackMonths <= dur / 2 ? 'menos da metade' : 'mais da metade'
+      } do ciclo de ${dur} meses.`
+    : `Não foi atingido payback dentro de ${dur} meses analisados — a operação permanece com saldo acumulado negativo.`
+  const tirText = metrics.irr != null
+    ? `A TIR projetada é de ${fmtIrr(metrics.irr)}, ${metrics.irr > 0.2 ? 'um patamar atrativo' : 'requerendo análise comparativa contra alternativas de mesmo risco'}.`
+    : 'A TIR não pôde ser calculada — fluxos de caixa sem inversão de sinal.'
+  const npvText = `O NPV é de ${formatCurrency(metrics.npv, cur)}${
+    metrics.npv > 0 ? ', sustentando viabilidade econômica.' : ', indicando retorno abaixo do custo de capital.'
+  }`
+
+  setFont(doc, 'normal', 10, C.body)
+  const narrative = [
+    `Esta análise projeta receita total de ${formatCurrency(metrics.totalRevenue, cur)} contra custo de ${formatCurrency(metrics.totalCost, cur)} e investimento de ${formatCurrency(metrics.totalInvestment, cur)}, totalizando ${metrics.netValue >= 0 ? 'resultado positivo' : 'resultado negativo'} de ${formatCurrency(metrics.netValue, cur)} ao longo de ${dur} meses.`,
+    paybackText,
+    `${tirText} ${npvText} A margem líquida da operação é de ${margemPct.toFixed(1)}%.`,
+  ].join(' ')
+  const narrativeLines = doc.splitTextToSize(narrative, PAGE_PORTRAIT.w - M.left - M.right)
+  doc.text(narrativeLines, M.left, y)
+  y += narrativeLines.length * 5 + 8
+
+  // ── KPI cards horizontais ──
+  const cardW = (PAGE_PORTRAIT.w - M.left - M.right - 9) / 4
+  const cardH = 26
+  const kpis: Array<{ label: string; value: string; accent: [number, number, number]; full?: string }> = [
+    { label: 'RECEITA', value: fmtShortCurrency(metrics.totalRevenue, cur), accent: C.pos, full: formatCurrency(metrics.totalRevenue, cur) },
+    { label: 'CUSTO', value: fmtShortCurrency(metrics.totalCost, cur), accent: C.neg, full: formatCurrency(metrics.totalCost, cur) },
+    { label: 'INVESTIMENTO', value: fmtShortCurrency(metrics.totalInvestment, cur), accent: C.inv, full: formatCurrency(metrics.totalInvestment, cur) },
+    { label: 'RESULTADO', value: fmtShortCurrency(metrics.netValue, cur), accent: metrics.netValue >= 0 ? C.pos : C.neg, full: formatCurrency(metrics.netValue, cur) },
   ]
-  const cardW = (inner() - 6) / 2
-  const cardH = 36
-  const cardY = 90
   kpis.forEach((k, i) => {
-    const col = i % 2
-    const row = Math.floor(i / 2)
-    const x = M.left + col * (cardW + 6)
-    const y = cardY + row * (cardH + 6)
-    // Card body
-    rect(doc, x, y, cardW, cardH, { fill: C.white, stroke: C.hairline, radius: 2, lineWidth: 0.3 })
-    // Faixa de cor à esquerda
-    rect(doc, x, y, 2.5, cardH, { fill: k.accent })
-    // Label
-    setFont(doc, 'bold', 8, C.muted)
-    doc.text(k.label, x + 6, y + 9)
-    // Valor (curto)
-    setFont(doc, 'bold', 22, k.accent)
-    doc.text(k.value, x + 6, y + 24)
-    // Valor full em pequeno
-    setFont(doc, 'normal', 8, C.muted)
-    doc.text(k.full, x + 6, y + 31)
+    const x = M.left + i * (cardW + 3)
+    rect(doc, x, y, cardW, cardH, { fill: C.white, stroke: C.hairline, radius: 1.5, lineWidth: 0.3 })
+    rect(doc, x, y, cardW, 1.2, { fill: k.accent })
+    setFont(doc, 'bold', 7, C.muted)
+    doc.text(k.label, x + 3, y + 7)
+    setFont(doc, 'bold', 14, k.accent)
+    doc.text(k.value, x + 3, y + 17)
+    setFont(doc, 'normal', 7, C.mutedLight)
+    if (k.full && k.full !== k.value) doc.text(k.full, x + 3, y + 22)
   })
+  y += cardH + 12
 
-  // ── Indicadores principais ─────────────────────────────
-  const indY = cardY + 2 * (cardH + 6) + 14
-  setFont(doc, 'bold', 12, C.ink)
-  doc.text('Indicadores principais', M.left, indY)
-  doc.setDrawColor(...C.brand).setLineWidth(0.6)
-  doc.line(M.left, indY + 1.5, M.left + 30, indY + 1.5)
-
+  // ── Indicadores ──
+  setFont(doc, 'bold', 11, C.ink)
+  doc.text('Indicadores principais', M.left, y)
+  doc.setDrawColor(...C.brand).setLineWidth(0.5)
+  doc.line(M.left, y + 1.5, M.left + 25, y + 1.5)
+  y += 8
   const ind: Array<[string, string, [number, number, number]?]> = [
     ['Receita mensal recorrente', formatCurrency(metrics.monthlyRevenueTotal, cur), C.posDark],
     ['NPV (Valor Presente Líquido)', formatCurrency(metrics.npv, cur), metrics.npv >= 0 ? C.posDark : C.negDark],
     ['TIR a.a.', fmtIrr(metrics.irr)],
     ['Payback', metrics.paybackMonths != null ? `${metrics.paybackMonths} meses` : 'Não atinge'],
-    ['Margem',
-      metrics.totalRevenue > 0
-        ? `${((metrics.netValue / metrics.totalRevenue) * 100).toFixed(2)}%`
-        : '—'],
-    ['Duração do contrato', `${roi.durationMonths || 12} meses`],
+    ['Margem líquida', `${margemPct.toFixed(2)}%`],
+    ['Duração do contrato', `${dur} meses`],
   ]
-  let yy = indY + 8
   ind.forEach(([k, v, color]) => {
-    setFont(doc, 'normal', 10, C.body)
-    doc.text(k, M.left + 2, yy)
-    setFont(doc, 'bold', 10, color || C.ink)
-    doc.text(v, PAGE.w - M.right - 2, yy, { align: 'right' })
-    // Hairline divider
-    doc.setDrawColor(...C.hairline).setLineWidth(0.2)
-    doc.line(M.left, yy + 1.5, PAGE.w - M.right, yy + 1.5)
-    yy += 7
+    setFont(doc, 'normal', 9.5, C.body)
+    doc.text(k, M.left + 1, y)
+    setFont(doc, 'bold', 9.5, color || C.ink)
+    doc.text(v, PAGE_PORTRAIT.w - M.right - 1, y, { align: 'right' })
+    doc.setDrawColor(...C.hairline).setLineWidth(0.15)
+    doc.line(M.left, y + 1.5, PAGE_PORTRAIT.w - M.right, y + 1.5)
+    y += 6.5
   })
 
-  // ── Receita: bruto vs líquido (se houver desconto) ─────────────
+  // ── Composição da receita ──
   if (metrics.discountStats.discountAmount > 0) {
-    yy += 6
-    setFont(doc, 'bold', 12, C.ink)
-    doc.text('Composição da receita', M.left, yy)
-    doc.setDrawColor(...C.brand).setLineWidth(0.6)
-    doc.line(M.left, yy + 1.5, M.left + 30, yy + 1.5)
-    yy += 9
+    y += 6
+    setFont(doc, 'bold', 11, C.ink)
+    doc.text('Composição da receita', M.left, y)
+    doc.setDrawColor(...C.brand).setLineWidth(0.5)
+    doc.line(M.left, y + 1.5, M.left + 25, y + 1.5)
+    y += 8
     const ds = metrics.discountStats
     const rows: Array<[string, string, [number, number, number]]> = [
-      ['Bruto', formatCurrency(ds.grossRevenue, cur), C.body],
-      ['Líquido', formatCurrency(ds.netRevenue, cur), C.posDark],
+      ['Bruto (sem desconto)', formatCurrency(ds.grossRevenue, cur), C.body],
+      ['Líquido (com desconto)', formatCurrency(ds.netRevenue, cur), C.posDark],
       ['Desconto concedido', `-${formatCurrency(ds.discountAmount, cur)}`, C.negDark],
     ]
     rows.forEach(([k, v, color]) => {
-      setFont(doc, 'normal', 10, C.body)
-      doc.text(k, M.left + 2, yy)
-      setFont(doc, 'bold', 10, color)
-      doc.text(v, PAGE.w - M.right - 2, yy, { align: 'right' })
-      doc.setDrawColor(...C.hairline).setLineWidth(0.2)
-      doc.line(M.left, yy + 1.5, PAGE.w - M.right, yy + 1.5)
-      yy += 7
+      setFont(doc, 'normal', 9.5, C.body)
+      doc.text(k, M.left + 1, y)
+      setFont(doc, 'bold', 9.5, color)
+      doc.text(v, PAGE_PORTRAIT.w - M.right - 1, y, { align: 'right' })
+      doc.setDrawColor(...C.hairline).setLineWidth(0.15)
+      doc.line(M.left, y + 1.5, PAGE_PORTRAIT.w - M.right, y + 1.5)
+      y += 6.5
     })
   }
 }
 
-// ───────────────────────── Página — Charts ─────────────────────────
-function drawChartsPage(doc: jsPDF, opts: ExportInput) {
+// ───────────────────────── Chart helpers ─────────────────────────
+function drawCumulativeChart(doc: jsPDF, opts: ExportInput, area: { x: number; y: number; w: number; h: number }) {
   const { roi, metrics } = opts
-  const cur = roi.currency
   const flow = metrics.monthlyFlow
   if (flow.length === 0) return
+  const cur = roi.currency
 
-  doc.addPage()
-  setFont(doc, 'bold', 16, C.ink)
-  doc.text('Fluxo de caixa', M.left, 30)
-  setFont(doc, 'normal', 9, C.muted)
-  doc.text('Saldo acumulado mês a mês e composição mensal por categoria.', M.left, 36)
-
-  // ──── Chart 1: Saldo Acumulado ────
-  const chart1 = { x: M.left, y: 44, w: inner(), h: 90 }
-  setFont(doc, 'bold', 11, C.ink)
-  doc.text('Saldo acumulado', chart1.x, chart1.y - 2)
-
+  const pad = { l: 22, r: 6, t: 12, b: 16 }
+  const innerW = area.w - pad.l - pad.r
+  const innerH = area.h - pad.t - pad.b
   const cumValues = flow.map(f => f.cumulative)
   const maxC = Math.max(0, ...cumValues)
   const minC = Math.min(0, ...cumValues)
   const range = (maxC - minC) || 1
-
-  const padL = 18, padR = 4, padT = 8, padB = 14
-  const innerW = chart1.w - padL - padR
-  const innerH = chart1.h - padT - padB
-  const xs = (i: number) => chart1.x + padL + (i / Math.max(1, flow.length - 1)) * innerW
-  const ys = (v: number) => chart1.y + padT + ((maxC - v) / range) * innerH
+  const xs = (i: number) => area.x + pad.l + (i / Math.max(1, flow.length - 1)) * innerW
+  const ys = (v: number) => area.y + pad.t + ((maxC - v) / range) * innerH
+  const yZero = ys(0)
 
   // Grid Y (4 ticks)
-  setFont(doc, 'normal', 7, C.muted)
   for (let i = 0; i <= 4; i++) {
     const v = maxC - (range * i / 4)
-    const y = chart1.y + padT + (i / 4) * innerH
-    doc.setDrawColor(...(v === 0 ? C.muted : C.hairline)).setLineWidth(v === 0 ? 0.4 : 0.2)
-    doc.line(chart1.x + padL, y, chart1.x + padL + innerW, y)
-    doc.text(fmtShortCurrency(v, cur), chart1.x + padL - 1, y + 1.5, { align: 'right' })
+    const y = area.y + pad.t + (i / 4) * innerH
+    doc.setDrawColor(...(Math.abs(v) < 0.01 ? C.muted : C.hairline)).setLineWidth(Math.abs(v) < 0.01 ? 0.4 : 0.15)
+    doc.line(area.x + pad.l, y, area.x + pad.l + innerW, y)
+    setFont(doc, 'normal', 7, C.muted)
+    doc.text(fmtShortCurrency(v, cur), area.x + pad.l - 1.5, y + 1.2, { align: 'right' })
   }
 
-  // Eixo X — TODOS os meses
-  for (let i = 0; i < flow.length; i++) {
-    const x = xs(i)
-    doc.setDrawColor(...C.hairline).setLineWidth(0.15)
-    doc.line(x, chart1.y + padT + innerH, x, chart1.y + padT + innerH + 1.5)
-    setFont(doc, 'normal', 6, C.muted)
-    doc.text(`m${flow[i].month}`, x, chart1.y + padT + innerH + 5, { align: 'center' })
+  // Eixo X — todos os meses
+  flow.forEach((f, i) => {
+    setFont(doc, 'normal', 6.5, C.muted)
+    doc.text(`m${f.month}`, xs(i), area.y + pad.t + innerH + 5, { align: 'center' })
+  })
+
+  // Áreas (trapézio fechado entre linha e zero)
+  for (let i = 0; i < flow.length - 1; i++) {
+    const a = flow[i], b = flow[i + 1]
+    const x1 = xs(i), x2 = xs(i + 1)
+    const y1 = ys(a.cumulative), y2 = ys(b.cumulative)
+    const aPos = a.cumulative >= 0
+    const bPos = b.cumulative >= 0
+    // Só preenche segmentos onde ambos pontos têm mesmo sinal (evita
+    // ambiguidade em cruzamento de zero — desenha a linha neutra).
+    if (aPos === bPos) {
+      const fill = aPos ? C.posSoft : C.negSoft
+      doc.setFillColor(...fill)
+      // Path triângulo/trapézio: (x1,y1) -> (x2,y2) -> (x2,yZero) -> (x1,yZero) -> close
+      doc.lines(
+        [[x2 - x1, y2 - y1], [0, yZero - y2], [x1 - x2, 0]],
+        x1, y1, [1, 1], 'F', true,
+      )
+    }
   }
+  // Linhas (depois das áreas pra ficar por cima)
+  for (let i = 0; i < flow.length - 1; i++) {
+    const a = flow[i], b = flow[i + 1]
+    const x1 = xs(i), x2 = xs(i + 1)
+    const y1 = ys(a.cumulative), y2 = ys(b.cumulative)
+    const aPos = a.cumulative >= 0
+    const bPos = b.cumulative >= 0
+    const lineColor = aPos && bPos ? C.pos : !aPos && !bPos ? C.neg : aPos ? C.pos : C.neg
+    doc.setDrawColor(...lineColor).setLineWidth(0.8)
+    doc.line(x1, y1, x2, y2)
+  }
+
+  // Pontos nos extremos + payback (não em todos pra não poluir)
+  const drawPoint = (i: number, color: [number, number, number]) => {
+    if (i < 0 || i >= flow.length) return
+    doc.setFillColor(...color)
+    doc.circle(xs(i), ys(flow[i].cumulative), 1.2, 'F')
+    doc.setFillColor(255, 255, 255)
+    doc.circle(xs(i), ys(flow[i].cumulative), 0.5, 'F')
+  }
+  drawPoint(0, flow[0].cumulative >= 0 ? C.pos : C.neg)
+  drawPoint(flow.length - 1, flow[flow.length - 1].cumulative >= 0 ? C.pos : C.neg)
+
+  // Anotações de início e fim — só o valor, sem label adicional pra não poluir
+  const startV = flow[0].cumulative
+  const endV = flow[flow.length - 1].cumulative
+  setFont(doc, 'bold', 7, startV >= 0 ? C.posDark : C.negDark)
+  doc.text(fmtShortCurrency(startV, cur), xs(0) + 1.5, ys(startV) + (startV >= 0 ? -2 : 5), { align: 'left' })
+  setFont(doc, 'bold', 7, endV >= 0 ? C.posDark : C.negDark)
+  doc.text(fmtShortCurrency(endV, cur), xs(flow.length - 1) - 1.5, ys(endV) + (endV >= 0 ? -2 : 5), { align: 'right' })
 
   // Payback marker
   if (metrics.paybackMonths != null) {
     const idx = flow.findIndex(f => f.month === metrics.paybackMonths)
     if (idx >= 0) {
       const px = xs(idx)
-      doc.setDrawColor(...C.pos).setLineWidth(0.4)
-      // Linha tracejada via sequência de pequenos segmentos
-      for (let yy = chart1.y + padT; yy < chart1.y + padT + innerH; yy += 2.5) {
-        doc.line(px, yy, px, Math.min(yy + 1.5, chart1.y + padT + innerH))
+      doc.setDrawColor(...C.pos).setLineWidth(0.5)
+      // dashed line via small segments
+      for (let yy = area.y + pad.t; yy < area.y + pad.t + innerH; yy += 2.5) {
+        doc.line(px, yy, px, Math.min(yy + 1.5, area.y + pad.t + innerH))
       }
+      drawPoint(idx, C.pos)
+      // Etiqueta
+      const labelText = `Payback m${metrics.paybackMonths}`
+      const labelW = doc.getTextWidth(labelText) + 4
+      rect(doc, px - labelW / 2, area.y + pad.t - 7, labelW, 5, { fill: C.posSoft, radius: 0.6 })
       setFont(doc, 'bold', 6.5, C.posDark)
-      doc.text(`Payback m${metrics.paybackMonths}`, px, chart1.y + padT - 1, { align: 'center' })
+      doc.text(labelText, px, area.y + pad.t - 3.5, { align: 'center' })
     }
   }
+}
 
-  // Linha + área (com cor por sinal)
-  // Área sob a linha
-  for (let i = 0; i < flow.length - 1; i++) {
-    const a = flow[i], b = flow[i + 1]
-    const x1 = xs(i), x2 = xs(i + 1)
-    const y1 = ys(a.cumulative), y2 = ys(b.cumulative)
-    const yZero = ys(0)
-    const aPos = a.cumulative >= 0
-    const bPos = b.cumulative >= 0
-    const fillTone = (aPos && bPos) ? [...C.posSoft] as [number, number, number]
-      : (!aPos && !bPos) ? [...C.negSoft] as [number, number, number]
-      : null
-    if (fillTone) {
-      doc.setFillColor(...fillTone)
-      doc.lines([[0, yZero - y1], [x2 - x1, y2 - yZero], [0, yZero - y2]], x1, y1, [1, 1], 'F', true)
-    }
-    // Linha
-    const lineColor = aPos && bPos ? C.pos : !aPos && !bPos ? C.neg : aPos ? C.pos : C.neg
-    doc.setDrawColor(...lineColor).setLineWidth(0.7)
-    doc.line(x1, y1, x2, y2)
-  }
+function drawMonthlyBarsChart(doc: jsPDF, opts: ExportInput, area: { x: number; y: number; w: number; h: number }) {
+  const { roi, metrics } = opts
+  const flow = metrics.monthlyFlow
+  if (flow.length === 0) return
+  const cur = roi.currency
 
-  // Pontos nos vértices
-  flow.forEach((f, i) => {
-    const x = xs(i), y = ys(f.cumulative)
-    const c = f.cumulative >= 0 ? C.pos : C.neg
-    doc.setFillColor(...c)
-    doc.circle(x, y, 0.8, 'F')
-  })
-
-  // ──── Chart 2: Fluxo mensal (barras agrupadas) ────
-  const chart2 = { x: M.left, y: 150, w: inner(), h: 90 }
-  setFont(doc, 'bold', 11, C.ink)
-  doc.text('Fluxo mensal por categoria', chart2.x, chart2.y - 2)
-
-  // Legenda
-  const legendY = chart2.y - 2
-  const drawLegend = (x: number, color: [number, number, number], label: string) => {
-    rect(doc, x, legendY - 3, 3, 3, { fill: color, radius: 0.5 })
-    setFont(doc, 'normal', 7, C.body)
-    doc.text(label, x + 4, legendY)
-  }
-  drawLegend(chart2.x + 60,  C.pos, 'Receita')
-  drawLegend(chart2.x + 90,  C.neg, 'Custo')
-  drawLegend(chart2.x + 115, C.inv, 'Investimento')
-
-  const innerW2 = chart2.w - padL - padR
-  const innerH2 = chart2.h - padT - padB
-  const xs2 = (i: number) => chart2.x + padL + (i + 0.5) * (innerW2 / flow.length)
-
+  const pad = { l: 22, r: 6, t: 12, b: 16 }
+  const innerW = area.w - pad.l - pad.r
+  const innerH = area.h - pad.t - pad.b
+  const xs = (i: number) => area.x + pad.l + (i + 0.5) * (innerW / flow.length)
   const max2 = Math.max(...flow.map(f => Math.max(f.inflow, f.outflow + f.investment)), 1)
-  const ys2 = (v: number) => chart2.y + padT + (1 - v / max2) * innerH2
 
   // Grid Y
   for (let i = 0; i <= 4; i++) {
     const v = max2 * (1 - i / 4)
-    const y = chart2.y + padT + (i / 4) * innerH2
-    doc.setDrawColor(...C.hairline).setLineWidth(0.2)
-    doc.line(chart2.x + padL, y, chart2.x + padL + innerW2, y)
-    setFont(doc, 'normal', 6, C.muted)
-    doc.text(fmtShortCurrency(v, cur), chart2.x + padL - 1, y + 1.5, { align: 'right' })
+    const y = area.y + pad.t + (i / 4) * innerH
+    doc.setDrawColor(...C.hairline).setLineWidth(0.15)
+    doc.line(area.x + pad.l, y, area.x + pad.l + innerW, y)
+    setFont(doc, 'normal', 7, C.muted)
+    doc.text(fmtShortCurrency(v, cur), area.x + pad.l - 1.5, y + 1.2, { align: 'right' })
   }
-  // Linha base (zero)
   doc.setDrawColor(...C.muted).setLineWidth(0.4)
-  doc.line(chart2.x + padL, chart2.y + padT + innerH2, chart2.x + padL + innerW2, chart2.y + padT + innerH2)
+  doc.line(area.x + pad.l, area.y + pad.t + innerH, area.x + pad.l + innerW, area.y + pad.t + innerH)
 
-  // Eixo X — TODOS os meses
-  for (let i = 0; i < flow.length; i++) {
-    setFont(doc, 'normal', 6, C.muted)
-    doc.text(`m${flow[i].month}`, xs2(i), chart2.y + padT + innerH2 + 5, { align: 'center' })
-  }
-
-  // 3 barras por mês (receita / custo / investimento)
-  const slotW = innerW2 / flow.length
-  const barW = Math.min(2.4, (slotW - 0.6) / 3)
+  // X-axis — todos meses
   flow.forEach((f, i) => {
-    const cx = xs2(i)
-    const yBase = chart2.y + padT + innerH2
-    // Receita (verde)
+    setFont(doc, 'normal', 6.5, C.muted)
+    doc.text(`m${f.month}`, xs(i), area.y + pad.t + innerH + 5, { align: 'center' })
+  })
+
+  const slotW = innerW / flow.length
+  const barW = Math.min(2.6, (slotW - 0.8) / 3)
+  const yBase = area.y + pad.t + innerH
+  flow.forEach((f, i) => {
+    const cx = xs(i)
     if (f.inflow > 0) {
-      const h = (f.inflow / max2) * innerH2
-      rect(doc, cx - barW * 1.5 - 0.3, yBase - h, barW, h, { fill: C.pos })
+      const h = (f.inflow / max2) * innerH
+      rect(doc, cx - barW * 1.5 - 0.4, yBase - h, barW, h, { fill: C.pos, radius: 0.3 })
     }
-    // Custo (vermelho)
     if (f.outflow > 0) {
-      const h = (f.outflow / max2) * innerH2
-      rect(doc, cx - barW / 2, yBase - h, barW, h, { fill: C.neg })
+      const h = (f.outflow / max2) * innerH
+      rect(doc, cx - barW / 2, yBase - h, barW, h, { fill: C.neg, radius: 0.3 })
     }
-    // Investimento (azul)
     if (f.investment > 0) {
-      const h = (f.investment / max2) * innerH2
-      rect(doc, cx + barW / 2 + 0.3, yBase - h, barW, h, { fill: C.inv })
+      const h = (f.investment / max2) * innerH
+      rect(doc, cx + barW / 2 + 0.4, yBase - h, barW, h, { fill: C.inv, radius: 0.3 })
     }
   })
-  void ys2
 }
 
-// ───────────────────────── Página — Lançamentos ─────────────────────────
+// ───────────────────────── PÁGINAS — Charts ─────────────────────────
+function drawChartsPages(doc: jsPDF, opts: ExportInput) {
+  const flow = opts.metrics.monthlyFlow
+  if (flow.length === 0) return
+
+  // ── Página: Saldo acumulado ──
+  doc.addPage()
+  drawSectionHeader(doc, '02', 'Fluxo de caixa', 'Trajetória do saldo acumulado e composição mensal')
+
+  setFont(doc, 'bold', 12, C.ink)
+  doc.text('Saldo acumulado', M.left, 58)
+  setFont(doc, 'normal', 9, C.muted)
+  doc.text('Em verde quando positivo, em vermelho quando negativo. O marker indica o mês de payback.', M.left, 64)
+
+  drawCumulativeChart(doc, opts, {
+    x: M.left, y: 68,
+    w: PAGE_PORTRAIT.w - M.left - M.right,
+    h: 95,
+  })
+
+  // ── Página: Fluxo mensal ──
+  setFont(doc, 'bold', 12, C.ink)
+  doc.text('Fluxo mensal por origem', M.left, 180)
+  setFont(doc, 'normal', 9, C.muted)
+  doc.text('Receita (verde), custo (vermelho) e investimento (azul) por mês.', M.left, 186)
+
+  // Legenda
+  const legendY = 192
+  const drawLegend = (x: number, color: [number, number, number], label: string) => {
+    rect(doc, x, legendY - 2.5, 3, 3, { fill: color, radius: 0.5 })
+    setFont(doc, 'normal', 8, C.body)
+    doc.text(label, x + 4, legendY)
+  }
+  drawLegend(M.left,        C.pos, 'Receita')
+  drawLegend(M.left + 26,   C.neg, 'Custo')
+  drawLegend(M.left + 50,   C.inv, 'Investimento')
+
+  drawMonthlyBarsChart(doc, opts, {
+    x: M.left, y: 198,
+    w: PAGE_PORTRAIT.w - M.left - M.right,
+    h: 70,
+  })
+}
+
+// ───────────────────────── PÁGINAS — Lançamentos ─────────────────────────
 function drawEntries(doc: jsPDF, opts: ExportInput) {
   const { roi, entries, categoryById, itemsById } = opts
   const cur = roi.currency
@@ -482,12 +627,8 @@ function drawEntries(doc: jsPDF, opts: ExportInput) {
   if (entries.length === 0) return
 
   doc.addPage()
-  setFont(doc, 'bold', 16, C.ink)
-  doc.text('Lançamentos', M.left, 30)
-  setFont(doc, 'normal', 9, C.muted)
-  doc.text(`${entries.length} ${entries.length > 1 ? 'itens' : 'item'} agrupados por categoria.`, M.left, 36)
+  drawSectionHeader(doc, '03', 'Lançamentos', `${entries.length} ${entries.length > 1 ? 'itens' : 'item'} agrupados por categoria`)
 
-  // Agrupar
   const groups = new Map<string, { name: string; items: RoiEntry[]; total: number; family: string }>()
   for (const e of entries) {
     const catId = e.categoryId || 'none'
@@ -508,7 +649,7 @@ function drawEntries(doc: jsPDF, opts: ExportInput) {
     groups.set(String(catId), g)
   }
 
-  let y = 44
+  let y = 56
   const order: Record<string, number> = { INCOME: 0, MIXED: 1, EXPENSE: 2, INVESTMENT: 3 }
   const sorted = Array.from(groups.entries()).sort(
     (a, b) => (order[a[1].family] - order[b[1].family]) || Math.abs(b[1].total) - Math.abs(a[1].total),
@@ -518,19 +659,20 @@ function drawEntries(doc: jsPDF, opts: ExportInput) {
     const accent = g.family === 'INCOME' ? C.pos : g.family === 'INVESTMENT' ? C.inv : C.neg
     const accentSoft = g.family === 'INCOME' ? C.posSoft : g.family === 'INVESTMENT' ? C.invSoft : C.negSoft
 
-    // Cabeçalho da categoria (banner)
-    rect(doc, M.left, y, inner(), 7, { fill: accentSoft })
-    rect(doc, M.left, y, 1.5, 7, { fill: accent })
-    setFont(doc, 'bold', 10, C.ink)
-    doc.text(g.name, M.left + 4, y + 4.7)
-    setFont(doc, 'normal', 8, C.muted)
-    doc.text(`${g.items.length} item${g.items.length > 1 ? 's' : ''}`, M.left + 70, y + 4.7)
-    setFont(doc, 'bold', 10, g.total >= 0 ? C.posDark : C.negDark)
+    // Card de categoria — header bem distinto
+    rect(doc, M.left, y, PAGE_PORTRAIT.w - M.left - M.right, 11, {
+      fill: accentSoft, radius: 1.5,
+    })
+    rect(doc, M.left, y, 1.8, 11, { fill: accent })
+    setFont(doc, 'bold', 11, C.ink)
+    doc.text(g.name, M.left + 5, y + 7)
+    setFont(doc, 'normal', 7.5, C.muted)
+    doc.text(`${g.items.length} item${g.items.length > 1 ? 's' : ''} |${g.family.toLowerCase()}`, M.left + 5 + doc.getTextWidth(g.name) + 4, y + 7)
+    setFont(doc, 'bold', 11, g.total >= 0 ? C.posDark : C.negDark)
     const sign = g.total >= 0 ? '+' : '-'
-    doc.text(`${sign}${formatCurrency(Math.abs(g.total), cur)}`, PAGE.w - M.right - 2, y + 4.7, { align: 'right' })
-    y += 9
+    doc.text(`${sign}${formatCurrency(Math.abs(g.total), cur)}`, PAGE_PORTRAIT.w - M.right - 3, y + 7, { align: 'right' })
+    y += 13
 
-    // Linhas
     const rows = g.items.map(e => {
       const it = itemsById.get(String(e.catalogItemId)) || {}
       const fam = familyOf(e.comportamento)
@@ -543,8 +685,8 @@ function drawEntries(doc: jsPDF, opts: ExportInput) {
       let impact = net
       if (suf === 'MONTHLY') impact = net * Math.max(0, dur - start + 1)
       const window =
-        suf === 'INSTALLMENT' && e.installments ? `m${start} ─ ${e.installments}x`
-        : suf === 'MONTHLY' ? `m${start}–m${dur}`
+        suf === 'INSTALLMENT' && e.installments ? `m${start} (${e.installments}x)`
+        : suf === 'MONTHLY' ? `m${start} a m${dur}`
         : `m${start} (única)`
       const sign = fam === 'INCOME' ? '+' : '-'
       return [
@@ -561,14 +703,15 @@ function drawEntries(doc: jsPDF, opts: ExportInput) {
       startY: y,
       head: [['Item', 'Qtd', 'Unitário', 'Desc.', 'Janela', 'Impacto']],
       body: rows,
-      theme: 'plain',
-      styles: { fontSize: 8.5, cellPadding: 2, lineColor: C.hairline, lineWidth: 0.1, textColor: C.body },
-      headStyles: { fontStyle: 'bold', textColor: C.muted, fontSize: 7, fillColor: C.surface },
+      theme: 'striped',
+      styles: { fontSize: 8.5, cellPadding: 2.2, lineColor: C.hairline, lineWidth: 0.1, textColor: C.body },
+      headStyles: { fontStyle: 'bold', textColor: C.muted, fontSize: 7, fillColor: C.surface, lineWidth: 0.2 },
+      alternateRowStyles: { fillColor: [252, 252, 253] },
       columnStyles: {
-        0: { cellWidth: 70, fontStyle: 'bold', textColor: C.ink },
-        1: { halign: 'right', cellWidth: 18 },
-        2: { halign: 'right', cellWidth: 28 },
-        3: { halign: 'center', cellWidth: 16 },
+        0: { cellWidth: 68, fontStyle: 'bold', textColor: C.ink },
+        1: { halign: 'right', cellWidth: 16 },
+        2: { halign: 'right', cellWidth: 26 },
+        3: { halign: 'center', cellWidth: 14 },
         4: { halign: 'center', cellWidth: 24 },
         5: { halign: 'right', cellWidth: 26, fontStyle: 'bold' },
       },
@@ -582,29 +725,27 @@ function drawEntries(doc: jsPDF, opts: ExportInput) {
       margin: { left: M.left, right: M.right },
     })
     // @ts-expect-error — autoTable.lastAutoTable
-    y = (doc.lastAutoTable.finalY ?? y) + 6
+    y = (doc.lastAutoTable.finalY ?? y) + 7
 
-    if (y > PAGE.h - 30) {
+    if (y > PAGE_PORTRAIT.h - 32) {
       doc.addPage()
-      y = 30
+      drawSectionHeader(doc, '03', 'Lançamentos (continuação)', '')
+      y = 56
     }
   }
 }
 
-// ───────────────────────── Página — Matriz mensal ─────────────────────────
+// ───────────────────────── PÁGINA — Matriz mensal (LANDSCAPE) ─────────────────────────
 function drawMonthlyMatrix(doc: jsPDF, opts: ExportInput) {
   const { roi, entries, categoryById } = opts
   const cur = roi.currency
   const dur = roi.durationMonths || 12
   if (entries.length === 0) return
 
-  doc.addPage()  // mantém a4 portrait (mesma orientação)
-  setFont(doc, 'bold', 16, C.ink)
-  doc.text('Fluxo mensal por categoria', M.left, 30)
-  setFont(doc, 'normal', 9, C.muted)
-  doc.text('Receitas em verde, custos/investimentos em vermelho. Heatmap proporcional ao valor absoluto.', M.left, 36)
+  doc.addPage('a4', 'landscape')
+  drawSectionHeader(doc, '04', 'Fluxo mensal por categoria',
+    'Heatmap proporcional ao valor absoluto. Receitas em verde, custos/investimentos em vermelho.')
 
-  // Reconstrói matriz
   type Col = { name: string; perMonth: number[]; total: number; family: string }
   const colMap = new Map<string, Col>()
   for (const e of entries) {
@@ -653,7 +794,6 @@ function drawMonthlyMatrix(doc: jsPDF, opts: ExportInput) {
     if (payback == null && cumulative[i] >= 0 && totalOut > 0) payback = i + 1
   }
 
-  // Heat scale (p95)
   const allVals = cols.flatMap(c => c.perMonth.map(v => Math.abs(v)))
   const sortedVals = allVals.filter(v => v > 0).sort((a, b) => a - b)
   const p95 = sortedVals.length > 0 ? sortedVals[Math.floor(sortedVals.length * 0.95)] : 1
@@ -662,17 +802,16 @@ function drawMonthlyMatrix(doc: jsPDF, opts: ExportInput) {
   const body = Array.from({ length: dur }, (_, i) => {
     const isPayback = payback === i + 1
     const monthCell = isPayback
-      ? { content: `m${i + 1} ◆`, styles: { fontStyle: 'bold' as const, fillColor: C.posSoft, textColor: C.posDark } }
+      ? { content: `m${i + 1} *`, styles: { fontStyle: 'bold' as const, fillColor: C.posSoft, textColor: C.posDark } }
       : { content: `m${i + 1}`, styles: { fontStyle: 'bold' as const } }
     const row: any[] = [
       monthCell,
       ...cols.map(c => {
         const v = c.perMonth[i]
-        if (v === 0) return { content: '—', styles: { textColor: [200, 200, 200] as [number, number, number], halign: 'center' as const } }
+        if (v === 0) return { content: '—', styles: { textColor: C.mutedLight, halign: 'center' as const } }
         const intensity = Math.min(1, Math.abs(v) / p95)
         const tone = v > 0 ? C.posSoft : C.negSoft
         const text = v > 0 ? C.posDark : C.negDark
-        // Mistura branco→tone proporcional
         const fill: [number, number, number] = [
           Math.round(255 - (255 - tone[0]) * intensity),
           Math.round(255 - (255 - tone[1]) * intensity),
@@ -693,7 +832,7 @@ function drawMonthlyMatrix(doc: jsPDF, opts: ExportInput) {
   })
 
   autoTable(doc, {
-    startY: 42,
+    startY: 50,
     head: [head],
     body,
     foot: [[
@@ -712,10 +851,9 @@ function drawMonthlyMatrix(doc: jsPDF, opts: ExportInput) {
       },
     ]],
     theme: 'plain',
-    styles: { fontSize: 6.5, cellPadding: 1.2, lineColor: C.hairline, lineWidth: 0.1, overflow: 'linebreak' },
-    headStyles: { fillColor: C.surface, textColor: C.muted, fontStyle: 'bold', halign: 'center', fontSize: 6.5, lineWidth: 0.2, cellPadding: 1.2 },
-    columnStyles: { 0: { halign: 'center', cellWidth: 12, fontStyle: 'bold' } },
-    tableWidth: 'auto',
+    styles: { fontSize: 8, cellPadding: 1.8, lineColor: C.hairline, lineWidth: 0.1 },
+    headStyles: { fillColor: C.surface, textColor: C.muted, fontStyle: 'bold', halign: 'center', fontSize: 7.5, lineWidth: 0.2 },
+    columnStyles: { 0: { halign: 'center', cellWidth: 16, fontStyle: 'bold' } },
     margin: { left: M.left, right: M.right },
   })
 }
@@ -724,21 +862,24 @@ function drawMonthlyMatrix(doc: jsPDF, opts: ExportInput) {
 export async function exportRoiToPdf(input: ExportInput): Promise<void> {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
 
-  // Resolve SVG→PNG uma vez. jsPDF não desenha SVG nativamente,
-  // e silenciosamente ignora addImage com SVG.
   const logo = await ensureRasterLogo(input.tenantLogoDataUrl)
 
   drawCover(doc, input, logo)
-  drawChartsPage(doc, input)
+  drawExecutiveSummary(doc, input)
+  drawChartsPages(doc, input)
   drawEntries(doc, input)
   drawMonthlyMatrix(doc, input)
 
-  // Header + footer em todas as páginas (exceto capa, que já tem logo grande)
+  // Header + footer em todas as páginas exceto capa.
+  // Detecta orientação por largura da página (jsPDF: getPageInfo retorna pageInfo.pageContext.mediaBox)
   const total = doc.getNumberOfPages()
   for (let i = 1; i <= total; i++) {
     doc.setPage(i)
-    if (i > 1) drawHeader(doc, input, logo, i, total)
-    drawFooter(doc)
+    if (i === 1) continue  // capa tem cabeçalho próprio
+    const w = doc.internal.pageSize.getWidth()
+    const isLandscape = w > 250
+    drawHeader(doc, input, logo, isLandscape)
+    drawFooter(doc, input, i, total, isLandscape)
   }
 
   const slug = input.roi.name.replace(/[^a-z0-9]/gi, '-').toLowerCase().replace(/-+/g, '-').replace(/^-|-$/g, '')
