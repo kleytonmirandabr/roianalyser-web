@@ -10,16 +10,14 @@
  * progresso %. Owner/Editor podem mexer; Viewer só visualiza.
  */
 import {
-  CalendarDays, CheckCircle2, ChevronDown, ChevronRight, Circle, FolderTree, LayoutGrid, List, Plus, Settings2, Trash2, UserCircle2,
+  CalendarDays, FolderTree, LayoutGrid, List, Plus, Settings2,
 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { useAppState } from '@/features/admin/hooks/use-app-state'
 import {
-  MILESTONE_STATUS_COLORS,
-  MILESTONE_STATUS_LABELS,
   type MilestoneKind,
-  type MilestoneStatus,
+ 
   type ProjectMilestone,
 } from '@/features/projects2/milestones-types'
 import {
@@ -35,13 +33,12 @@ import {
 } from '@/features/projects2/hooks/use-project-task-columns'
 import type { ProjectTaskColumn, TaskColumnValue } from '@/features/projects2/task-columns-types'
 import { ColumnsManager } from '@/features/projects2/components/ColumnsManager'
-import { ColumnCellEditor, ColumnCellReadonly } from '@/features/projects2/components/ColumnCellEditor'
 import { TasksKanbanView } from '@/features/projects2/components/TasksKanbanView'
 import { TasksCalendarView } from '@/features/projects2/components/TasksCalendarView'
+import { TasksTableView } from '@/features/projects2/components/TasksTableView'
 import { TasksToolbar, type TasksFilters } from '@/features/projects2/components/TasksToolbar'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
-import { Combobox } from '@/shared/ui/combobox'
 import { confirm } from '@/shared/ui/confirm-dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
@@ -54,141 +51,8 @@ interface Props {
 
 interface UserMini { id: string; name: string; email: string }
 
-function fmtDate(iso: string | null): string {
-  if (!iso) return '—'
-  try {
-    return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
-  } catch { return iso }
-}
 
-function initials(name: string): string {
-  return name.split(' ').filter(Boolean).map(s => s[0]).slice(0, 2).join('').toUpperCase()
-}
 
-function relativeTime(iso: string | null): string {
-  if (!iso) return ''
-  try {
-    const then = new Date(iso).getTime()
-    const now = Date.now()
-    const sec = Math.max(1, Math.round((now - then) / 1000))
-    if (sec < 60) return `${sec}s atras`
-    const min = Math.round(sec / 60)
-    if (min < 60) return `${min} min atras`
-    const hr = Math.round(min / 60)
-    if (hr < 24) return `${hr} h atras`
-    const day = Math.round(hr / 24)
-    if (day < 7) return `${day} dia${day > 1 ? 's' : ''} atras`
-    if (day < 30) return `${Math.round(day / 7)} sem atras`
-    if (day < 365) return `${Math.round(day / 30)} mes atras`
-    return `${Math.round(day / 365)} ano atras`
-  } catch { return '' }
-}
-
-/* MultiPeoplePicker — popover simples com checkboxes pra escolher N usuários. */
-function MultiPeoplePicker({
-  value, users, onChange, disabled,
-}: { value: string[]; users: UserMini[]; onChange: (ids: string[]) => void; disabled?: boolean }) {
-  const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState('')
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    function onClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    if (open) document.addEventListener('mousedown', onClick)
-    return () => document.removeEventListener('mousedown', onClick)
-  }, [open])
-
-  const filtered = users.filter(u =>
-    !search.trim() || u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()),
-  )
-
-  function toggle(id: string) {
-    if (value.includes(id)) onChange(value.filter(x => x !== id))
-    else onChange([...value, id])
-  }
-
-  const selected = users.filter(u => value.includes(u.id))
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-1 px-2 py-1 text-xs rounded border bg-background hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {selected.length === 0 ? (
-          <span className="text-muted-foreground">Atribuir...</span>
-        ) : (
-          <span className="truncate">
-            {selected.length === 1 ? selected[0].name : `${selected.length} pessoas`}
-          </span>
-        )}
-        <ChevronDown className="h-3 w-3 ml-auto text-muted-foreground" />
-      </button>
-      {open && (
-        <div className="absolute z-50 top-full left-0 mt-1 w-56 max-h-72 overflow-auto rounded-md border bg-popover shadow-md">
-          <div className="p-1.5 border-b">
-            <Input
-              autoFocus
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar..."
-              className="h-7 text-xs"
-            />
-          </div>
-          <ul className="py-1">
-            {filtered.length === 0 ? (
-              <li className="px-2 py-1 text-xs text-muted-foreground italic">Sem resultados</li>
-            ) : filtered.map(u => {
-              const checked = value.includes(u.id)
-              return (
-                <li key={u.id}>
-                  <button
-                    type="button"
-                    onClick={() => toggle(u.id)}
-                    className={`w-full flex items-center gap-2 px-2 py-1 text-xs hover:bg-muted text-left ${checked ? 'font-medium' : ''}`}
-                  >
-                    <input type="checkbox" checked={checked} readOnly className="h-3 w-3" />
-                    <span className="truncate">{u.name}</span>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function ResponsibleAvatars({ ids, users, max = 3 }: { ids: string[]; users: UserMini[]; max?: number }) {
-  const list = ids.map(id => users.find(u => u.id === id)).filter(Boolean) as UserMini[]
-  if (list.length === 0) {
-    return <UserCircle2 className="h-6 w-6 text-muted-foreground/40" />
-  }
-  const visible = list.slice(0, max)
-  const extra = list.length - visible.length
-  return (
-    <div className="flex -space-x-1.5">
-      {visible.map(u => (
-        <div
-          key={u.id}
-          title={u.name}
-          className="h-6 w-6 rounded-full ring-2 ring-background bg-primary/15 text-primary flex items-center justify-center text-[10px] font-semibold"
-        >
-          {initials(u.name)}
-        </div>
-      ))}
-      {extra > 0 && (
-        <div className="h-6 w-6 rounded-full ring-2 ring-background bg-muted text-muted-foreground flex items-center justify-center text-[10px] font-semibold">
-          +{extra}
-        </div>
-      )}
-    </div>
-  )
-}
 
 export function ProjectTasksCard({ projectId, canEdit }: Props) {
   const list = useProjectMilestones(projectId)
@@ -234,22 +98,6 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
     return map
   }, [items])
 
-  const tree = useMemo(() => {
-    // Tree mostra grupos sempre. Tasks/subtasks respeitam filtros.
-    const rootGroups = items.filter(i => i.kind === 'group' && !i.parentId)
-    const filteredIds = new Set(filteredItems.map(i => i.id))
-    const rootTasks = items.filter(i => i.kind === 'task' && !i.parentId && filteredIds.has(i.id))
-    const tasksByParent: Record<string, ProjectMilestone[]> = {}
-    const subtasksByParent: Record<string, ProjectMilestone[]> = {}
-    items.forEach(i => {
-      if (i.parentId && i.kind === 'task' && filteredIds.has(i.id)) {
-        (tasksByParent[i.parentId] = tasksByParent[i.parentId] || []).push(i)
-      } else if (i.parentId && i.kind === 'subtask' && filteredIds.has(i.id)) {
-        (subtasksByParent[i.parentId] = subtasksByParent[i.parentId] || []).push(i)
-      }
-    })
-    return { rootGroups, rootTasks, tasksByParent, subtasksByParent }
-  }, [items, filteredItems])
 
   const allTaskIds = useMemo(() => items.map((i) => i.id), [items])
   const valuesQuery = useColumnValues(projectId, allTaskIds)
@@ -261,9 +109,6 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
     return map
   }, [valuesQuery.data])
 
-  function getValue(taskId: string, colId: string): any {
-    return valuesByTaskCol[taskId]?.[colId]?.value ?? null
-  }
 
   function setValue(taskId: string, colId: string, value: any) {
     putValue.mutate({ taskId, columnId: colId, value })
@@ -301,30 +146,8 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
     } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
   }
 
-  async function handleStatusChange(m: ProjectMilestone, status: MilestoneStatus) {
-    try {
-      await update.mutateAsync({
-        id: m.id,
-        patch: {
-          status,
-          completedDate: status !== 'done' ? null : undefined,
-        },
-      })
-    } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
-  }
 
-  async function handleResponsiblesChange(m: ProjectMilestone, userIds: string[]) {
-    try {
-      await update.mutateAsync({ id: m.id, patch: { responsibleIds: userIds } })
-    } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
-  }
 
-  async function handleProgressChange(m: ProjectMilestone, value: number) {
-    const clamped = Math.max(0, Math.min(100, Math.round(value)))
-    try {
-      await update.mutateAsync({ id: m.id, patch: { progressPct: clamped } })
-    } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
-  }
 
   async function handleDelete(m: ProjectMilestone) {
     const label = m.kind === 'group' ? 'grupo' : m.kind === 'task' ? 'tarefa' : 'subtarefa'
@@ -341,128 +164,7 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
     } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
   }
 
-  const statusOptions = (Object.entries(MILESTONE_STATUS_LABELS) as Array<[MilestoneStatus, string]>)
-    .map(([value, label]) => ({ value, label }))
 
-  function renderTaskRow(t: ProjectMilestone, level: 1 | 2) {
-    const isCollapsed = collapsed.has(t.id)
-    const subtasks = tree.subtasksByParent[t.id] || []
-    const hasChildren = subtasks.length > 0
-    const indentClass = level === 1 ? 'pl-4' : 'pl-12'
-    return (
-      <div key={t.id}>
-        <div className={`group flex items-center gap-3 py-2 ${indentClass} pr-3 border-b border-border/50 hover:bg-muted/30 transition-colors`}>
-          {hasChildren ? (
-            <button
-              onClick={() => toggleCollapse(t.id)}
-              className="text-muted-foreground hover:text-foreground"
-              type="button"
-            >
-              {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </button>
-          ) : (
-            <div className="w-4 h-4" />
-          )}
-          <button
-            type="button"
-            onClick={() => canEdit && handleStatusChange(t, t.status === 'done' ? 'in_progress' : 'done')}
-            disabled={!canEdit}
-            className="text-muted-foreground hover:text-emerald-600 disabled:cursor-not-allowed"
-          >
-            {t.status === 'done'
-              ? <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              : <Circle className="h-4 w-4" />}
-          </button>
-          <span className={`flex-1 text-sm flex items-center gap-1.5 ${t.status === 'done' ? 'line-through text-muted-foreground' : ''}`}>
-            {t.title}
-            {level === 1 && subtaskCount[t.id] ? (
-              <span className="text-[10px] tabular-nums px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-semibold">
-                {subtaskCount[t.id]}
-              </span>
-            ) : null}
-          </span>
-          {t.plannedDate && (
-            <span className="text-xs text-muted-foreground tabular-nums w-20 text-right">
-              {fmtDate(t.plannedDate)}
-            </span>
-          )}
-          <div className="w-32">
-            <Combobox
-              options={statusOptions}
-              value={t.status}
-              onChange={(v) => canEdit && handleStatusChange(t, v as MilestoneStatus)}
-              disabled={!canEdit}
-            />
-          </div>
-          <div className="w-36">
-            <MultiPeoplePicker
-              value={t.responsibleIds}
-              users={users}
-              onChange={(ids) => handleResponsiblesChange(t, ids)}
-              disabled={!canEdit}
-            />
-          </div>
-          <div className="w-20 flex items-center gap-1">
-            {canEdit ? (
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={t.progressPct ?? ''}
-                onChange={(e) => handleProgressChange(t, Number(e.target.value))}
-                placeholder="%"
-                className="w-14 px-1.5 py-0.5 text-xs rounded border bg-background"
-              />
-            ) : (
-              <span className="text-xs tabular-nums w-14 text-right">
-                {t.progressPct !== null && t.progressPct !== undefined ? `${t.progressPct}%` : '—'}
-              </span>
-            )}
-          </div>
-          {customCols.map((c) => (
-            <div key={c.id} className="w-32 px-1">
-              {canEdit
-                ? <ColumnCellEditor column={c} value={getValue(t.id, c.id)} onChange={(v) => setValue(t.id, c.id, v)} />
-                : <ColumnCellReadonly column={c} value={getValue(t.id, c.id)} />}
-            </div>
-          ))}
-          <ResponsibleAvatars ids={t.responsibleIds} users={users} />
-          <div className="w-24 hidden md:flex items-center gap-1.5 text-[10px] text-muted-foreground" title={t.updatedAt ? new Date(t.updatedAt).toLocaleString('pt-BR') : ''}>
-            {t.responsibleIds[0] ? (
-              <div className="h-5 w-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[9px] font-semibold flex-shrink-0">
-                {initials(users.find(u => u.id === t.responsibleIds[0])?.name || '?')}
-              </div>
-            ) : (
-              <UserCircle2 className="h-5 w-5 text-muted-foreground/40 flex-shrink-0" />
-            )}
-            <span className="truncate">{relativeTime(t.updatedAt)}</span>
-          </div>
-          {canEdit && (
-            <div className="flex items-center gap-0.5">
-              {level === 1 && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => { setAdding({ kind: 'subtask', parentId: t.id }); setNewTitle(''); setNewDate('') }}
-                  title="Subtarefa"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </Button>
-              )}
-              <Button variant="ghost" size="icon" onClick={() => handleDelete(t)} title="Remover">
-                <Trash2 className="h-3.5 w-3.5 text-rose-600" />
-              </Button>
-            </div>
-          )}
-        </div>
-        {hasChildren && !isCollapsed && (
-          <div>
-            {subtasks.map(s => renderTaskRow(s, 2))}
-          </div>
-        )}
-      </div>
-    )
-  }
 
   return (
     <Card className="p-0 overflow-hidden">
@@ -557,82 +259,25 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
 
       {view === 'list' && (list.isLoading ? (
         <div className="px-6 py-8 text-sm text-muted-foreground">Carregando...</div>
-      ) : items.length === 0 ? (
-        <div className="px-6 py-8 text-sm text-muted-foreground italic">
-          Nenhuma tarefa. {canEdit && 'Crie um grupo ou tarefa para começar.'}
-        </div>
       ) : (
-        <div className="border-t">
-          {tree.rootTasks.map(t => renderTaskRow(t, 1))}
-          {tree.rootGroups.map(group => {
-            const isCollapsed = collapsed.has(group.id)
-            const childTasks = tree.tasksByParent[group.id] || []
-            return (
-              <div key={group.id}>
-                <div className="flex items-center gap-2 py-2 px-4 bg-primary/5 border-b">
-                  <button
-                    type="button"
-                    onClick={() => toggleCollapse(group.id)}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </button>
-                  <span className="font-semibold text-sm flex-1">{group.title}</span>
-                  <span className="text-xs text-muted-foreground tabular-nums">{childTasks.length} tarefa{childTasks.length !== 1 ? 's' : ''}</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${MILESTONE_STATUS_COLORS[group.status]}`}>
-                    {MILESTONE_STATUS_LABELS[group.status]}
-                  </span>
-                  {canEdit && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => { setAdding({ kind: 'task', parentId: group.id }); setNewTitle(''); setNewDate('') }}
-                        title="Tarefa neste grupo"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(group)} title="Remover">
-                        <Trash2 className="h-3.5 w-3.5 text-rose-600" />
-                      </Button>
-                    </>
-                  )}
-                </div>
-                {!isCollapsed && childTasks.map(t => renderTaskRow(t, 1))}
-                {!isCollapsed && childTasks.length > 0 && (() => {
-                  // Footer agregado: total tarefas, % média, range datas
-                  const total = childTasks.length
-                  const done = childTasks.filter(c => c.status === 'done').length
-                  const avgProgress = Math.round(
-                    childTasks.reduce((s, c) => s + (c.progressPct || 0), 0) / total
-                  )
-                  const dates = childTasks.map(c => c.plannedDate).filter(Boolean) as string[]
-                  const minDate = dates.length ? dates.reduce((a, b) => (a < b ? a : b)) : null
-                  const maxDate = dates.length ? dates.reduce((a, b) => (a > b ? a : b)) : null
-                  function fmt(iso: string | null): string {
-                    if (!iso) return ''
-                    try { return new Date(iso + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) }
-                    catch { return iso }
-                  }
-                  return (
-                    <div className="flex items-center gap-3 px-4 py-1.5 bg-muted/20 border-t text-[11px] text-muted-foreground tabular-nums">
-                      <span><strong className="text-foreground">{done}</strong>/{total} concluida{total !== 1 ? 's' : ''}</span>
-                      <span>·</span>
-                      <span>media <strong className="text-foreground">{avgProgress}%</strong></span>
-                      {minDate && maxDate && (
-                        <>
-                          <span>·</span>
-                          <span>{fmt(minDate)} - {fmt(maxDate)}</span>
-                        </>
-                      )}
-                    </div>
-                  )
-                })()}
-              </div>
-            )
-          })}
-        </div>
+        <TasksTableView
+          items={filteredItems}
+          customCols={customCols}
+          valuesByTaskCol={valuesByTaskCol}
+          users={users}
+          canEdit={canEdit}
+          collapsed={collapsed}
+          onToggleCollapse={toggleCollapse}
+          onUpdateTask={(id, patch) => update.mutateAsync({ id, patch }).catch(err => toastError(`Erro: ${(err as Error).message}`))}
+          onDeleteTask={handleDelete}
+          onAddTaskInGroup={(groupId) => { setAdding({ kind: 'task', parentId: groupId }); setNewTitle(''); setNewDate('') }}
+          onAddSubtaskInTask={(taskId) => { setAdding({ kind: 'subtask', parentId: taskId }); setNewTitle(''); setNewDate('') }}
+          onPutColumnValue={setValue}
+          onOpenColumnsManager={() => setColsModalOpen(true)}
+          subtaskCount={subtaskCount}
+        />
       ))}
+
       <ColumnsManager
         open={colsModalOpen}
         onClose={() => setColsModalOpen(false)}
