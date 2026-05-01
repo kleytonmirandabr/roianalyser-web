@@ -1792,5 +1792,11 @@
       "statusDistribution": "Distribución por estado",
       "viewProjects": "Ver proyectos"
     }
+  },
+  "theme": {
+    "title": "Tema",
+    "system": "Sistema",
+    "light": "Claro",
+    "dark": "Oscuro"
   }
 }

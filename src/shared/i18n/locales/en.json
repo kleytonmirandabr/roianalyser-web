@@ -1792,5 +1792,11 @@
       "statusDistribution": "Status distribution",
       "viewProjects": "View projects"
     }
+  },
+  "theme": {
+    "title": "Theme",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
   }
 }

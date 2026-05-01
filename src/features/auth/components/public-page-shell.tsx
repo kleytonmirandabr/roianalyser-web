@@ -13,11 +13,13 @@
 import type { ReactNode } from 'react'
 
 import { LanguageSwitcher } from '@/features/shell/components/language-switcher'
+import { ThemeToggle } from '@/features/theme/theme-toggle'
 
 export function PublicPageShell({ children }: { children: ReactNode }) {
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-background p-6">
-      <div className="absolute right-4 top-4">
+      <div className="absolute right-4 top-4 flex items-center gap-1">
+        <ThemeToggle />
         <LanguageSwitcher />
       </div>
       {children}

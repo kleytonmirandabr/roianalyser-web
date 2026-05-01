@@ -1792,5 +1792,11 @@
       "statusDistribution": "Distribuição por status",
       "viewProjects": "Ver projetos"
     }
+  },
+  "theme": {
+    "title": "Tema",
+    "system": "Sistema",
+    "light": "Claro",
+    "dark": "Escuro"
   }
 }

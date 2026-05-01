@@ -7,6 +7,7 @@ import { AuthProvider } from '@/features/auth/auth-provider'
 import i18n from '@/shared/i18n'
 import { ConfirmDialogProvider } from '@/shared/ui/confirm-dialog'
 import { Toaster } from '@/shared/ui/toaster'
+import { ThemeProvider } from '@/features/theme/theme-provider'
 import { TooltipProvider } from '@/shared/ui/tooltip'
 
 import { queryClient } from './query-client'
@@ -26,7 +27,8 @@ const ROUTER_BASENAME =
 
 export function AppProviders({ children }: AppProvidersProps) {
   return (
-    <QueryClientProvider client={queryClient}>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
       <I18nextProvider i18n={i18n}>
         <BrowserRouter
           basename={ROUTER_BASENAME}
@@ -44,6 +46,7 @@ export function AppProviders({ children }: AppProvidersProps) {
           </AuthProvider>
         </BrowserRouter>
       </I18nextProvider>
-    </QueryClientProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   )
 }
