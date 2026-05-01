@@ -396,6 +396,7 @@ export function AppRouter() {
 
         {/* Projetos V2 — Sprint 4 (módulo isolado pós-Phase 0).
             Path /projects evita conflito com /projects (legacy). */}
+
         <Route
           path="/projects"
           element={

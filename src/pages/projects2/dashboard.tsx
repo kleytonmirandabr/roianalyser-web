@@ -1,346 +1,246 @@
 /**
- * Dashboard de Projetos — saúde operacional, atrasos, progresso.
- * Spec: PLAN_split-domain-entities.md, seção 4.8.
+ * Dashboard cross-project (Phase 3 Sprint 2 / P.10).
+ *
+ * Visao agregada de todos os projetos visiveis ao usuario:
+ * KPIs, tasks atrasadas, tarefas desta semana, tabela de projetos.
  */
-
-import { AlertTriangle, CheckCircle2, Rocket, Timer } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import { useMemo } from 'react'
+import {
+  AlertTriangle, Briefcase, Calendar, CheckCircle2, Clock, ExternalLink, TrendingUp,
+} from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-import { useProjects2 } from '@/features/projects2/hooks/use-projects'
+import { useProjectDashboard } from '@/features/projects2/hooks/use-project-dashboard'
 import {
   PROJECT_STATUS_LABELS, type ProjectStatus,
 } from '@/features/projects2/types'
-import { formatCurrencyShort, formatPercent } from '@/shared/lib/format'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
-import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { formatCurrency } from '@/shared/lib/format'
 
-const STATUS_BAR_COLOR: Record<ProjectStatus, string> = {
-  planning:  'bg-slate-400',
-  execution: 'bg-blue-500',
-  paused:    'bg-amber-500',
-  done:      'bg-emerald-500',
-  cancelled: 'bg-rose-500',
+function fmtShortDate(iso: string | null): string {
+  if (!iso) return '-'
+  try {
+    return new Date(iso + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+  } catch { return iso }
 }
 
-function daysLate(plannedEnd: string | null, status: ProjectStatus): number {
-  if (!plannedEnd || status === 'done' || status === 'cancelled') return 0
-  const target = new Date(plannedEnd).getTime()
-  const today = new Date().getTime()
-  const days = Math.floor((today - target) / 86400000)
-  return Math.max(0, days)
+const PROJECT_STATUS_TONE: Record<ProjectStatus, string> = {
+  planning: 'bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300',
+  execution: 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
+  paused: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+  done: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+  cancelled: 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
 }
 
-function daysSinceLastUpdate(updatedAt: string): number {
-  return Math.floor((Date.now() - new Date(updatedAt).getTime()) / 86400000)
-}
-
-export function Projects2DashboardPage() {
-  const { t } = useTranslation()
-  const { data: items = [], isLoading, error } = useProjects2()
-
-  const stats = useMemo(() => {
-    if (items.length === 0) return null
-
-    const currency = items[0]?.currency || 'BRL'
-    const inExecution = items.filter(p => p.status === 'execution')
-    const done = items.filter(p => p.status === 'done')
-    const planning = items.filter(p => p.status === 'planning')
-    const paused = items.filter(p => p.status === 'paused')
-
-    // Atrasados: execution com plannedEnd no passado
-    const late = items.filter(p => daysLate(p.plannedEnd, p.status) > 0)
-    const onTrack = inExecution.filter(p => daysLate(p.plannedEnd, p.status) === 0)
-
-    // Saúde: % no prazo
-    const totalActive = inExecution.length + paused.length + planning.length
-    const healthPct = totalActive > 0 ? (onTrack.length / totalActive) * 100 : 0
-
-    // Progresso médio dos ativos (execution)
-    const avgProgress = inExecution.length > 0
-      ? inExecution.reduce((s, p) => s + p.progressPct, 0) / inExecution.length
-      : 0
-
-    // Budget total
-    const totalBudget = items.reduce((s, p) => s + (p.budget || 0), 0)
-    const activeBudget = inExecution.reduce((s, p) => s + (p.budget || 0), 0)
-
-    // Distribuição por status
-    const byStatus = new Map<ProjectStatus, { count: number }>()
-    for (const p of items) {
-      const e = byStatus.get(p.status) || { count: 0 }
-      e.count += 1
-      byStatus.set(p.status, e)
-    }
-
-    // Stuck — projetos ativos sem update há +14 dias
-    const stuck = [...inExecution, ...paused].filter(p => daysSinceLastUpdate(p.updatedAt) >= 14)
-
-    // Top atrasados (worst)
-    const topLate = [...late]
-      .sort((a, b) => daysLate(b.plannedEnd, b.status) - daysLate(a.plannedEnd, a.status))
-      .slice(0, 5)
-
-    return {
-      currency,
-      total: items.length,
-      inExecutionCount: inExecution.length,
-      doneCount: done.length,
-      planningCount: planning.length,
-      pausedCount: paused.length,
-      lateCount: late.length,
-      onTrackCount: onTrack.length,
-      healthPct,
-      avgProgress,
-      totalBudget,
-      activeBudget,
-      byStatus,
-      stuck,
-      topLate,
-    }
-  }, [items])
-
-  if (error) {
-    return <div className="p-6"><Alert variant="destructive"><AlertDescription>Erro: {(error as Error).message}</AlertDescription></Alert></div>
-  }
-  if (isLoading || !stats) {
-    return (
-      <div className="space-y-4 p-6">
-        <Skeleton className="h-8 w-1/3" />
-        <div className="grid grid-cols-4 gap-4">
-          {[0, 1, 2, 3].map(i => <Skeleton key={i} className="h-32" />)}
-        </div>
+interface KpiProps { label: string; value: string; hint?: string; tone?: 'pos' | 'neg' | 'warn' | 'neutral'; icon?: any }
+function Kpi({ label, value, hint, tone = 'neutral', icon: Icon }: KpiProps) {
+  const toneCls = tone === 'pos' ? 'text-emerald-700 dark:text-emerald-400'
+    : tone === 'neg' ? 'text-rose-700 dark:text-rose-400'
+    : tone === 'warn' ? 'text-amber-700 dark:text-amber-400'
+    : 'text-foreground'
+  return (
+    <Card className="p-4">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">{label}</span>
+        {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
       </div>
-    )
-  }
+      <div className={`mt-2 text-2xl font-bold tabular-nums ${toneCls}`}>{value}</div>
+      {hint && <div className="text-[11px] text-muted-foreground mt-0.5">{hint}</div>}
+    </Card>
+  )
+}
 
-  const statusOrder: ProjectStatus[] = ['planning', 'execution', 'paused', 'done', 'cancelled']
-  const statusData = statusOrder
-    .map(s => ({ status: s, count: stats.byStatus.get(s)?.count || 0 }))
-    .filter(d => d.count > 0)
-  const maxStatusCount = Math.max(...statusData.map(d => d.count), 1)
+export function ProjectsDashboardPage() {
+  const { data, isLoading, error } = useProjectDashboard()
+
+  if (isLoading) return <div className="p-6 max-w-7xl mx-auto"><Skeleton className="h-64" /></div>
+  if (error) return (
+    <div className="p-6 max-w-7xl mx-auto">
+      <Alert variant="destructive"><AlertDescription>{(error as Error).message}</AlertDescription></Alert>
+    </div>
+  )
+  if (!data) return null
+
+  const { projects, kpis, overdueTasks, upcomingTasks } = data
+  const completedRatio = kpis.total > 0 ? Math.round((kpis.completedCount / kpis.total) * 100) : 0
+  const consumedRatio = kpis.budgetTotal > 0
+    ? Math.round((kpis.executedTotal / kpis.budgetTotal) * 100)
+    : 0
 
   return (
-    <div className="space-y-6 p-6">
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Rocket className="h-6 w-6 text-indigo-600" />
-          <div>
-            <h1 className="text-2xl font-semibold">{t('projects2.dashboard.title')}</h1>
-            <p className="text-sm text-muted-foreground">
-              Execução operacional · {stats.total} {stats.total === 1 ? 'projeto' : 'projetos'}
-            </p>
-          </div>
-        </div>
-        <Button asChild variant="outline">
-          <Link to="/projects">{t('projects2.dashboard.seeList')}</Link>
-        </Button>
+    <div className="space-y-6 p-6 max-w-7xl mx-auto">
+      <header>
+        <h1 className="text-2xl font-bold tracking-tight">Dashboard de Projetos</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Visao geral de todos os projetos visiveis a voce. Atualizado em tempo real.
+        </p>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground uppercase">{t('projects2.dashboard.overallHealth')}</span>
-            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className={`text-2xl font-semibold tabular-nums mt-1 ${stats.healthPct >= 70 ? 'text-emerald-700' : stats.healthPct >= 40 ? 'text-amber-700' : 'text-rose-700'}`}>
-            {formatPercent(stats.healthPct, 0)}
-          </div>
-          <div className="text-xs text-muted-foreground mt-1">
-            {stats.onTrackCount} no prazo / {stats.lateCount} atrasados
-          </div>
-        </Card>
-
-        <Link to="/projects?status=execution" className="block group">
-          <Card className="p-4 group-hover:border-indigo-300 transition">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground uppercase">{t('projects2.dashboard.inExecution')}</span>
-              <Rocket className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <div className="text-2xl font-semibold tabular-nums mt-1 text-blue-700">
-              {stats.inExecutionCount}
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              {formatCurrencyShort(stats.activeBudget, stats.currency)}
-            </div>
-          </Card>
-        </Link>
-
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground uppercase">{t('projects2.dashboard.avgProgress')}</span>
-            <Timer className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="text-2xl font-semibold tabular-nums mt-1">
-            {formatPercent(stats.avgProgress, 0)}
-          </div>
-          <div className="text-xs text-muted-foreground mt-1">dos ativos</div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground uppercase">{t('projects2.dashboard.totalBudget')}</span>
-            <Timer className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="text-2xl font-semibold tabular-nums mt-1">
-            {formatCurrencyShort(stats.totalBudget, stats.currency)}
-          </div>
-          <div className="text-xs text-muted-foreground mt-1">
-            {stats.doneCount} {stats.doneCount === 1 ? 'concluído' : 'concluídos'}
-          </div>
-        </Card>
+      {/* KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <Kpi label="Projetos" value={String(kpis.total)} icon={Briefcase}
+          hint={`${kpis.byStatus.execution || 0} em execucao`} />
+        <Kpi label="Concluidos" value={String(kpis.completedCount)} tone="pos" icon={CheckCircle2}
+          hint={`${completedRatio}% do total`} />
+        <Kpi label="Atrasados" value={String(kpis.overdueCount)} tone={kpis.overdueCount > 0 ? 'neg' : 'pos'}
+          icon={AlertTriangle} hint="Prazo passou" />
+        <Kpi label="Tarefas atrasadas" value={String(kpis.overdueTasksCount)}
+          tone={kpis.overdueTasksCount > 0 ? 'warn' : 'pos'} icon={Clock}
+          hint={`${kpis.upcomingTasksCount} nesta semana`} />
+        <Kpi label="Custo executado" value={formatCurrency(kpis.executedTotal, 'BRL')}
+          tone="neutral" icon={TrendingUp}
+          hint={`${consumedRatio}% de ${formatCurrency(kpis.budgetTotal, 'BRL')}`} />
       </div>
 
-      {/* Alertas */}
-      {(stats.lateCount > 0 || stats.stuck.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {stats.lateCount > 0 && (
-            <Alert variant="destructive">
-              <AlertDescription className="flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>
-                  <strong>{stats.lateCount}</strong> {stats.lateCount === 1 ? 'projeto atrasado' : 'projetos atrasados'} (passou do plannedEnd sem concluir).
-                </span>
-              </AlertDescription>
-            </Alert>
-          )}
-          {stats.stuck.length > 0 && (
-            <Alert>
-              <AlertDescription className="flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-700" />
-                <span>
-                  <strong>{stats.stuck.length}</strong> {stats.stuck.length === 1 ? 'projeto sem atualização' : 'projetos sem atualização'} há 14+ dias.
-                </span>
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
-      )}
-
-      {/* Top atrasados */}
-      {stats.topLate.length > 0 && (
-        <Card className="p-6 space-y-3">
-          <div>
-            <h2 className="font-semibold">{t('projects2.dashboard.topDelays')}</h2>
-            <p className="text-xs text-muted-foreground">{t('projects2.dashboard.mostOverdue')}</p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Tarefas atrasadas */}
+        <Card className="p-0 overflow-hidden">
+          <div className="p-5 border-b">
+            <h2 className="text-base font-semibold flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-rose-600" /> Tarefas atrasadas
+              <span className="text-xs text-muted-foreground font-normal">({overdueTasks.length})</span>
+            </h2>
           </div>
-          <ul className="space-y-2">
-            {stats.topLate.map(p => {
-              const days = daysLate(p.plannedEnd, p.status)
-              return (
-                <li key={p.id}>
-                  <Link to={`/projects/${p.id}`} className="flex items-center justify-between rounded border p-3 hover:bg-muted/30">
-                    <div>
-                      <span className="font-mono text-xs text-muted-foreground mr-2">{p.projectCode}</span>
-                      <span className="font-medium">{p.name}</span>
+          {overdueTasks.length === 0 ? (
+            <div className="px-5 py-8 text-sm text-muted-foreground italic text-center">
+              Nenhuma tarefa atrasada. 🎉
+            </div>
+          ) : (
+            <ul className="divide-y max-h-80 overflow-auto">
+              {overdueTasks.slice(0, 12).map((t) => (
+                <li key={t.taskId}>
+                  <Link to={`/projects/${t.projectId}`} className="flex items-center justify-between gap-3 px-5 py-2.5 hover:bg-muted/40 transition-colors">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium truncate">{t.title}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {t.projectCode} · {t.projectName}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3 text-xs">
-                      <span className="tabular-nums text-muted-foreground">{p.progressPct.toFixed(0)}%</span>
-                      <span className="font-medium tabular-nums text-rose-700">⚠ {days}d atraso</span>
+                    <div className="text-right">
+                      <div className="text-xs font-semibold text-rose-700 dark:text-rose-400 tabular-nums">
+                        {t.daysLate}d atrasada
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">{fmtShortDate(t.plannedDate)}</div>
                     </div>
                   </Link>
                 </li>
-              )
-            })}
-          </ul>
+              ))}
+              {overdueTasks.length > 12 && (
+                <li className="px-5 py-2 text-xs text-muted-foreground italic text-center">
+                  +{overdueTasks.length - 12} mais
+                </li>
+              )}
+            </ul>
+          )}
         </Card>
-      )}
 
-      {/* Top 5 por orçamento */}
-      <Card className="p-6 space-y-3">
-        <div>
-          <h2 className="font-semibold">{t('projects2.dashboard.topByBudget')}</h2>
-          <p className="text-xs text-muted-foreground">{t('projects2.dashboard.biggestFinCommit')}</p>
-        </div>
-        {(() => {
-          const top = items
-            .filter(p => p.budget != null && Number(p.budget) > 0)
-            .sort((a, b) => Number(b.budget) - Number(a.budget))
-            .slice(0, 5)
-          if (top.length === 0) {
-            return <p className="text-sm text-muted-foreground">{t('common.empty.items')}</p>
-          }
-          const max = Math.max(1, ...top.map(p => Number(p.budget)))
-          return (
-            <div className="space-y-2">
-              {top.map(p => (
-                <Link key={p.id} to={`/projects/${p.id}`} className="block group">
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="font-medium truncate max-w-[60%]">{p.name}</span>
-                    <span className="text-xs tabular-nums">{formatCurrencyShort(Number(p.budget), p.currency)}</span>
-                  </div>
-                  <div className="h-2 rounded bg-muted overflow-hidden">
-                    <div className="h-full bg-primary/70 transition-all group-hover:opacity-80"
-                      style={{ width: `${(Number(p.budget) / max) * 100}%` }} />
-                  </div>
-                </Link>
-              ))}
+        {/* Tarefas desta semana */}
+        <Card className="p-0 overflow-hidden">
+          <div className="p-5 border-b">
+            <h2 className="text-base font-semibold flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-blue-600" /> Proximos 7 dias
+              <span className="text-xs text-muted-foreground font-normal">({upcomingTasks.length})</span>
+            </h2>
+          </div>
+          {upcomingTasks.length === 0 ? (
+            <div className="px-5 py-8 text-sm text-muted-foreground italic text-center">
+              Nada planejado para esta semana.
             </div>
-          )
-        })()}
-      </Card>
-
-      {/* Por responsável */}
-      <Card className="p-6 space-y-3">
-        <div>
-          <h2 className="font-semibold">{t('projects2.dashboard.loadByManager')}</h2>
-          <p className="text-xs text-muted-foreground">{t('projects2.dashboard.projectsByManager')}</p>
-        </div>
-        {(() => {
-          const byResp = new Map<string, number>()
-          for (const p of items) {
-            if (!p.managerId) continue
-            byResp.set(p.managerId, (byResp.get(p.managerId) ?? 0) + 1)
-          }
-          const arr = Array.from(byResp.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8)
-          if (arr.length === 0) {
-            return <p className="text-sm text-muted-foreground">{t('common.empty.items')}</p>
-          }
-          const max = Math.max(1, ...arr.map(([_, c]) => c))
-          return (
-            <div className="space-y-2">
-              {arr.map(([rid, c]) => (
-                <div key={rid}>
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="font-medium">Gestor #{rid}</span>
-                    <span className="text-xs tabular-nums font-semibold">{c}</span>
-                  </div>
-                  <div className="h-2 rounded bg-muted overflow-hidden">
-                    <div className="h-full bg-emerald-500/70" style={{ width: `${(c / max) * 100}%` }} />
-                  </div>
-                </div>
+          ) : (
+            <ul className="divide-y max-h-80 overflow-auto">
+              {upcomingTasks.slice(0, 12).map((t) => (
+                <li key={t.taskId}>
+                  <Link to={`/projects/${t.projectId}`} className="flex items-center justify-between gap-3 px-5 py-2.5 hover:bg-muted/40 transition-colors">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium truncate">{t.title}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {t.projectCode} · {t.projectName}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs font-semibold tabular-nums">
+                        {t.dueIn === 0 ? 'hoje' : t.dueIn === 1 ? 'amanha' : `em ${t.dueIn}d`}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">{fmtShortDate(t.plannedDate)}</div>
+                    </div>
+                  </Link>
+                </li>
               ))}
-            </div>
-          )
-        })()}
-      </Card>
+              {upcomingTasks.length > 12 && (
+                <li className="px-5 py-2 text-xs text-muted-foreground italic text-center">
+                  +{upcomingTasks.length - 12} mais
+                </li>
+              )}
+            </ul>
+          )}
+        </Card>
+      </div>
 
-      {/* Distribuição por status */}
-      <Card className="p-6 space-y-4">
-        <div>
-          <h2 className="font-semibold">{t('projects2.dashboard.statusDistribution')}</h2>
-          <p className="text-xs text-muted-foreground">{t('projects2.dashboard.clickToFilter')}</p>
+      {/* Tabela de projetos */}
+      <Card className="p-0 overflow-hidden">
+        <div className="p-5 border-b flex items-center justify-between">
+          <h2 className="text-base font-semibold">Todos os projetos ({projects.length})</h2>
+          <Link to="/projects" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+            Lista completa <ExternalLink className="h-3 w-3" />
+          </Link>
         </div>
-        <div className="space-y-3">
-          {statusData.map(d => (
-            <Link key={d.status} to={`/projects?status=${d.status}`} className="block group">
-              <div className="flex items-center justify-between text-sm mb-1">
-                <span className="font-medium">{PROJECT_STATUS_LABELS[d.status]}</span>
-                <span className="font-medium tabular-nums">{d.count}</span>
-              </div>
-              <div className="h-3 rounded bg-muted overflow-hidden">
-                <div
-                  className={`h-full ${STATUS_BAR_COLOR[d.status]} transition-all group-hover:opacity-80`}
-                  style={{ width: `${(d.count / maxStatusCount) * 100}%` }}
-                />
-              </div>
-            </Link>
-          ))}
-        </div>
+        {projects.length === 0 ? (
+          <div className="px-5 py-8 text-sm text-muted-foreground italic text-center">
+            Nenhum projeto visivel pra voce ainda.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="text-left px-5 py-2 font-semibold">Projeto</th>
+                  <th className="text-left px-3 py-2 font-semibold">Status</th>
+                  <th className="text-left px-3 py-2 font-semibold">Prazo</th>
+                  <th className="text-left px-3 py-2 font-semibold w-48">Progresso</th>
+                  <th className="text-right px-5 py-2 font-semibold">Orcamento</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {projects.map((p) => (
+                  <tr key={p.id} className="hover:bg-muted/30">
+                    <td className="px-5 py-2.5">
+                      <Link to={`/projects/${p.id}`} className="hover:underline">
+                        <div className="font-medium">{p.name}</div>
+                        <div className="text-[11px] text-muted-foreground font-mono">{p.projectCode}</div>
+                      </Link>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <span className={`inline-flex text-[10px] uppercase font-semibold rounded px-1.5 py-0.5 ${PROJECT_STATUS_TONE[p.status]}`}>
+                        {PROJECT_STATUS_LABELS[p.status]}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-xs text-muted-foreground">
+                      {fmtShortDate(p.plannedEnd)}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 w-32 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${p.status === 'done' ? 'bg-emerald-500' : 'bg-primary'}`}
+                            style={{ width: `${p.progressPct || 0}%` }}
+                          />
+                        </div>
+                        <span className="text-xs tabular-nums w-9 text-right">{p.progressPct || 0}%</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-2.5 text-right text-xs tabular-nums">
+                      {p.budget != null ? formatCurrency(p.budget, p.currency || 'BRL') : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
     </div>
   )
 }
+
+export { ProjectsDashboardPage as Projects2DashboardPage }

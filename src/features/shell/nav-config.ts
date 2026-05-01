@@ -82,6 +82,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: BarChart3,
     children: [
       { i18nKey: 'projectsList', to: '/projects' },
+      { i18nKey: 'projectsDashboard', to: '/projects/dashboard' },
     ],
   },
   {
