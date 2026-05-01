@@ -9,10 +9,14 @@
  *   5) Editar dados — accordion no fim
  */
 
-import { AlertTriangle, ArrowLeft, Calendar, ChevronDown, ChevronUp, Clock, ExternalLink, FileText, Heart, Plus, Trash2 } from 'lucide-react'
+import {
+  AlertTriangle, ArrowLeft, BarChart3, Calendar, ChevronDown, ChevronUp, Clock,
+  ExternalLink, FileText, Heart, LayoutDashboard, ListTodo, Paperclip,
+  Plus, Trash2, Users2,
+} from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { useCreateForecast } from '@/features/forecasts/hooks/use-create-forecast'
 import { useForecastsByProject } from '@/features/forecasts/hooks/use-forecasts'
@@ -118,6 +122,14 @@ export function Project2DetailPage() {
   const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = (searchParams.get('tab') || 'overview') as 'overview' | 'board' | 'members' | 'docs' | 'forecasts'
+  function setTab(next: string) {
+    const sp = new URLSearchParams(searchParams)
+    if (next === 'overview') sp.delete('tab')
+    else sp.set('tab', next)
+    setSearchParams(sp, { replace: true })
+  }
   const { data: prj, isLoading, error } = useProject2(id)
   const { data: forecasts = [] } = useForecastsByProject(id)
   const update = useUpdateProject2(id)
@@ -295,7 +307,7 @@ export function Project2DetailPage() {
   }
 
   return (
-    <div className="space-y-4 p-6 max-w-7xl mx-auto">
+    <div className={`p-6 mx-auto ${tab === 'board' ? 'max-w-[1600px]' : 'max-w-7xl'} space-y-4`}>
       <header className="flex items-center justify-between gap-3">
         <Button asChild variant="ghost" size="sm">
           <Link to="/projects">
@@ -307,6 +319,31 @@ export function Project2DetailPage() {
         </Button>
       </header>
 
+      {/* TABS */}
+      <nav className="flex items-center gap-1 border-b -mx-2 px-2 overflow-x-auto sticky top-0 bg-background/95 backdrop-blur z-10 py-1">
+        {[
+          { key: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
+          { key: 'board',    label: 'Cronograma', icon: ListTodo },
+          { key: 'members',  label: 'Membros',    icon: Users2 },
+          { key: 'docs',     label: 'Documentos', icon: Paperclip },
+          { key: 'forecasts',label: 'Forecasts',  icon: BarChart3 },
+        ].map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setTab(key)}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-t-md border-b-2 -mb-px transition-colors ${
+              tab === key
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40'
+            }`}
+          >
+            <Icon className="h-4 w-4" /> {label}
+          </button>
+        ))}
+      </nav>
+
+      {tab === 'overview' && <>
       {/* HERO */}
       <Card className="p-6 space-y-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -481,15 +518,24 @@ export function Project2DetailPage() {
         </Card>
       )}
 
-      {/* TAREFAS (Phase 1 P.2) */}
-      <ProjectTasksCard projectId={id} canEdit={canEdit} />
+      {/* CUSTOM FIELDS (parte do overview) */}
+      <CustomFieldsCard scope="project" entityType="project" entityId={id} />
+      </>}
 
-      {/* MEMBROS (Phase 1 P.3) */}
-      <MembersCard projectId={id} generalAccess={prj.generalAccess} canManage={canManage} />
+      {tab === 'board' && (
+        <ProjectTasksCard projectId={id} canEdit={canEdit} />
+      )}
 
-      {/* DOCUMENTOS */}
-      <ProjectAttachmentsCard projectId={id} />
+      {tab === 'members' && (
+        <MembersCard projectId={id} generalAccess={prj.generalAccess} canManage={canManage} />
+      )}
 
+      {tab === 'docs' && (
+        <ProjectAttachmentsCard projectId={id} />
+      )}
+
+      {tab === 'forecasts' && (
+      <>
       {/* FORECASTS */}
       <Card className="p-6 space-y-3">
         <div className="flex items-center justify-between">
@@ -519,10 +565,9 @@ export function Project2DetailPage() {
           </ul>
         )}
       </Card>
+      </>)}
 
-      {/* CUSTOM FIELDS */}
-      <CustomFieldsCard scope="project" entityType="project" entityId={id} />
-
+      {tab === 'overview' && <>
       {/* EDITOR */}
       <Card className="p-0 overflow-hidden">
         <button
@@ -613,6 +658,7 @@ export function Project2DetailPage() {
           </div>
         )}
       </Card>
+      </>}
     </div>
   )
 }
