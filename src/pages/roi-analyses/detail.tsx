@@ -8,7 +8,7 @@
  *           - Tabela: mês × categoria (estilo planilha v1) + Resumo Comparativo + Totais
  */
 
-import { ArrowLeft, Pencil, Plus, Save, Trash2, TrendingUp, TrendingDown, Wallet, BarChart3 } from 'lucide-react'
+import { ArrowLeft, Pencil, Plus, Printer, Save, Trash2, TrendingUp, TrendingDown, Wallet, BarChart3 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -17,6 +17,9 @@ import {
   useAddRoiEntry, useDeleteRoiEntry, useUpdateRoiEntry,
 } from '@/features/roi-analyses/hooks/use-roi-entries'
 import { useRoiAnalysis } from '@/features/roi-analyses/hooks/use-roi-analysis'
+import { useBranding } from '@/features/auth/hooks/use-branding'
+import { useAppState } from '@/features/admin/hooks/use-app-state'
+import { useAuth } from '@/features/auth/hooks/use-auth'
 import { useUpdateRoiAnalysis } from '@/features/roi-analyses/hooks/use-update-roi'
 import {
   COMPORTAMENTOS, ROI_STATUSES, ROI_STATUS_LABELS,
@@ -69,6 +72,9 @@ export function RoiAnalysisDetailPage() {
   const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const { data, isLoading, error } = useRoiAnalysis(id)
+  const branding = useBranding()
+  const appState = useAppState()
+  const { activeClientId } = useAuth()
   const update = useUpdateRoiAnalysis(id)
   const addEntry = useAddRoiEntry(id)
   const deleteEntry = useDeleteRoiEntry(id)
@@ -317,9 +323,34 @@ export function RoiAnalysisDetailPage() {
 
   /* ──────────────────────────── Render ──────────────────────────── */
 
+  // Logo pra cabeçalho do print: cliente ativo > global
+  const accessibleClients = (appState.data?.clients || []) as Array<{ id: string; name: string; logoDataUrl?: string | null }>
+  const activeClient = activeClientId ? accessibleClients.find(c => c.id === activeClientId) : null
+  const tenantLogo = activeClient?.logoDataUrl
+  const printLogo = tenantLogo ?? branding.data?.logoDataUrl ?? null
+  const printSubject = activeClient?.name ?? branding.data?.systemName ?? 'RoiAnalyser'
+
   return (
-    <div className="space-y-4 p-6 max-w-7xl mx-auto">
-      <header className="flex items-center gap-3">
+    <div className="space-y-4 p-6 max-w-7xl mx-auto roi-print-page">
+      {/* Cabeçalho exclusivo da impressão (window.print) */}
+      <div className="hidden print:block roi-print-header mb-6">
+        <div className="flex items-center justify-between border-b pb-3">
+          <div className="flex items-center gap-3">
+            {printLogo && <img src={printLogo} alt={printSubject} className="h-12 max-w-[200px] object-contain" />}
+            <div>
+              <div className="text-lg font-bold">{printSubject}</div>
+              <div className="text-xs text-muted-foreground">{t('roiAnalyses.print.subtitle', 'Análise de ROI — Pré-venda')}</div>
+            </div>
+          </div>
+          <div className="text-right text-xs">
+            <div className="font-medium">{roi.name}</div>
+            <div className="text-muted-foreground">v{roi.version} · {cur}</div>
+            <div className="text-muted-foreground">{t('roiAnalyses.print.generatedAt', 'Gerado em')} {new Date().toLocaleString('pt-BR')}</div>
+          </div>
+        </div>
+      </div>
+
+      <header className="flex items-center gap-3 print:hidden">
         <Button asChild variant="ghost" size="sm">
           <Link to={`/opportunities/${roi.opportunityId}`}>
             <ArrowLeft className="h-4 w-4" />{t('common.entity.opportunity')}
@@ -343,7 +374,10 @@ export function RoiAnalysisDetailPage() {
               {' · ' + cur}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 print:hidden">
+            <Button variant="outline" size="sm" onClick={() => window.print()} title={t('roiAnalyses.export.pdfTitle', 'Exportar PDF')}>
+              <Printer className="h-4 w-4" /> {t('roiAnalyses.export.pdf', 'Exportar PDF')}
+            </Button>
             <span className="text-sm text-muted-foreground">Status:</span>
             <div className="w-44">
               <Combobox value={roi.status} onChange={v => handleStatusChange(v as RoiStatus)} options={statusOptions} />
@@ -381,19 +415,26 @@ export function RoiAnalysisDetailPage() {
         {/* ─────────── TAB: Resumo ─────────── */}
         <TabsContent value="summary" className="space-y-4">
           {/* 5 KPIs */}
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-            <KpiCard icon={<TrendingUp className="h-4 w-4 text-emerald-600" />} label={t('common.fields.totalRevenue')} value={formatCurrency(totalRevenue, cur)} tone="emerald" />
-            <KpiCard icon={<TrendingDown className="h-4 w-4 text-rose-600" />} label={t('common.fields.totalCost')} value={formatCurrency(totalCost, cur)} tone="rose" />
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <KpiCard icon={<TrendingUp className="h-4 w-4 text-emerald-600" />} label={t('common.fields.totalRevenue', 'Receita Total')} value={formatCurrency(totalRevenue, cur)} tone="emerald" />
+            <KpiCard icon={<TrendingDown className="h-4 w-4 text-rose-600" />} label={t('common.fields.totalCost', 'Custo Total')} value={formatCurrency(totalCost, cur)} tone="rose" />
             <KpiCard icon={<Wallet className="h-4 w-4 text-blue-600" />} label={t('roiAnalyses.kpi.investment', 'Investimento')} value={formatCurrency(totalInvestment, cur)} tone="blue" />
-            <KpiCard icon={<BarChart3 className="h-4 w-4" />} label={t('common.fields.netValue')} value={formatCurrency(netValue, cur)} tone={netValue >= 0 ? 'emerald' : 'rose'} />
-            <Card className="p-4">
-              <div className="space-y-1 text-xs">
-                <div className="flex justify-between"><span className="text-muted-foreground">NPV</span><span className="tabular-nums font-medium">{formatCurrency(npv, cur)}</span></div>
-                <div className="flex justify-between items-center"><span className="text-muted-foreground">TIR a.a.</span><IrrDisplay irr={irr} /></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">{t('common.fields.payback')}</span><span className="tabular-nums font-medium">{paybackMonths != null ? `${paybackMonths} ${t('common.fields.months', 'meses')}` : '—'}</span></div>
+            <KpiCard icon={<BarChart3 className={`h-4 w-4 ${netValue >= 0 ? 'text-emerald-600' : 'text-rose-600'}`} />} label={t('roiAnalyses.kpi.result', 'Resultado')} value={formatCurrency(netValue, cur)} tone={netValue >= 0 ? 'emerald' : 'rose'} />
+          </div>
+          {/* NPV em linha separada — TIR e Payback já estão no mini-rail acima */}
+          {npv !== 0 && (
+            <Card className="p-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <div>
+                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">NPV — Valor Presente Líquido</div>
+                  <div className="text-[10px] text-muted-foreground">Considera o desconto aplicado ao fluxo de caixa</div>
+                </div>
+                <div className={`text-lg font-semibold tabular-nums ${npv >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
+                  {formatCurrency(npv, cur)}
+                </div>
               </div>
             </Card>
-          </div>
+          )}
 
           {/* Discount + ticket */}
           {metrics && (metrics.discountStats.discountAmount > 0 || metrics.recurringRevenueAvg > 0) && (
@@ -417,13 +458,7 @@ export function RoiAnalysisDetailPage() {
                   </div>
                 </Card>
               )}
-              {metrics.recurringRevenueAvg > 0 && (
-                <Card className="p-4">
-                  <div className="text-xs text-muted-foreground uppercase tracking-wide mb-2">{t('roiAnalyses.ticket.title', 'Ticket médio recorrente')}</div>
-                  <div className="text-2xl font-semibold tabular-nums text-emerald-700">{formatCurrency(metrics.recurringRevenueAvg, cur)}<span className="text-sm font-normal text-muted-foreground"> /{t('common.fields.month', 'mês')}</span></div>
-                  <div className="text-xs text-muted-foreground mt-1">{t('roiAnalyses.ticket.hint', 'Média por linha de receita mensal lançada.')}</div>
-                </Card>
-              )}
+              {/* Ticket médio recorrente removido — já está no mini-rail "Receita mensal" no topo da página */}
             </div>
           )}
 
@@ -667,7 +702,6 @@ export function RoiAnalysisDetailPage() {
             <Card className="p-4">
               <MonthlyByCategoryTable
                 entries={entries}
-                metrics={metrics}
                 currency={cur}
                 durationMonths={roi.durationMonths || 12}
                 categoryById={categoryById}
@@ -805,35 +839,6 @@ function BehaviorBadge({ c }: { c: string | null }) {
       ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300'
       : 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
   return <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] ${cls}`}>{t(`admin.catalogItems.behavior.${c}`, c)}</span>
-}
-function IrrDisplay({ irr }: { irr: number | null }) {
-  const { t } = useTranslation()
-  if (irr == null) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="tabular-nums font-medium text-muted-foreground cursor-help underline decoration-dotted underline-offset-2">—</span>
-        </TooltipTrigger>
-        <TooltipContent>{t('roiAnalyses.irr.noFlow', 'Sem inversão de fluxo de caixa — TIR não definida.')}</TooltipContent>
-      </Tooltip>
-    )
-  }
-  if (irr > 1.0) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="tabular-nums font-medium text-emerald-700 cursor-help underline decoration-dotted underline-offset-2">&gt;100% a.a.</span>
-        </TooltipTrigger>
-        <TooltipContent>
-          {t('roiAnalyses.irr.veryHigh', 'TIR muito alta')}: {formatPercent(irr * 100, 2)} — {t('roiAnalyses.irr.veryHighHint', 'projeto altamente rentável (capital investido pequeno vs. retorno alto).')}
-        </TooltipContent>
-      </Tooltip>
-    )
-  }
-  if (irr < 0) {
-    return <span className="tabular-nums font-medium text-rose-700">{formatPercent(irr * 100, 2)}</span>
-  }
-  return <span className="tabular-nums font-medium">{formatPercent(irr * 100, 2)}</span>
 }
 
 function RailCellIrr({ label, irr }: { label: string; irr: number | null }) {

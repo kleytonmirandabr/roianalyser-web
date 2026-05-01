@@ -18,7 +18,7 @@ import { Button } from '@/shared/ui/button'
 import { formatCurrency } from '@/shared/lib/format'
 import {
   familyOf, suffixOf,
-  type RoiEntry, type RoiMetrics,
+  type RoiEntry,
 } from '@/features/roi-analyses/types'
 
 type CategoryMonthly = {
@@ -31,13 +31,11 @@ type CategoryMonthly = {
 
 export function MonthlyByCategoryTable({
   entries,
-  metrics,
   currency,
   durationMonths,
   categoryById,
 }: {
   entries: RoiEntry[]
-  metrics: RoiMetrics
   currency: string
   durationMonths: number
   categoryById: Map<string, string>  // id → nome
@@ -278,80 +276,8 @@ export function MonthlyByCategoryTable({
         </table>
       </div>
 
-      {/* Resumo lado a lado */}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        {/* Resumo comparativo (Original × Com Desconto) — só se houver desconto */}
-        {metrics.discountStats.discountAmount > 0 && (
-          <div className="rounded-md border overflow-hidden">
-            <div className="bg-slate-900 text-slate-100 px-3 py-2 text-sm font-semibold">
-              {t('roiAnalyses.table.compareSummary', 'Resumo Comparativo')}
-            </div>
-            <table className="w-full text-sm">
-              <thead className="bg-muted/30">
-                <tr>
-                  <th className="px-3 py-2 text-left font-medium">{t('common.entity.item', 'Item')}</th>
-                  <th className="px-3 py-2 text-right font-medium">{t('roiAnalyses.discount.gross', 'Original')}</th>
-                  <th className="px-3 py-2 text-right font-medium">{t('roiAnalyses.discount.net', 'Com Desconto')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-t">
-                  <td className="px-3 py-2">{t('common.fields.totalRevenue', 'Receita')}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{formatCurrency(metrics.discountStats.grossRevenue, currency)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{formatCurrency(metrics.discountStats.netRevenue, currency)}</td>
-                </tr>
-                <tr className="border-t bg-rose-50/50">
-                  <td className="px-3 py-2 font-medium">{t('roiAnalyses.discount.given', 'Desconto')}</td>
-                  <td className="px-3 py-2 text-right tabular-nums text-rose-700" colSpan={2}>−{formatCurrency(metrics.discountStats.discountAmount, currency)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Totais do Projeto */}
-        <div className="rounded-md border overflow-hidden">
-          <div className="bg-slate-900 text-slate-100 px-3 py-2 text-sm font-semibold">
-            {t('roiAnalyses.table.projectTotals', 'Totais do Projeto')}
-          </div>
-          <table className="w-full text-sm">
-            <thead className="bg-muted/30">
-              <tr>
-                <th className="px-3 py-2 text-left font-medium">{t('roiAnalyses.table.indicator', 'Indicador')}</th>
-                <th className="px-3 py-2 text-right font-medium">{t('common.fields.value', 'Valor')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <Row label={t('common.fields.totalRevenue', 'Receita Total')}     value={formatCurrency(metrics.totalRevenue, currency)} />
-              <Row label={t('common.fields.totalCost', 'Custo Total')}          value={formatCurrency(metrics.totalCost, currency)} />
-              <Row label={t('roiAnalyses.kpi.investment', 'Investimento Total')} value={formatCurrency(metrics.totalInvestment, currency)} />
-              <tr className="border-t-2 bg-emerald-50/40">
-                <td className="px-3 py-2 font-semibold">{t('common.fields.netValue', 'Resultado')}</td>
-                <td className={`px-3 py-2 text-right tabular-nums font-semibold ${metrics.netValue >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
-                  {formatCurrency(metrics.netValue, currency)}
-                </td>
-              </tr>
-              {metrics.totalRevenue > 0 && (
-                <tr className="border-t bg-emerald-50/40">
-                  <td className="px-3 py-2 font-semibold">{t('roiAnalyses.table.margin', 'Margem')}</td>
-                  <td className="px-3 py-2 text-center tabular-nums font-semibold">
-                    {((metrics.netValue / metrics.totalRevenue) * 100).toFixed(2)}%
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   )
 }
 
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <tr className="border-t">
-      <td className="px-3 py-2">{label}</td>
-      <td className="px-3 py-2 text-right tabular-nums">{value}</td>
-    </tr>
-  )
-}
+

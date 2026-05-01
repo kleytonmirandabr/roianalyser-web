@@ -95,22 +95,92 @@
 /* Impressão / Salvar como PDF — esconde sidebar, header, botões; deixa
  * o conteúdo principal limpo. Dispara via window.print() (Cmd/Ctrl+P). */
 @media print {
-  aside,
-  header,
-  button,
-  .no-print {
+  /* ─── Layout: descascar shell e mostrar só o conteúdo ─── */
+  /* Sidebar + Header global ficam invisíveis em qualquer página */
+  body > div > div:first-child[class*="border-r"],   /* sidebar */
+  body > div > div > header                          /* header global */ {
     display: none !important;
   }
+
+  /* Tailwind print:hidden helper já cobre via classe — esses são fallback */
+  .no-print,
+  [class*="print:hidden"] {
+    display: none !important;
+  }
+
+  /* Main expande, sem padding herdado */
   main {
     padding: 0 !important;
     overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
   }
+
   body {
     background: white !important;
     color: black !important;
+    font-size: 10pt;
   }
-  /* Cards e tabelas com cores neutras para imprimir limpo. */
+
+  /* Preserva cores (Tailwind dark/light + heatmap) — sem isso o navegador
+     remove background colorido e ficamos sem heatmap nem badges */
+  * {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* ─── ROI: força todas as 3 abas a aparecerem em sequência ─── */
+  .roi-print-page [data-state="inactive"] {
+    display: block !important;
+  }
+  .roi-print-page [role="tablist"] {
+    display: none !important;
+  }
+  .roi-print-page [role="tabpanel"] {
+    page-break-before: always;
+    margin-top: 0 !important;
+  }
+  /* Primeira aba (Resumo) não força page-break antes — fica colado no header */
+  .roi-print-page [role="tabpanel"]:first-of-type {
+    page-break-before: auto;
+  }
+
+  /* Cabeçalho de print só aparece em print (hidden + print:block já cobre) */
+  .roi-print-header {
+    display: block !important;
+  }
+
+  /* Bordas mais sutis no PDF */
   [class*='border-border'] {
     border-color: #ddd !important;
+  }
+
+  /* Container de cards SVG — não cortar */
+  svg {
+    page-break-inside: avoid;
+  }
+
+  /* Tabelas evitam quebra horizontal e mantêm linhas inteiras */
+  tr, td, th {
+    page-break-inside: avoid;
+  }
+
+  /* Sticky containers (ex: max-h-[70vh] no Cards view + tabela) viram natural */
+  [class*="max-h-"][class*="overflow-y-auto"],
+  [class*="overflow-x-auto"] {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Esconde botões de ação, toggles, status switcher */
+  .roi-print-page button,
+  .roi-print-page [role="combobox"] {
+    display: none !important;
+  }
+
+  /* Configuração de página A4 paisagem pra caber tabela mês×categoria larga */
+  @page {
+    size: A4 landscape;
+    margin: 12mm 10mm;
   }
 }
