@@ -17,6 +17,7 @@ interface Props {
   currency: string
   onChange: (n: number | null) => void
   placeholder?: string
+  disabled?: boolean
 }
 
 const LOCALE_BY_CCY: Record<string, string> = {
@@ -57,7 +58,7 @@ function filterDuringEdit(text: string): string {
   return text.replace(/[^\d,.\-]/g, '')
 }
 
-export function CurrencyInput({ value, currency, onChange, placeholder }: Props) {
+export function CurrencyInput({ value, currency, onChange, placeholder, disabled }: Props) {
   const [text, setText] = useState<string>(
     value != null ? formatForCurrency(value, currency) : ''
   )
@@ -71,7 +72,7 @@ export function CurrencyInput({ value, currency, onChange, placeholder }: Props)
   }, [currency, value, editing])
 
   return (
-    <Input
+    <Input disabled={disabled}
       value={text}
       inputMode="decimal"
       onFocus={() => {

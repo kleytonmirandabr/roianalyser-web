@@ -1,10 +1,18 @@
 /**
- * Drawer de criar Contrato (refatorado).
+ * Drawer de criar Contrato (v3 — pré-fill do ROI aprovado).
  *
- * - Empresa (Combobox, obrigatório) — lista companies do tenant ativo
- * - Moeda (Combobox com lista fechada BRL/USD/EUR/GBP/ARS/CLP/MXN)
- * - Valor (CurrencyInput com máscara baseada na moeda)
- * - Datas, renovação, condições de pagamento — iguais à versão anterior
+ * Quando aberto a partir de uma oportunidade COM ROI aprovado, recebe
+ * `approvedRoiId` e pré-preenche:
+ *   - Moeda (do ROI, read-only)
+ *   - Valor total (= ROI metrics.totalRevenue, read-only)
+ *   - Tempo de contrato (= roi.durationMonths, read-only)
+ *
+ * Usuário só preenche Nome, Início, Assinatura. Data Fim é auto-calculada:
+ *   - Se Assinatura preenchida → Fim = Assinatura + duração
+ *   - Senão se Início → Fim = Início + duração
+ *   - Senão → vazia
+ *
+ * Quando contrato é avulso (sem ROI), todos os campos ficam editáveis.
  */
 import { Save } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -15,6 +23,7 @@ import {
   CONTRACT_STATUSES, CONTRACT_STATUS_LABELS, RENEWAL_TYPE_LABELS,
   type ContractStatus, type RenewalType,
 } from '@/features/contracts2/types'
+import { useRoiAnalysis } from '@/features/roi-analyses/hooks/use-roi-analysis'
 import { toastError, toastSaved } from '@/shared/lib/toasts'
 import { Button } from '@/shared/ui/button'
 import { Combobox } from '@/shared/ui/combobox'
@@ -29,8 +38,10 @@ interface Props {
   open: boolean
   onClose: () => void
   fromOpportunityId?: string | null
-  /** Pré-preenche a empresa quando vem da Oportunidade (que já tem companyId). */
+  /** Pré-preenche a empresa quando vem da Oportunidade. */
   preselectCompanyId?: string | null
+  /** Quando setado, puxa moeda+valor+duração do ROI e bloqueia esses campos. */
+  approvedRoiId?: string | null
   onSaved?: (id: string) => void
 }
 
@@ -44,9 +55,32 @@ const SUPPORTED_CURRENCIES: Array<{ value: string; label: string }> = [
   { value: 'MXN', label: 'MXN — Peso mexicano' },
 ]
 
-export function ContractFormSheet({ open, onClose, fromOpportunityId, preselectCompanyId, onSaved }: Props) {
+/** Adiciona N meses a uma data ISO (yyyy-mm-dd) e devolve nova ISO. */
+function addMonthsIso(iso: string, months: number): string {
+  if (!iso || !Number.isFinite(months) || months <= 0) return ''
+  const [y, m, d] = iso.split('-').map(Number)
+  if (!y || !m || !d) return ''
+  const dt = new Date(Date.UTC(y, m - 1, d))
+  dt.setUTCMonth(dt.getUTCMonth() + months)
+  return dt.toISOString().slice(0, 10)
+}
+
+const RoiBadge = () => (
+  <span className="text-[10px] uppercase font-bold tracking-wide bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 px-1.5 py-0.5 rounded">
+    Do ROI
+  </span>
+)
+
+export function ContractFormSheet({
+  open, onClose, fromOpportunityId, preselectCompanyId, approvedRoiId, onSaved,
+}: Props) {
   const create = useCreateContract()
   const companiesQ = useCompanies()
+  const roiQ = useRoiAnalysis(approvedRoiId || undefined)
+  const roi = roiQ.data?.item
+  const roiMetrics = roiQ.data?.metrics
+
+  const isFromRoi = !!approvedRoiId && !!roi
 
   const [name, setName] = useState('')
   const [companyId, setCompanyId] = useState('')
@@ -56,9 +90,12 @@ export function ContractFormSheet({ open, onClose, fromOpportunityId, preselectC
   const [currency, setCurrency] = useState('BRL')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [signedDate, setSignedDate] = useState('')
   const [renewalType, setRenewalType] = useState<RenewalType>('manual')
   const [noticePeriodDays, setNoticePeriodDays] = useState('30')
   const [paymentTerms, setPaymentTerms] = useState('')
+  /** Quando o usuário edita endDate manualmente, paramos de auto-calcular. */
+  const [endDateManual, setEndDateManual] = useState(false)
 
   // Reset ao abrir
   useEffect(() => {
@@ -71,10 +108,34 @@ export function ContractFormSheet({ open, onClose, fromOpportunityId, preselectC
     setCurrency('BRL')
     setStartDate('')
     setEndDate('')
+    setSignedDate('')
     setRenewalType('manual')
     setNoticePeriodDays('30')
     setPaymentTerms('')
+    setEndDateManual(false)
   }, [open, preselectCompanyId])
+
+  // Quando o ROI carrega, sincronizar moeda + valor
+  useEffect(() => {
+    if (!open || !isFromRoi) return
+    if (roi?.currency) setCurrency(roi.currency)
+    if (roiMetrics?.totalRevenue != null && roiMetrics.totalRevenue > 0) {
+      setTotalValue(roiMetrics.totalRevenue)
+    }
+    // Sugerir nome do contrato a partir do nome do ROI quando user ainda não digitou
+    setName(prev => prev || (roi?.name ? `Contrato — ${roi.name}` : prev))
+  }, [open, isFromRoi, roi?.currency, roi?.name, roiMetrics?.totalRevenue])
+
+  const durationMonths = roi?.durationMonths ?? 12
+
+  // Auto-calc endDate quando vier do ROI (ou pelo menos quando há duração)
+  useEffect(() => {
+    if (endDateManual) return
+    if (!isFromRoi) return
+    const base = signedDate || startDate
+    if (!base) { setEndDate(''); return }
+    setEndDate(addMonthsIso(base, durationMonths))
+  }, [isFromRoi, signedDate, startDate, durationMonths, endDateManual])
 
   const companies = (companiesQ.data || []).filter((c: any) => !c.deletedAt)
   const companyOptions = useMemo(
@@ -111,11 +172,13 @@ export function ContractFormSheet({ open, onClose, fromOpportunityId, preselectC
         companyId,
         status,
         opportunityId: fromOpportunityId || null,
+        approvedRoiId: approvedRoiId || null,
         contractTypeKey: contractTypeKey.trim() || null,
         totalValue,
         currency,
         startDate: startDate || null,
         endDate: endDate || null,
+        signedDate: signedDate || null,
         renewalType,
         noticePeriodDays: Number(noticePeriodDays) || 30,
         paymentTerms: paymentTerms.trim() || null,
@@ -131,7 +194,14 @@ export function ContractFormSheet({ open, onClose, fromOpportunityId, preselectC
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent className="sm:max-w-xl">
-        <SheetHeader><SheetTitle>Novo contrato</SheetTitle></SheetHeader>
+        <SheetHeader>
+          <SheetTitle>Novo contrato</SheetTitle>
+          {isFromRoi && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Pré-preenchido com base no ROI aprovado <strong>{roi?.name}</strong> v{roi?.version}.
+            </p>
+          )}
+        </SheetHeader>
         <form onSubmit={handleSubmit}>
           <SheetBody className="space-y-4">
             <div className="space-y-1">
@@ -178,28 +248,68 @@ export function ContractFormSheet({ open, onClose, fromOpportunityId, preselectC
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label>Moeda <span className="text-rose-600">*</span></Label>
-                <Combobox options={SUPPORTED_CURRENCIES} value={currency} onChange={setCurrency} />
+                <Label className="flex items-center gap-2">
+                  Moeda <span className="text-rose-600">*</span>
+                  {isFromRoi && <RoiBadge />}
+                </Label>
+                <Combobox
+                  options={SUPPORTED_CURRENCIES}
+                  value={currency}
+                  onChange={setCurrency}
+                  disabled={isFromRoi}
+                />
               </div>
               <div className="space-y-1">
-                <Label>Valor total <span className="text-rose-600">*</span></Label>
+                <Label className="flex items-center gap-2">
+                  Valor total <span className="text-rose-600">*</span>
+                  {isFromRoi && <RoiBadge />}
+                </Label>
                 <CurrencyInput
                   value={totalValue}
                   currency={currency}
                   onChange={setTotalValue}
                   placeholder="0,00"
+                  disabled={isFromRoi}
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            {isFromRoi && (
+              <div className="rounded-md border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-xs text-blue-800 dark:text-blue-300 flex items-center justify-between">
+                <span>
+                  <strong>Tempo de contrato:</strong> {durationMonths} meses (do ROI)
+                </span>
+                <span className="text-blue-600 dark:text-blue-500">
+                  A Data Fim é calculada automaticamente.
+                </span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label>Início</Label>
                 <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
               </div>
               <div className="space-y-1">
-                <Label>Fim</Label>
-                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                <Label>Assinatura</Label>
+                <Input type="date" value={signedDate} onChange={(e) => setSignedDate(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="flex items-center gap-2">
+                  Fim
+                  {isFromRoi && !endDateManual && <RoiBadge />}
+                </Label>
+                <Input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => { setEndDate(e.target.value); setEndDateManual(true) }}
+                  className={isFromRoi && !endDateManual ? 'opacity-70' : undefined}
+                />
+                {isFromRoi && !endDateManual && (
+                  <p className="text-[10px] text-muted-foreground">
+                    {signedDate ? 'Assinatura' : startDate ? 'Início' : '—'} + {durationMonths} meses
+                  </p>
+                )}
               </div>
             </div>
 

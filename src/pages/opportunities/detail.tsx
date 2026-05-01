@@ -96,6 +96,14 @@ export function OpportunityDetailPage() {
   const createRoi = useCreateRoiAnalysis()
 
   const hasApprovedRoi = roiAnalyses.some(r => r.status === 'approved')
+  // ROI aprovado mais recente (maior versão / createdAt) — pré-fill do contrato
+  const approvedRoi = (() => {
+    const approved = roiAnalyses.filter((r: any) => r.status === 'approved')
+    if (approved.length === 0) return null
+    return approved.reduce((best: any, r: any) =>
+      !best || (r.version || 0) > (best.version || 0) ? r : best,
+    null as any)
+  })()
 
   // Form state — espelha o drawer
   const [name, setName] = useState('')
@@ -541,6 +549,7 @@ export function OpportunityDetailPage() {
         onClose={() => setContractDrawerOpen(false)}
         fromOpportunityId={opp.id}
         preselectCompanyId={opp.companyId || null}
+        approvedRoiId={approvedRoi?.id ?? null}
       />
     </div>
   )
