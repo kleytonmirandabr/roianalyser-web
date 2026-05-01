@@ -10,7 +10,7 @@
  * progresso %. Owner/Editor podem mexer; Viewer só visualiza.
  */
 import {
-  CheckCircle2, ChevronDown, ChevronRight, Circle, FolderTree, Plus, Settings2, Trash2, UserCircle2,
+  CalendarDays, CheckCircle2, ChevronDown, ChevronRight, Circle, FolderTree, LayoutGrid, List, Plus, Settings2, Trash2, UserCircle2,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -36,6 +36,8 @@ import {
 import type { ProjectTaskColumn, TaskColumnValue } from '@/features/projects2/task-columns-types'
 import { ColumnsManager } from '@/features/projects2/components/ColumnsManager'
 import { ColumnCellEditor, ColumnCellReadonly } from '@/features/projects2/components/ColumnCellEditor'
+import { TasksKanbanView } from '@/features/projects2/components/TasksKanbanView'
+import { TasksCalendarView } from '@/features/projects2/components/TasksCalendarView'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Combobox } from '@/shared/ui/combobox'
@@ -224,6 +226,7 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
   const [newDate, setNewDate] = useState('')
 
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const [view, setView] = useState<'list' | 'kanban' | 'calendar'>('list')
   function toggleCollapse(id: string) {
     setCollapsed(prev => {
       const next = new Set(prev)
@@ -460,7 +463,29 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
         </div>
       )}
 
-      {list.isLoading ? (
+      {/* Tabs de visualizacao */}
+      <div className="px-6 pb-2 flex items-center gap-1 border-b">
+        <button
+          type="button"
+          onClick={() => setView('list')}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-t-md ${view === 'list' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+        ><List className="h-3.5 w-3.5" /> Lista</button>
+        <button
+          type="button"
+          onClick={() => setView('kanban')}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-t-md ${view === 'kanban' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+        ><LayoutGrid className="h-3.5 w-3.5" /> Kanban</button>
+        <button
+          type="button"
+          onClick={() => setView('calendar')}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-t-md ${view === 'calendar' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+        ><CalendarDays className="h-3.5 w-3.5" /> Calendario</button>
+      </div>
+
+      {view === 'kanban' && <TasksKanbanView tasks={items} projectId={projectId} canEdit={canEdit} />}
+      {view === 'calendar' && <TasksCalendarView tasks={items} />}
+
+      {view === 'list' && (list.isLoading ? (
         <div className="px-6 py-8 text-sm text-muted-foreground">Carregando...</div>
       ) : items.length === 0 ? (
         <div className="px-6 py-8 text-sm text-muted-foreground italic">
@@ -508,7 +533,7 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
             )
           })}
         </div>
-      )}
+      ))}
       <ColumnsManager
         open={colsModalOpen}
         onClose={() => setColsModalOpen(false)}
