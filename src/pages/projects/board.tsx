@@ -355,7 +355,7 @@ export function ProjectsBoardPage({
 
 function BoardSkeleton() {
   return (
-    <div className="flex gap-3 overflow-x-auto pb-2">
+    <div className="flex gap-3 overflow-x-auto pb-2 w-full max-w-full">
       {Array.from({ length: 4 }).map((_, i) => (
         <div key={i} className="flex w-80 shrink-0 flex-col gap-2">
           <Skeleton className="h-7 w-full" />
@@ -411,7 +411,7 @@ function Board({
   }
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-2">
+    <div className="flex gap-3 overflow-x-auto pb-2 w-full max-w-full">
       {columns.map((col) => {
         const colTotal = (col.projects as EnrichedProject[]).reduce(
           (s, p) => s + (p.__revenue ?? 0),
