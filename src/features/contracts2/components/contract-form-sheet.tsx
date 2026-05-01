@@ -126,7 +126,7 @@ export function ContractFormSheet({
     setName(prev => prev || (roi?.name ? `Contrato — ${roi.name}` : prev))
   }, [open, isFromRoi, roi?.currency, roi?.name, roiMetrics?.totalRevenue])
 
-  const durationMonths = roi?.durationMonths ?? 12
+  const durationMonths = (roi?.durationMonths && roi.durationMonths > 0) ? roi.durationMonths : 12
 
   // Auto-calc endDate quando vier do ROI (ou pelo menos quando há duração)
   useEffect(() => {
