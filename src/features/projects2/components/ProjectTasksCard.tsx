@@ -38,6 +38,7 @@ import { ColumnsManager } from '@/features/projects2/components/ColumnsManager'
 import { ColumnCellEditor, ColumnCellReadonly } from '@/features/projects2/components/ColumnCellEditor'
 import { TasksKanbanView } from '@/features/projects2/components/TasksKanbanView'
 import { TasksCalendarView } from '@/features/projects2/components/TasksCalendarView'
+import { TasksToolbar, type TasksFilters } from '@/features/projects2/components/TasksToolbar'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Combobox } from '@/shared/ui/combobox'
@@ -179,26 +180,57 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
   const customCols: ProjectTaskColumn[] = colsList.data || []
   const putValue = usePutColumnValue(projectId)
   const [colsModalOpen, setColsModalOpen] = useState(false)
+  const [filters, setFilters] = useState<TasksFilters>({ q: '', status: '', personId: '', sort: 'order' })
   const appState = useAppState()
   const users: UserMini[] = ((appState.data?.users || []) as Array<{ id: string; name?: string; email?: string }>)
     .map(u => ({ id: String(u.id), name: u.name || u.email || `User #${u.id}`, email: u.email || '' }))
 
   const items = list.data || []
 
+  // Sprint 3.3: filtros + sort
+  const filteredItems = useMemo(() => {
+    let arr = items.slice()
+    if (filters.q) {
+      const q = filters.q.toLowerCase()
+      arr = arr.filter((t) => t.title.toLowerCase().includes(q))
+    }
+    if (filters.status) arr = arr.filter((t) => t.status === filters.status)
+    if (filters.personId) arr = arr.filter((t) => t.responsibleIds.includes(filters.personId))
+    if (filters.sort === 'title') arr.sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'))
+    else if (filters.sort === 'plannedDate') {
+      arr.sort((a, b) => (a.plannedDate || '9999').localeCompare(b.plannedDate || '9999'))
+    } else if (filters.sort === 'status') arr.sort((a, b) => a.status.localeCompare(b.status))
+    else if (filters.sort === 'progress') arr.sort((a, b) => (b.progressPct || 0) - (a.progressPct || 0))
+    return arr
+  }, [items, filters])
+
+  // Conta subtarefas por task (root e por grupo)
+  const subtaskCount = useMemo(() => {
+    const map: Record<string, number> = {}
+    for (const it of items) {
+      if (it.kind === 'subtask' && it.parentId) {
+        map[it.parentId] = (map[it.parentId] || 0) + 1
+      }
+    }
+    return map
+  }, [items])
+
   const tree = useMemo(() => {
+    // Tree mostra grupos sempre. Tasks/subtasks respeitam filtros.
     const rootGroups = items.filter(i => i.kind === 'group' && !i.parentId)
-    const rootTasks = items.filter(i => i.kind === 'task' && !i.parentId)
+    const filteredIds = new Set(filteredItems.map(i => i.id))
+    const rootTasks = items.filter(i => i.kind === 'task' && !i.parentId && filteredIds.has(i.id))
     const tasksByParent: Record<string, ProjectMilestone[]> = {}
     const subtasksByParent: Record<string, ProjectMilestone[]> = {}
     items.forEach(i => {
-      if (i.parentId && i.kind === 'task') {
+      if (i.parentId && i.kind === 'task' && filteredIds.has(i.id)) {
         (tasksByParent[i.parentId] = tasksByParent[i.parentId] || []).push(i)
-      } else if (i.parentId && i.kind === 'subtask') {
+      } else if (i.parentId && i.kind === 'subtask' && filteredIds.has(i.id)) {
         (subtasksByParent[i.parentId] = subtasksByParent[i.parentId] || []).push(i)
       }
     })
     return { rootGroups, rootTasks, tasksByParent, subtasksByParent }
-  }, [items])
+  }, [items, filteredItems])
 
   const allTaskIds = useMemo(() => items.map((i) => i.id), [items])
   const valuesQuery = useColumnValues(projectId, allTaskIds)
@@ -322,8 +354,13 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
               ? <CheckCircle2 className="h-4 w-4 text-emerald-600" />
               : <Circle className="h-4 w-4" />}
           </button>
-          <span className={`flex-1 text-sm ${t.status === 'done' ? 'line-through text-muted-foreground' : ''}`}>
+          <span className={`flex-1 text-sm flex items-center gap-1.5 ${t.status === 'done' ? 'line-through text-muted-foreground' : ''}`}>
             {t.title}
+            {level === 1 && subtaskCount[t.id] ? (
+              <span className="text-[10px] tabular-nums px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-semibold">
+                {subtaskCount[t.id]}
+              </span>
+            ) : null}
           </span>
           {t.plannedDate && (
             <span className="text-xs text-muted-foreground tabular-nums w-20 text-right">
@@ -482,8 +519,12 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
         ><CalendarDays className="h-3.5 w-3.5" /> Calendario</button>
       </div>
 
-      {view === 'kanban' && <TasksKanbanView tasks={items} projectId={projectId} canEdit={canEdit} />}
-      {view === 'calendar' && <TasksCalendarView tasks={items} />}
+      {view === 'list' && (
+        <TasksToolbar filters={filters} onChange={(p) => setFilters(f => ({ ...f, ...p }))} users={users} />
+      )}
+
+      {view === 'kanban' && <TasksKanbanView tasks={filteredItems} projectId={projectId} canEdit={canEdit} />}
+      {view === 'calendar' && <TasksCalendarView tasks={filteredItems} />}
 
       {view === 'list' && (list.isLoading ? (
         <div className="px-6 py-8 text-sm text-muted-foreground">Carregando...</div>
@@ -529,6 +570,35 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
                   )}
                 </div>
                 {!isCollapsed && childTasks.map(t => renderTaskRow(t, 1))}
+                {!isCollapsed && childTasks.length > 0 && (() => {
+                  // Footer agregado: total tarefas, % média, range datas
+                  const total = childTasks.length
+                  const done = childTasks.filter(c => c.status === 'done').length
+                  const avgProgress = Math.round(
+                    childTasks.reduce((s, c) => s + (c.progressPct || 0), 0) / total
+                  )
+                  const dates = childTasks.map(c => c.plannedDate).filter(Boolean) as string[]
+                  const minDate = dates.length ? dates.reduce((a, b) => (a < b ? a : b)) : null
+                  const maxDate = dates.length ? dates.reduce((a, b) => (a > b ? a : b)) : null
+                  function fmt(iso: string | null): string {
+                    if (!iso) return ''
+                    try { return new Date(iso + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) }
+                    catch { return iso }
+                  }
+                  return (
+                    <div className="flex items-center gap-3 px-4 py-1.5 bg-muted/20 border-t text-[11px] text-muted-foreground tabular-nums">
+                      <span><strong className="text-foreground">{done}</strong>/{total} concluida{total !== 1 ? 's' : ''}</span>
+                      <span>·</span>
+                      <span>media <strong className="text-foreground">{avgProgress}%</strong></span>
+                      {minDate && maxDate && (
+                        <>
+                          <span>·</span>
+                          <span>{fmt(minDate)} - {fmt(maxDate)}</span>
+                        </>
+                      )}
+                    </div>
+                  )
+                })()}
               </div>
             )
           })}
