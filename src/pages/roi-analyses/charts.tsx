@@ -14,8 +14,8 @@ import { useTranslation } from 'react-i18next'
 import { formatCurrency } from '@/shared/lib/format'
 import type { MonthlyFlow } from '@/features/roi-analyses/types'
 
-const VB_W = 720
-const VB_H = 240
+const VB_W = 880
+const VB_H = 320
 const PAD_L = 64
 const PAD_R = 16
 const PAD_T = 16
@@ -93,7 +93,7 @@ export function CumulativeCashFlowChart({
           </span>
         )}
       </div>
-      <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="w-full" style={{ maxHeight: 280 }}
+      <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="w-full" style={{ maxHeight: 360 }}
         onMouseLeave={() => setHover(null)}>
         {/* grid + Y ticks */}
         {points.yTicks.map((y, i) => (
@@ -196,7 +196,7 @@ export function MonthlyCashFlowChart({
           <Legend color="bg-blue-500"    label={t('roiAnalyses.kpi.investment', 'Investimento')} />
         </div>
       </div>
-      <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="w-full" style={{ maxHeight: 280 }}
+      <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="w-full" style={{ maxHeight: 360 }}
         onMouseLeave={() => setHover(null)}>
         {/* Y grid */}
         {points.yTicks.map((y, i) => (

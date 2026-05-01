@@ -10,7 +10,7 @@
  * Inspiração: planilha v1 que o usuário mostrou.
  */
 
-import { Download } from 'lucide-react'
+import { Download, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -45,7 +45,7 @@ export function MonthlyByCategoryTable({
   const { t } = useTranslation()
 
   /* Constrói matrix mês × categoria */
-  const { columns, totals } = useMemo(() => {
+  const { columns, totals, paybackMonth, heatScale } = useMemo(() => {
     const dur = Math.max(1, durationMonths)
     const colMap = new Map<string, CategoryMonthly>()
 
@@ -111,9 +111,27 @@ export function MonthlyByCategoryTable({
       cumulative.push(acc)
     }
 
+    // Payback: primeiro mês com acumulado >= 0 (e que houve algum custo/investimento)
+    let paybackMonth: number | null = null
+    let totalOut = 0
+    for (let i = 0; i < dur; i++) {
+      if (totalsPerMonth[i] < 0) totalOut += -totalsPerMonth[i]
+      if (paybackMonth === null && cumulative[i] >= 0 && totalOut > 0) {
+        paybackMonth = i + 1
+      }
+    }
+
+    // Maior valor absoluto pra normalizar heatmap (ignora outliers > p95)
+    const allValues = columns.flatMap(c => c.perMonth.map(v => Math.abs(v)))
+    const sorted = allValues.filter(v => v > 0).sort((a, b) => a - b)
+    const p95 = sorted.length > 0 ? sorted[Math.floor(sorted.length * 0.95)] : 1
+    const heatScale = p95 || 1
+
     return {
       columns,
       totals: { perMonth: totalsPerMonth, cumulative },
+      paybackMonth,
+      heatScale,
     }
   }, [entries, durationMonths, categoryById, t])
 
@@ -159,52 +177,89 @@ export function MonthlyByCategoryTable({
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
+      <div className="overflow-x-auto rounded-md border max-h-[70vh]">
         <table className="w-full text-sm">
-          <thead className="bg-muted/50">
-            <tr className="text-left">
-              <th className="sticky left-0 z-10 bg-muted/50 px-3 py-2 font-medium border-r">{t('common.fields.month', 'Mês')}</th>
-              {columns.map(c => (
-                <th key={c.categoryId} className="px-3 py-2 font-medium text-right whitespace-nowrap">
-                  <span className={c.family === 'INCOME' ? 'text-emerald-700' : c.family === 'INVESTMENT' ? 'text-blue-700' : c.family === 'EXPENSE' ? 'text-rose-700' : ''}>
-                    {c.categoryName}
-                  </span>
-                </th>
-              ))}
-              <th className="px-3 py-2 font-medium text-right border-l">{t('roiAnalyses.table.netMonth', 'Líquido do mês')}</th>
-              <th className="px-3 py-2 font-medium text-right">{t('roiAnalyses.table.cumulative', 'Acumulado')}</th>
+          <thead className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-sm">
+            <tr className="text-left border-b">
+              <th className="sticky left-0 z-30 bg-background px-3 py-2.5 font-semibold border-r text-xs uppercase tracking-wide text-muted-foreground">
+                {t('common.fields.month', 'Mês')}
+              </th>
+              {columns.map(c => {
+                const Icon = c.family === 'INCOME' ? TrendingUp : c.family === 'INVESTMENT' ? Wallet : c.family === 'EXPENSE' ? TrendingDown : null
+                const tone = c.family === 'INCOME' ? 'text-emerald-700 dark:text-emerald-400'
+                  : c.family === 'INVESTMENT' ? 'text-blue-700 dark:text-blue-400'
+                  : c.family === 'EXPENSE' ? 'text-rose-700 dark:text-rose-400'
+                  : ''
+                return (
+                  <th key={c.categoryId} className="px-3 py-2.5 font-semibold text-right whitespace-nowrap">
+                    <span className={`inline-flex items-center gap-1 ${tone}`}>
+                      {Icon && <Icon className="h-3 w-3" />}
+                      {c.categoryName}
+                    </span>
+                  </th>
+                )
+              })}
+              <th className="px-3 py-2.5 font-semibold text-right border-l text-xs uppercase tracking-wide text-muted-foreground">
+                {t('roiAnalyses.table.netMonth', 'Líquido do mês')}
+              </th>
+              <th className="px-3 py-2.5 font-semibold text-right text-xs uppercase tracking-wide text-muted-foreground">
+                {t('roiAnalyses.table.cumulative', 'Acumulado')}
+              </th>
             </tr>
           </thead>
           <tbody>
             {Array.from({ length: durationMonths }, (_, i) => {
               const net = totals.perMonth[i]
               const acc = totals.cumulative[i]
+              const isPaybackRow = paybackMonth === i + 1
+              const rowCls = isPaybackRow
+                ? 'border-t border-emerald-300 dark:border-emerald-600 bg-emerald-50/40 dark:bg-emerald-950/20 hover:bg-emerald-50/70 dark:hover:bg-emerald-950/30'
+                : 'border-t hover:bg-muted/40'
               return (
-                <tr key={i} className="border-t hover:bg-muted/20">
-                  <td className="sticky left-0 z-10 bg-background px-3 py-2 font-medium border-r">m{i + 1}</td>
-                  {columns.map(c => (
-                    <td key={c.categoryId} className="px-3 py-2 text-right tabular-nums">
-                      {c.perMonth[i] === 0
-                        ? <span className="text-muted-foreground/40">—</span>
-                        : <span className={c.perMonth[i] > 0 ? 'text-emerald-700' : 'text-rose-700'}>
-                            {formatCurrency(Math.abs(c.perMonth[i]), currency)}
-                          </span>
-                      }
-                    </td>
-                  ))}
-                  <td className={`px-3 py-2 text-right tabular-nums font-medium border-l ${net >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                <tr key={i} className={rowCls}>
+                  <td className={`sticky left-0 z-10 px-3 py-2 font-semibold border-r ${isPaybackRow ? 'bg-emerald-50/40 dark:bg-emerald-950/20' : 'bg-background'}`}>
+                    <span className="inline-flex items-center gap-1.5">
+                      m{i + 1}
+                      {isPaybackRow && (
+                        <span className="text-[9px] uppercase font-bold tracking-wide text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/40 px-1 py-0.5 rounded">
+                          {t('roiAnalyses.table.paybackBadge', 'Payback')}
+                        </span>
+                      )}
+                    </span>
+                  </td>
+                  {columns.map(c => {
+                    const v = c.perMonth[i]
+                    if (v === 0) {
+                      return <td key={c.categoryId} className="px-3 py-2 text-right tabular-nums text-muted-foreground/30">—</td>
+                    }
+                    // Heatmap: intensidade do background proporcional a |v| / heatScale (cap 0..1)
+                    const intensity = Math.min(1, Math.abs(v) / heatScale)
+                    const bgOpacity = (0.05 + intensity * 0.20).toFixed(2)
+                    const bgStyle = v > 0
+                      ? { backgroundColor: `rgb(16 185 129 / ${bgOpacity})` }   // emerald
+                      : { backgroundColor: `rgb(244 63 94 / ${bgOpacity})` }    // rose
+                    const textCls = v > 0
+                      ? 'text-emerald-800 dark:text-emerald-300 font-medium'
+                      : 'text-rose-800 dark:text-rose-300 font-medium'
+                    return (
+                      <td key={c.categoryId} className={`px-3 py-2 text-right tabular-nums ${textCls}`} style={bgStyle}>
+                        {formatCurrency(Math.abs(v), currency)}
+                      </td>
+                    )
+                  })}
+                  <td className={`px-3 py-2 text-right tabular-nums font-semibold border-l ${net >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
                     {net === 0 ? '—' : formatCurrency(net, currency)}
                   </td>
-                  <td className={`px-3 py-2 text-right tabular-nums font-medium ${acc >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                  <td className={`px-3 py-2 text-right tabular-nums font-semibold ${acc >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
                     {formatCurrency(acc, currency)}
                   </td>
                 </tr>
               )
             })}
           </tbody>
-          <tfoot className="bg-muted/40">
-            <tr className="border-t-2">
-              <td className="sticky left-0 z-10 bg-muted/40 px-3 py-2 font-semibold border-r">{t('common.fields.total', 'Total')}</td>
+          <tfoot className="sticky bottom-0 z-20 bg-muted/80 backdrop-blur supports-[backdrop-filter]:bg-muted/60 shadow-[0_-1px_0_0_rgba(0,0,0,0.1)]">
+            <tr className="border-t-2 border-foreground/20">
+              <td className="sticky left-0 z-30 bg-muted/95 px-3 py-2.5 font-bold border-r text-xs uppercase tracking-wide">{t('common.fields.total', 'Total')}</td>
               {columns.map(c => (
                 <td key={c.categoryId} className="px-3 py-2 text-right tabular-nums font-semibold">
                   <span className={c.total > 0 ? 'text-emerald-700' : c.total < 0 ? 'text-rose-700' : ''}>

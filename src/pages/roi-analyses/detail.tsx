@@ -8,13 +8,13 @@
  *           - Tabela: mês × categoria (estilo planilha v1) + Resumo Comparativo + Totais
  */
 
-import { ArrowLeft, Plus, Trash2, TrendingUp, TrendingDown, Wallet, BarChart3 } from 'lucide-react'
+import { ArrowLeft, Pencil, Plus, Save, Trash2, TrendingUp, TrendingDown, Wallet, BarChart3 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import {
-  useAddRoiEntry, useDeleteRoiEntry,
+  useAddRoiEntry, useDeleteRoiEntry, useUpdateRoiEntry,
 } from '@/features/roi-analyses/hooks/use-roi-entries'
 import { useRoiAnalysis } from '@/features/roi-analyses/hooks/use-roi-analysis'
 import { useUpdateRoiAnalysis } from '@/features/roi-analyses/hooks/use-update-roi'
@@ -31,6 +31,8 @@ import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Combobox } from '@/shared/ui/combobox'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
+import { CurrencyInput } from '@/shared/ui/currency-input'
 import { Input } from '@/shared/ui/input'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
@@ -70,11 +72,23 @@ export function RoiAnalysisDetailPage() {
   const update = useUpdateRoiAnalysis(id)
   const addEntry = useAddRoiEntry(id)
   const deleteEntry = useDeleteRoiEntry(id)
+  const updateEntry = useUpdateRoiEntry(id)
 
   const categoriesQ = useItemCategories()
   const itemsQ = useCatalogItems()
 
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT)
+  const [editingEntry, setEditingEntry] = useState<{
+    entryId: string
+    quantity: string
+    unitValue: string
+    discountPct: string
+    startMonth: string
+    installments: string
+    description: string
+    comportamento: Comportamento
+    itemName: string
+  } | null>(null)
 
   const roi = data?.item
   const entries: RoiEntry[] = data?.entries || []
@@ -127,8 +141,11 @@ export function RoiAnalysisDetailPage() {
       ...d,
       catalogItemId: itemId,
       comportamento: (it?.comportamento as Comportamento) || d.comportamento,
-      unitValue: it?.unitPrice != null ? String(it.unitPrice) : d.unitValue,
+      // Catálogo tem defaultValue (era unitPrice antes — campo inexistente)
+      unitValue: it?.defaultValue != null ? String(it.defaultValue) : d.unitValue,
       description: it?.name ? String(it.name) : d.description,
+      // Pré-popula installments com defaultInstallments do item, se houver
+      installments: it?.defaultInstallments != null ? String(it.defaultInstallments) : d.installments,
     }))
   }
 
@@ -185,6 +202,49 @@ export function RoiAnalysisDetailPage() {
   async function handleDeleteEntry(entryId: string) {
     try {
       await deleteEntry.mutateAsync(entryId)
+    } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
+  }
+
+  function handleStartEditEntry(e: RoiEntry) {
+    const it = items.find((x: any) => String(x.id) === String(e.catalogItemId)) as any
+    setEditingEntry({
+      entryId: String(e.id),
+      quantity: String(e.quantity ?? 1),
+      unitValue: String(e.unitValue ?? 0),
+      discountPct: String(e.discountPct ?? 0),
+      startMonth: String(e.startMonth ?? 1),
+      installments: String(e.installments ?? 12),
+      description: String(e.description ?? ''),
+      comportamento: (e.comportamento as Comportamento) || 'EXPENSE_ONE_TIME',
+      itemName: it?.name || e.description || 'Item',
+    })
+  }
+
+  async function handleSaveEditEntry() {
+    if (!editingEntry) return
+    const qty = Number(editingEntry.quantity)
+    const unit = Number(editingEntry.unitValue)
+    if (!Number.isFinite(qty) || qty <= 0) return toastError(t('roiAnalyses.entry.qtyInvalid', 'Quantidade precisa ser positiva'))
+    if (!Number.isFinite(unit) || unit <= 0) return toastError(t('roiAnalyses.entry.unitInvalid', 'Valor unitário precisa ser positivo'))
+    const isInstallment = suffixOf(editingEntry.comportamento) === 'INSTALLMENT'
+    const installments = isInstallment ? Number(editingEntry.installments) : null
+    if (isInstallment && (!Number.isInteger(installments) || (installments as number) < 1)) {
+      return toastError(t('roiAnalyses.entry.installmentsInvalid', 'Parcelas precisa ser inteiro >= 1'))
+    }
+    try {
+      await updateEntry.mutateAsync({
+        entryId: editingEntry.entryId,
+        patch: {
+          quantity: qty,
+          unitValue: unit,
+          discountPct: Number(editingEntry.discountPct) || 0,
+          startMonth: Number(editingEntry.startMonth) || 1,
+          installments,
+          description: editingEntry.description || null,
+        },
+      })
+      setEditingEntry(null)
+      toastSaved(t('roiAnalyses.entry.updated', 'Lançamento atualizado'))
     } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
   }
 
@@ -474,8 +534,11 @@ export function RoiAnalysisDetailPage() {
                 </div>
                 <div className="md:col-span-2">
                   <label className="text-xs text-muted-foreground">{t('roiAnalyses.entry.unitValue', 'Valor unitário')} ({cur})</label>
-                  <Input type="number" step="0.01" min="0" value={draft.unitValue}
-                    onChange={e => setDraft({ ...draft, unitValue: e.target.value })} />
+                  <CurrencyInput
+                    value={draft.unitValue !== '' ? Number(draft.unitValue) : null}
+                    currency={cur}
+                    onChange={(n) => setDraft({ ...draft, unitValue: n != null ? String(n) : '' })}
+                  />
                 </div>
                 <div className="md:col-span-2">
                   <label className="text-xs text-muted-foreground">{t('roiAnalyses.entry.discountPct', 'Desconto %')}</label>
@@ -576,11 +639,16 @@ export function RoiAnalysisDetailPage() {
                             {suf === 'INSTALLMENT' && e.installments ? `/${e.installments}` : suf === 'MONTHLY' ? `–m${dur}` : ''}
                           </td>
                           <td className={`px-3 py-2 text-right tabular-nums font-medium ${toneCls}`}>{sign}{formatCurrency(impact, cur)}</td>
-                          <td className="px-3 py-2 text-right">
+                          <td className="px-3 py-2 text-right whitespace-nowrap">
                             {!isFrozen && (
-                              <Button variant="ghost" size="sm" onClick={() => handleDeleteEntry(e.id)}>
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
+                              <>
+                                <Button variant="ghost" size="sm" onClick={() => handleStartEditEntry(e)} title={t('common.actions.edit', 'Editar')}>
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => handleDeleteEntry(e.id)} title={t('common.actions.delete', 'Excluir')}>
+                                  <Trash2 className="h-3 w-3 text-rose-600" />
+                                </Button>
+                              </>
                             )}
                           </td>
                         </tr>
@@ -612,6 +680,67 @@ export function RoiAnalysisDetailPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Dialog de edição de lançamento */}
+      <Dialog open={!!editingEntry} onOpenChange={(o) => { if (!o) setEditingEntry(null) }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t('roiAnalyses.entry.editTitle', 'Editar lançamento')}</DialogTitle>
+          </DialogHeader>
+          {editingEntry && (
+            <div className="space-y-3 py-2">
+              <div>
+                <div className="text-sm font-medium">{editingEntry.itemName}</div>
+                <div className="text-xs text-muted-foreground">{t(`admin.catalogItems.behavior.${editingEntry.comportamento}`)}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">{t('common.fields.quantity', 'Quantidade')}</label>
+                  <Input type="number" step="0.01" min="0" value={editingEntry.quantity}
+                    onChange={(e) => setEditingEntry({ ...editingEntry, quantity: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">{t('roiAnalyses.entry.unitValue', 'Valor unitário')} ({cur})</label>
+                  <CurrencyInput
+                    value={editingEntry.unitValue !== '' ? Number(editingEntry.unitValue) : null}
+                    currency={cur}
+                    onChange={(n) => setEditingEntry({ ...editingEntry, unitValue: n != null ? String(n) : '' })}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">{t('roiAnalyses.entry.discountPct', 'Desconto %')}</label>
+                  <Input type="number" step="0.01" min="0" max="100" value={editingEntry.discountPct}
+                    onChange={(e) => setEditingEntry({ ...editingEntry, discountPct: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">{t('roiAnalyses.entry.startMonth', 'Mês de início')}</label>
+                  <Input type="number" min="1" max={String(roi.durationMonths || 999)} value={editingEntry.startMonth}
+                    onChange={(e) => setEditingEntry({ ...editingEntry, startMonth: e.target.value })} />
+                </div>
+                {suffixOf(editingEntry.comportamento) === 'INSTALLMENT' && (
+                  <div className="col-span-2">
+                    <label className="text-xs text-muted-foreground">{t('roiAnalyses.entry.installments', 'Parcelas')}</label>
+                    <Input type="number" min="1" value={editingEntry.installments}
+                      onChange={(e) => setEditingEntry({ ...editingEntry, installments: e.target.value })} />
+                  </div>
+                )}
+                <div className="col-span-2">
+                  <label className="text-xs text-muted-foreground">{t('common.fields.description')}</label>
+                  <Input value={editingEntry.description}
+                    onChange={(e) => setEditingEntry({ ...editingEntry, description: e.target.value })}
+                    placeholder={t('roiAnalyses.entry.descriptionPlaceholder', 'opcional')} />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingEntry(null)}>{t('common.actions.cancel', 'Cancelar')}</Button>
+            <Button onClick={handleSaveEditEntry} disabled={updateEntry.isPending}>
+              <Save className="h-4 w-4" /> {t('common.actions.save', 'Salvar')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <CustomFieldsCard scope="roi" entityType="roi_analysis" entityId={id} />
     </div>
