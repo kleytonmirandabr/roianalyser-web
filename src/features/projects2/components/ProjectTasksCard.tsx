@@ -65,6 +65,25 @@ function initials(name: string): string {
   return name.split(' ').filter(Boolean).map(s => s[0]).slice(0, 2).join('').toUpperCase()
 }
 
+function relativeTime(iso: string | null): string {
+  if (!iso) return ''
+  try {
+    const then = new Date(iso).getTime()
+    const now = Date.now()
+    const sec = Math.max(1, Math.round((now - then) / 1000))
+    if (sec < 60) return `${sec}s atras`
+    const min = Math.round(sec / 60)
+    if (min < 60) return `${min} min atras`
+    const hr = Math.round(min / 60)
+    if (hr < 24) return `${hr} h atras`
+    const day = Math.round(hr / 24)
+    if (day < 7) return `${day} dia${day > 1 ? 's' : ''} atras`
+    if (day < 30) return `${Math.round(day / 7)} sem atras`
+    if (day < 365) return `${Math.round(day / 30)} mes atras`
+    return `${Math.round(day / 365)} ano atras`
+  } catch { return '' }
+}
+
 /* MultiPeoplePicker — popover simples com checkboxes pra escolher N usuários. */
 function MultiPeoplePicker({
   value, users, onChange, disabled,
@@ -408,6 +427,16 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
             </div>
           ))}
           <ResponsibleAvatars ids={t.responsibleIds} users={users} />
+          <div className="w-24 hidden md:flex items-center gap-1.5 text-[10px] text-muted-foreground" title={t.updatedAt ? new Date(t.updatedAt).toLocaleString('pt-BR') : ''}>
+            {t.responsibleIds[0] ? (
+              <div className="h-5 w-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[9px] font-semibold flex-shrink-0">
+                {initials(users.find(u => u.id === t.responsibleIds[0])?.name || '?')}
+              </div>
+            ) : (
+              <UserCircle2 className="h-5 w-5 text-muted-foreground/40 flex-shrink-0" />
+            )}
+            <span className="truncate">{relativeTime(t.updatedAt)}</span>
+          </div>
           {canEdit && (
             <div className="flex items-center gap-0.5">
               {level === 1 && (

@@ -2,6 +2,7 @@
  * Editor inline pra valor de coluna custom (Phase 2 P.4).
  * Suporta 9 tipos: text, number, currency, percent, date, select, checkbox, link, status.
  */
+import { Star } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Combobox } from '@/shared/ui/combobox'
 import { Input } from '@/shared/ui/input'
@@ -99,6 +100,29 @@ export function ColumnCellEditor({ column, value, onChange, disabled }: Props) {
         />
       )
 
+    case 'date_range': {
+      const v = (value && typeof value === 'object') ? value as { start?: string; end?: string } : {}
+      return (
+        <div className="flex items-center gap-1">
+          <input
+            type="date"
+            value={v.start || ''}
+            onChange={(e) => commit({ ...v, start: e.target.value || null })}
+            disabled={disabled}
+            className="h-7 px-1.5 text-xs rounded border bg-background w-28"
+          />
+          <span className="text-xs text-muted-foreground">-</span>
+          <input
+            type="date"
+            value={v.end || ''}
+            onChange={(e) => commit({ ...v, end: e.target.value || null })}
+            disabled={disabled}
+            className="h-7 px-1.5 text-xs rounded border bg-background w-28"
+          />
+        </div>
+      )
+    }
+
     case 'select':
     case 'status': {
       const opts = (column.options?.values || []).map(o => ({ value: o.value, label: o.label }))
@@ -123,6 +147,26 @@ export function ColumnCellEditor({ column, value, onChange, disabled }: Props) {
           className="h-4 w-4"
         />
       )
+
+    case 'rating': {
+      const n = Number(value) || 0
+      return (
+        <div className="flex items-center gap-0.5">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <button
+              key={i}
+              type="button"
+              disabled={disabled}
+              onClick={() => commit(i === n ? 0 : i)}
+              className="text-amber-500 hover:scale-110 transition-transform disabled:cursor-not-allowed"
+              title={`${i} de 5`}
+            >
+              <Star className={`h-3.5 w-3.5 ${i <= n ? 'fill-amber-400 text-amber-500' : 'text-muted-foreground/40'}`} />
+            </button>
+          ))}
+        </div>
+      )
+    }
 
     case 'link':
       return (
@@ -170,6 +214,35 @@ export function ColumnCellReadonly({ column, value }: { column: ProjectTaskColum
     case 'date':
       try { return <span className="text-xs">{new Date(value).toLocaleDateString('pt-BR')}</span> }
       catch { return <span className="text-xs">{String(value)}</span> }
+    case 'date_range': {
+      const v = (value && typeof value === 'object') ? value as { start?: string; end?: string } : {}
+      function fmt(s?: string): string {
+        if (!s) return '?'
+        try { return new Date(s + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) }
+        catch { return s }
+      }
+      const today = new Date().toISOString().slice(0, 10)
+      const isLate = v.end && v.end < today
+      const tone = isLate
+        ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
+        : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+      return (
+        <span className={`inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded ${tone}`}>
+          {isLate && <span className="mr-1">!</span>}
+          {fmt(v.start)} - {fmt(v.end)}
+        </span>
+      )
+    }
+    case 'rating': {
+      const n = Number(value) || 0
+      return (
+        <div className="flex items-center gap-0.5">
+          {[1, 2, 3, 4, 5].map(i => (
+            <Star key={i} className={`h-3 w-3 ${i <= n ? 'fill-amber-400 text-amber-500' : 'text-muted-foreground/40'}`} />
+          ))}
+        </div>
+      )
+    }
     default:
       return <span className="text-xs truncate">{String(value)}</span>
   }

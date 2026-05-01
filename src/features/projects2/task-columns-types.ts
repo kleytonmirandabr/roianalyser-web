@@ -30,7 +30,7 @@ export const COLUMN_TYPE_LABELS: Partial<Record<ColumnType, string>> = {
 
 export const SUPPORTED_COLUMN_TYPES: ColumnType[] = [
   'text', 'number', 'currency', 'percent',
-  'date', 'select', 'checkbox', 'link', 'status',
+  'date', 'date_range', 'select', 'checkbox', 'link', 'status', 'rating',
 ]
 
 export interface ProjectTaskColumn {
