@@ -178,6 +178,10 @@ export function ContractFormSheet({ open, onClose, fromOpportunityId, preselectC
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
+                <Label>Moeda <span className="text-rose-600">*</span></Label>
+                <Combobox options={SUPPORTED_CURRENCIES} value={currency} onChange={setCurrency} />
+              </div>
+              <div className="space-y-1">
                 <Label>Valor total <span className="text-rose-600">*</span></Label>
                 <CurrencyInput
                   value={totalValue}
@@ -185,10 +189,6 @@ export function ContractFormSheet({ open, onClose, fromOpportunityId, preselectC
                   onChange={setTotalValue}
                   placeholder="0,00"
                 />
-              </div>
-              <div className="space-y-1">
-                <Label>Moeda <span className="text-rose-600">*</span></Label>
-                <Combobox options={SUPPORTED_CURRENCIES} value={currency} onChange={setCurrency} />
               </div>
             </div>
 

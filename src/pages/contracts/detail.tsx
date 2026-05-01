@@ -27,6 +27,7 @@ import {
 import { useProjects2 } from '@/features/projects2/hooks/use-projects'
 import { PROJECT_STATUS_LABELS } from '@/features/projects2/types'
 import { useRoiAnalysis } from '@/features/roi-analyses/hooks/use-roi-analysis'
+import { useCompanies } from '@/features/companies/hooks/use-companies'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
@@ -122,6 +123,10 @@ export function ContractDetailPage() {
   const { data: approvedRoiResp } = useRoiAnalysis(ctr?.approvedRoiId || undefined)
   const approvedRoi = approvedRoiResp?.item
   const approvedRoiMetrics = approvedRoiResp?.metrics
+  const { data: companies = [] } = useCompanies()
+  const company = ctr?.companyId
+    ? (companies as any[]).find((c) => String(c.id) === String(ctr.companyId))
+    : null
   // Quando há ROI vinculado, moeda+valor vêm de lá (read-only). Valor de
   // referência: receita total da análise aprovada.
   const roiTotalRevenue = approvedRoiMetrics?.totalRevenue
@@ -334,7 +339,25 @@ export function ContractDetailPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Origem</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Empresa contratante */}
+          <div className="rounded-md border p-3">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Empresa contratante</div>
+            {company ? (
+              <div className="mt-1 space-y-0.5">
+                <Link to={`/admin/companies`} className="text-sm font-medium hover:underline" title="Ver empresa">
+                  {company.name}
+                </Link>
+                {(company as any).cnpj && (
+                  <div className="text-xs text-muted-foreground font-mono">{(company as any).cnpj}</div>
+                )}
+              </div>
+            ) : ctr.companyId ? (
+              <div className="mt-1 text-sm text-muted-foreground italic">Carregando...</div>
+            ) : (
+              <div className="mt-1 text-sm text-amber-700 dark:text-amber-400 italic">Sem empresa vinculada</div>
+            )}
+          </div>
           {/* Oportunidade */}
           <div className="rounded-md border p-3">
             <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Oportunidade</div>

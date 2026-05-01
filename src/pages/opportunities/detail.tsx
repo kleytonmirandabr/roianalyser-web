@@ -23,6 +23,7 @@ import { useDeleteOpportunity } from '@/features/opportunities/hooks/use-delete-
 import { useOpportunity } from '@/features/opportunities/hooks/use-opportunity'
 import { useUpdateOpportunity } from '@/features/opportunities/hooks/use-update-opportunity'
 import { useContracts } from '@/features/contracts2/hooks/use-contracts'
+import { ContractFormSheet } from '@/features/contracts2/components/contract-form-sheet'
 import { CONTRACT_STATUS_LABELS } from '@/features/contracts2/types'
 import { useCreateRoiAnalysis } from '@/features/roi-analyses/hooks/use-create-roi'
 import { useRoiAnalysesByOpportunity } from '@/features/roi-analyses/hooks/use-roi-analyses'
@@ -101,6 +102,7 @@ export function OpportunityDetailPage() {
   const [statusId, setStatusId] = useState('')
   const [opportunityTypeId, setOpportunityTypeId] = useState('')
   const [companyId, setCompanyId] = useState('')
+  const [contractDrawerOpen, setContractDrawerOpen] = useState(false)
   const [contactId, setContactId] = useState('')
   const [leadSourceId, setLeadSourceId] = useState('')
   const [probability, setProbability] = useState('')
@@ -499,10 +501,12 @@ export function OpportunityDetailPage() {
                   : 'Aprove uma análise de ROI pra liberar geração de contrato.'}
               </p>
             </div>
-            <Button size="sm" asChild disabled={!hasApprovedRoi && currentStatus?.category !== 'gain'}>
-              <Link to={`/contracts/new?opportunityId=${opp.id}`}>
-                <Plus className="h-4 w-4 mr-1" /> Gerar contrato
-              </Link>
+            <Button
+              size="sm"
+              onClick={() => setContractDrawerOpen(true)}
+              disabled={!hasApprovedRoi && currentStatus?.category !== 'gain'}
+            >
+              <Plus className="h-4 w-4 mr-1" /> Gerar contrato
             </Button>
           </div>
           {relatedContracts.length === 0 ? (
@@ -532,6 +536,12 @@ export function OpportunityDetailPage() {
       </div>
 
       <DeleteWithReasonDialog open={deleteOpen} onClose={() => setDeleteOpen(false)} count={1} onConfirm={confirmDelete} pending={remove.isPending} />
+      <ContractFormSheet
+        open={contractDrawerOpen}
+        onClose={() => setContractDrawerOpen(false)}
+        fromOpportunityId={opp.id}
+        preselectCompanyId={opp.companyId || null}
+      />
     </div>
   )
 }
