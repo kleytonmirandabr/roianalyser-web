@@ -27,8 +27,10 @@ import { useContract } from '@/features/contracts2/hooks/use-contract'
 import { useCompanies } from '@/features/companies/hooks/use-companies'
 import { useAppState } from '@/features/admin/hooks/use-app-state'
 import { ProjectAttachmentsCard } from '@/features/projects2/components/ProjectAttachmentsCard'
-import { MilestonesCard } from '@/features/projects2/components/MilestonesCard'
+import { ProjectTasksCard } from '@/features/projects2/components/ProjectTasksCard'
+import { MembersCard } from '@/features/projects2/components/MembersCard'
 import { useProjectMilestones } from '@/features/projects2/hooks/use-project-milestones'
+import { useProjectRole } from '@/features/projects2/hooks/use-project-role'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
@@ -121,6 +123,7 @@ export function Project2DetailPage() {
   const update = useUpdateProject2(id)
   const remove = useDeleteProject2()
   const createForecast = useCreateForecast()
+  const { canEdit, canManage } = useProjectRole(prj)
 
   const { data: contract } = useContract(prj?.contractId || undefined)
   const { data: companies = [] } = useCompanies()
@@ -177,9 +180,9 @@ export function Project2DetailPage() {
   const { data: milestones = [] } = useProjectMilestones(id)
   const milestoneStats = useMemo(() => {
     const total = milestones.length
-    const completed = milestones.filter((m) => m.status === 'completed').length
+    const completed = milestones.filter((m) => m.status === 'done').length
     const todayIso = new Date().toISOString().slice(0, 10)
-    const overdue = milestones.filter((m) => m.status === 'pending' && m.plannedDate && m.plannedDate < todayIso).length
+    const overdue = milestones.filter((m) => m.status !== 'done' && m.status !== 'cancelled' && m.plannedDate && m.plannedDate < todayIso).length
     return { total, completed, overdue }
   }, [milestones])
 
@@ -478,8 +481,11 @@ export function Project2DetailPage() {
         </Card>
       )}
 
-      {/* CRONOGRAMA DE MARCOS */}
-      <MilestonesCard projectId={id} />
+      {/* TAREFAS (Phase 1 P.2) */}
+      <ProjectTasksCard projectId={id} canEdit={canEdit} />
+
+      {/* MEMBROS (Phase 1 P.3) */}
+      <MembersCard projectId={id} generalAccess={prj.generalAccess} canManage={canManage} />
 
       {/* DOCUMENTOS */}
       <ProjectAttachmentsCard projectId={id} />

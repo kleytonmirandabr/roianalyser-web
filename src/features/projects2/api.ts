@@ -9,6 +9,7 @@ function qs(f: ListProjectsFilters = {}): string {
   if (f.managerId) p.set('managerId', f.managerId)
   if (f.clientId) p.set('clientId', f.clientId)
   if (f.contractId) p.set('contractId', f.contractId)
+  if (f.opportunityId) p.set('opportunityId', f.opportunityId)
   if (f.tenantId) p.set('tenantId', f.tenantId)
   const s = p.toString()
   return s ? `?${s}` : ''

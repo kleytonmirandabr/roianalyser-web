@@ -24,6 +24,9 @@ import { useOpportunity } from '@/features/opportunities/hooks/use-opportunity'
 import { useUpdateOpportunity } from '@/features/opportunities/hooks/use-update-opportunity'
 import { useContracts } from '@/features/contracts2/hooks/use-contracts'
 import { ContractFormSheet } from '@/features/contracts2/components/contract-form-sheet'
+import { ProjectFormSheet } from '@/features/projects2/components/project-form-sheet'
+import { useProjects2 } from '@/features/projects2/hooks/use-projects'
+import { PROJECT_STATUS_LABELS } from '@/features/projects2/types'
 import { CONTRACT_STATUS_LABELS } from '@/features/contracts2/types'
 import { useCreateRoiAnalysis } from '@/features/roi-analyses/hooks/use-create-roi'
 import { useRoiAnalysesByOpportunity } from '@/features/roi-analyses/hooks/use-roi-analyses'
@@ -83,6 +86,7 @@ export function OpportunityDetailPage() {
   const { data: opp, isLoading, error } = useOpportunity(id)
   const { data: roiAnalyses = [] } = useRoiAnalysesByOpportunity(id)
   const { data: relatedContracts = [] } = useContracts(id ? { opportunityId: id } : {})
+  const { data: relatedProjects = [] } = useProjects2(id ? { opportunityId: id } : {})
   const { data: statuses = [] } = useOpportunityStatuses()
   const { data: types = [] } = useOpportunityTypes()
   const { data: companies = [] } = useCompanies()
@@ -111,6 +115,7 @@ export function OpportunityDetailPage() {
   const [opportunityTypeId, setOpportunityTypeId] = useState('')
   const [companyId, setCompanyId] = useState('')
   const [contractDrawerOpen, setContractDrawerOpen] = useState(false)
+  const [projectDrawerOpen, setProjectDrawerOpen] = useState(false)
   const [contactId, setContactId] = useState('')
   const [leadSourceId, setLeadSourceId] = useState('')
   const [probability, setProbability] = useState('')
@@ -539,6 +544,41 @@ export function OpportunityDetailPage() {
         </Card>
       )}
 
+      {/* Projetos relacionados (Phase 1 P.6) */}
+      <Card className="p-6 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Projetos relacionados ({relatedProjects.length})</h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Inicie um projeto a partir desta oportunidade. O projeto fica vinculado mesmo sem contrato.
+            </p>
+          </div>
+          <Button size="sm" onClick={() => setProjectDrawerOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Iniciar projeto
+          </Button>
+        </div>
+        {relatedProjects.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhum projeto vinculado ainda.</p>
+        ) : (
+          <ul className="space-y-1 text-sm">
+            {relatedProjects.map((p: any) => (
+              <li key={p.id}>
+                <Link to={`/projects/${p.id}`} className="flex items-center justify-between p-2 rounded hover:bg-muted/50">
+                  <div>
+                    <span className="font-medium">{p.name}</span>
+                    {p.projectCode && <span className="ml-2 text-xs text-muted-foreground font-mono">{p.projectCode}</span>}
+                  </div>
+                  <div className="flex items-center gap-3 text-xs">
+                    {p.progressPct != null && <span className="tabular-nums text-muted-foreground">{p.progressPct}%</span>}
+                    <span className="text-muted-foreground">{PROJECT_STATUS_LABELS[p.status as keyof typeof PROJECT_STATUS_LABELS] || p.status}</span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+
       <CustomFieldsCard scope="opportunity" entityType="opportunity" entityId={id} />
         </aside>
       </div>
@@ -550,6 +590,11 @@ export function OpportunityDetailPage() {
         fromOpportunityId={opp.id}
         preselectCompanyId={opp.companyId || null}
         approvedRoiId={approvedRoi?.id ?? null}
+      />
+      <ProjectFormSheet
+        open={projectDrawerOpen}
+        onClose={() => setProjectDrawerOpen(false)}
+        fromOpportunityId={opp.id}
       />
     </div>
   )

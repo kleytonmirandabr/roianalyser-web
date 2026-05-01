@@ -21,10 +21,11 @@ interface Props {
   open: boolean
   onClose: () => void
   fromContractId?: string | null
+  fromOpportunityId?: string | null
   onSaved?: (id: string) => void
 }
 
-export function ProjectFormSheet({ open, onClose, fromContractId, onSaved }: Props) {
+export function ProjectFormSheet({ open, onClose, fromContractId, fromOpportunityId, onSaved }: Props) {
   const create = useCreateProject2()
 
   const [name, setName] = useState('')
@@ -51,6 +52,7 @@ export function ProjectFormSheet({ open, onClose, fromContractId, onSaved }: Pro
         name: name.trim(),
         status,
         contractId: fromContractId || null,
+        opportunityId: fromOpportunityId || null,
         plannedStart: plannedStart || null,
         plannedEnd: plannedEnd || null,
         budget: budget ? Number(budget) : null,

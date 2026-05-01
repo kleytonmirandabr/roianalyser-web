@@ -22,6 +22,7 @@ export type Project = {
   id: string
   tenantId: string
   contractId: string | null
+  opportunityId: string | null
   clientId: string
   managerId: string
   projectCode: string
@@ -35,6 +36,7 @@ export type Project = {
   budget: number | null
   currency: string
   description: string | null
+  generalAccess: 'private' | 'tenant_view' | 'tenant_edit'
   createdBy: string
   createdAt: string
   updatedAt: string
@@ -46,15 +48,17 @@ export type CreateProjectInput = {
   name: string
   status?: ProjectStatus
   contractId?: string | null
+  opportunityId?: string | null
   clientId?: string
   managerId?: string
-  projectCode?: string  // auto-gerado se omitido
+  projectCode?: string
   plannedStart?: string | null
   plannedEnd?: string | null
   progressPct?: number
   budget?: number | null
   currency?: string
   description?: string | null
+  generalAccess?: 'private' | 'tenant_view' | 'tenant_edit'
   tenantId?: string
 }
 
@@ -63,6 +67,7 @@ export type UpdateProjectInput = Partial<
     | 'name' | 'status' | 'clientId' | 'managerId'
     | 'plannedStart' | 'plannedEnd' | 'actualStart' | 'actualEnd'
     | 'progressPct' | 'budget' | 'currency' | 'description'
+    | 'opportunityId' | 'generalAccess'
   >
 >
 
@@ -71,5 +76,6 @@ export type ListProjectsFilters = {
   managerId?: string
   clientId?: string
   contractId?: string
+  opportunityId?: string
   tenantId?: string
 }
