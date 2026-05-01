@@ -9,7 +9,7 @@
  *   5) Editar dados — accordion no fim
  */
 
-import { ArrowLeft, ChevronDown, ChevronUp, ExternalLink, FileText, Plus, Trash2 } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Calendar, ChevronDown, ChevronUp, Clock, ExternalLink, FileText, Heart, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -27,6 +27,8 @@ import { useContract } from '@/features/contracts2/hooks/use-contract'
 import { useCompanies } from '@/features/companies/hooks/use-companies'
 import { useAppState } from '@/features/admin/hooks/use-app-state'
 import { ProjectAttachmentsCard } from '@/features/projects2/components/ProjectAttachmentsCard'
+import { MilestonesCard } from '@/features/projects2/components/MilestonesCard'
+import { useProjectMilestones } from '@/features/projects2/hooks/use-project-milestones'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
@@ -172,6 +174,70 @@ export function Project2DetailPage() {
     return { remainingDays: remaining, elapsedPct, totalDays, lag }
   }, [prj])
 
+  const { data: milestones = [] } = useProjectMilestones(id)
+  const milestoneStats = useMemo(() => {
+    const total = milestones.length
+    const completed = milestones.filter((m) => m.status === 'completed').length
+    const todayIso = new Date().toISOString().slice(0, 10)
+    const overdue = milestones.filter((m) => m.status === 'pending' && m.plannedDate && m.plannedDate < todayIso).length
+    return { total, completed, overdue }
+  }, [milestones])
+
+  // ─── ALERTAS ─────────────────────────────────────────────
+  const alerts = useMemo(() => {
+    if (!prj) return [] as Array<{ tone: 'amber' | 'rose' | 'blue'; icon: any; text: string }>
+    const list: Array<{ tone: 'amber' | 'rose' | 'blue'; icon: any; text: string }> = []
+    const isActive = prj.status === 'execution'
+    if (isActive && kpis?.remainingDays != null && kpis.remainingDays >= 0 && kpis.remainingDays <= 14) {
+      list.push({ tone: 'amber', icon: Clock, text: `Encerra em ${kpis.remainingDays} dias` })
+    }
+    if (isActive && kpis?.remainingDays != null && kpis.remainingDays < 0) {
+      list.push({ tone: 'rose', icon: AlertTriangle, text: `Prazo passou há ${Math.abs(kpis.remainingDays)} dias — atualize o status ou estenda o prazo` })
+    }
+    if (isActive && kpis?.lag != null && kpis.lag > 15) {
+      list.push({ tone: 'amber', icon: AlertTriangle, text: `Execução ${kpis.lag}p atrás do esperado` })
+    }
+    if (milestoneStats.overdue > 0) {
+      list.push({ tone: 'amber', icon: Calendar, text: `${milestoneStats.overdue} marco${milestoneStats.overdue > 1 ? 's' : ''} atrasado${milestoneStats.overdue > 1 ? 's' : ''}` })
+    }
+    return list
+  }, [prj, kpis, milestoneStats])
+
+  // ─── HEALTH SCORE ────────────────────────────────────────
+  const health = useMemo(() => {
+    if (!prj) return { tone: 'gray' as const, label: '—', score: 0 }
+    let score = 100
+    if (kpis?.remainingDays != null) {
+      if (kpis.remainingDays < 0 && prj.status !== 'done') score -= 40
+      else if (kpis.remainingDays <= 14 && prj.status === 'execution') score -= 15
+    }
+    if (kpis?.lag != null) {
+      if (kpis.lag > 25) score -= 30
+      else if (kpis.lag > 15) score -= 15
+      else if (kpis.lag > 5) score -= 5
+    }
+    if (milestoneStats.total > 0) {
+      const lateRatio = milestoneStats.overdue / milestoneStats.total
+      if (lateRatio > 0.3) score -= 20
+      else if (lateRatio > 0.1) score -= 10
+    }
+    if (prj.status === 'paused') score = Math.min(score, 50)
+    if (prj.status === 'cancelled') score = 0
+    score = Math.max(0, Math.min(100, score))
+    const tone: 'pos' | 'amber' | 'rose' = score >= 70 ? 'pos' : score >= 40 ? 'amber' : 'rose'
+    const label = score >= 70 ? 'Saudável' : score >= 40 ? 'Atenção' : 'Crítico'
+    return { tone, label, score }
+  }, [prj, kpis, milestoneStats])
+
+  // ─── PLANEJADO × REALIZADO ───────────────────────────────
+  // Custo executado = budget * progressPct (proxy — não temos custo real ainda).
+  const planVsReal = useMemo(() => {
+    if (!prj) return null
+    const budget = prj.budget || 0
+    const executed = budget * ((prj.progressPct || 0) / 100)
+    return { budget, executed }
+  }, [prj])
+
   if (isLoading || !id) return <Skeleton className="h-64" />
   if (error) return <Alert variant="destructive"><AlertDescription>{(error as Error).message}</AlertDescription></Alert>
   if (!prj) return <Alert variant="destructive"><AlertDescription>Projeto não encontrado.</AlertDescription></Alert>
@@ -242,7 +308,16 @@ export function Project2DetailPage() {
       <Card className="p-6 space-y-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="text-xs text-muted-foreground font-mono mb-1">{prj.projectCode}</div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs text-muted-foreground font-mono">{prj.projectCode}</span>
+              <span className={`inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-wide rounded-full px-2 py-0.5 ${
+                health.tone === 'pos' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+                : health.tone === 'amber' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                : 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400'
+              }`}>
+                <Heart className="h-3 w-3" /> {health.label} - {health.score}
+              </span>
+            </div>
             <h1 className="text-2xl font-bold tracking-tight">{prj.name}</h1>
             <p className="text-sm text-muted-foreground mt-1">
               {fmtShortDate(prj.plannedStart)} {prj.plannedEnd ? `→ ${fmtShortDate(prj.plannedEnd)}` : ''}
@@ -334,6 +409,77 @@ export function Project2DetailPage() {
           </div>
         </div>
       </Card>
+
+      {/* ALERTAS */}
+      {alerts.length > 0 && (
+        <div className="space-y-2">
+          {alerts.map((a, i) => {
+            const Icon = a.icon
+            const cls = a.tone === 'rose'
+              ? 'border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-300'
+              : a.tone === 'blue'
+              ? 'border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300'
+              : 'border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300'
+            return (
+              <div key={i} className={`rounded-md border px-3 py-2 text-sm flex items-center gap-2 ${cls}`}>
+                <Icon className="h-4 w-4 flex-shrink-0" />
+                <span>{a.text}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* PLANEJADO × REALIZADO */}
+      {planVsReal && planVsReal.budget > 0 && (
+        <Card className="p-6 space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold">Planejado × Realizado</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Comparação entre orçamento e custo executado (proxy = orçamento × % executado).
+            </p>
+          </div>
+          <div className="space-y-3">
+            {[
+              { label: 'Orçamento planejado', value: planVsReal.budget, tone: 'bg-blue-500' },
+              { label: 'Executado (estimado)', value: planVsReal.executed, tone: 'bg-emerald-500' },
+            ].map((row) => {
+              const max = Math.max(planVsReal.budget, planVsReal.executed, 1)
+              const pct = (row.value / max) * 100
+              return (
+                <div key={row.label} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{row.label}</span>
+                    <span className="font-semibold tabular-nums">{formatCurrency(row.value, prj.currency)}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div className={`h-full ${row.tone} rounded-full`} style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Saldo do orçamento</div>
+              <div className={`text-sm font-semibold tabular-nums ${
+                (planVsReal.budget - planVsReal.executed) >= 0 ? 'text-emerald-600' : 'text-rose-600'
+              }`}>
+                {formatCurrency(planVsReal.budget - planVsReal.executed, prj.currency)}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">% consumido</div>
+              <div className="text-sm font-semibold tabular-nums">
+                {((planVsReal.executed / planVsReal.budget) * 100).toFixed(1)}%
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* CRONOGRAMA DE MARCOS */}
+      <MilestonesCard projectId={id} />
 
       {/* DOCUMENTOS */}
       <ProjectAttachmentsCard projectId={id} />
