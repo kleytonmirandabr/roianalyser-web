@@ -9,7 +9,7 @@
  *   5) Edição de dados — agora num accordion no fim
  */
 
-import { ArrowLeft, ChevronDown, ChevronUp, ExternalLink, FileSpreadsheet, Plus, Trash2 } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Calendar, ChevronDown, ChevronUp, Clock, ExternalLink, FileSignature, FileSpreadsheet, Heart, PenLine, Plus, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -182,6 +182,81 @@ export function ContractDetailPage() {
     }
   }, [ctr])
 
+  // ─── ALERTAS ─────────────────────────────────────────────
+  const alerts = useMemo(() => {
+    if (!ctr) return [] as Array<{ tone: 'amber' | 'rose' | 'blue'; icon: any; text: string }>
+    const list: Array<{ tone: 'amber' | 'rose' | 'blue'; icon: any; text: string }> = []
+    const today = new Date().toISOString().slice(0, 10)
+    const remaining = ctr.endDate ? daysBetween(today, ctr.endDate) : null
+    const isActive = ctr.status === 'active' || ctr.status === 'ending_soon'
+    const isPending = ctr.status === 'pending_signature' || ctr.status === 'drafting'
+    // Encerramento próximo
+    if (isActive && remaining != null && remaining >= 0 && remaining <= ctr.noticePeriodDays) {
+      list.push({ tone: 'amber', icon: Clock, text: `Encerra em ${remaining} dias — dentro do aviso prévio (${ctr.noticePeriodDays}d)` })
+    }
+    // Já encerrado
+    if (isActive && remaining != null && remaining < 0) {
+      list.push({ tone: 'rose', icon: AlertTriangle, text: `Encerrado há ${Math.abs(remaining)} dias — atualize o status` })
+    }
+    // Sem assinatura há muito tempo
+    if (isPending && ctr.createdAt) {
+      const ageDays = daysBetween(ctr.createdAt.slice(0, 10), today)
+      if (ageDays != null && ageDays > 14) {
+        list.push({ tone: 'amber', icon: PenLine, text: `Sem assinatura há ${ageDays} dias — siga com o cliente` })
+      }
+    }
+    // Renovação automática próxima
+    if (isActive && ctr.renewalType === 'auto' && remaining != null && remaining >= 0 && remaining <= 30) {
+      list.push({ tone: 'blue', icon: Calendar, text: `Renovação automática em ${remaining} dias` })
+    }
+    return list
+  }, [ctr])
+
+  // ─── HEALTH SCORE ────────────────────────────────────────
+  // Combina sinais: vencimento próximo, sem assinatura, projetos atrasados.
+  const health = useMemo(() => {
+    if (!ctr) return { tone: 'gray' as const, label: '—', score: 0 }
+    let score = 100
+    // Vencimento próximo
+    if (kpis?.remainingDays != null) {
+      if (kpis.remainingDays < 0) score -= 50
+      else if (kpis.remainingDays <= ctr.noticePeriodDays) score -= 20
+    }
+    // Status pending há muito tempo
+    if (ctr.status === 'pending_signature' && ctr.createdAt) {
+      const ageDays = daysBetween(ctr.createdAt.slice(0, 10), new Date().toISOString().slice(0, 10))
+      if (ageDays != null && ageDays > 14) score -= 25
+    }
+    // Projetos atrasados (% prazo decorrido > % progresso)
+    const projectGap = relatedProjects.reduce((sum, p) => {
+      const elapsed = (p.plannedStart && p.plannedEnd)
+        ? (() => {
+            const tot = daysBetween(p.plannedStart, p.plannedEnd) || 1
+            const done = daysBetween(p.plannedStart, new Date().toISOString().slice(0, 10)) || 0
+            return Math.max(0, Math.min(100, (done / tot) * 100))
+          })()
+        : 0
+      const lag = elapsed - p.progressPct
+      return sum + Math.max(0, lag)
+    }, 0)
+    if (projectGap > 30) score -= 15
+    else if (projectGap > 10) score -= 5
+
+    score = Math.max(0, Math.min(100, score))
+    const tone: 'pos' | 'amber' | 'rose' = score >= 70 ? 'pos' : score >= 40 ? 'amber' : 'rose'
+    const label = score >= 70 ? 'Saudável' : score >= 40 ? 'Atenção' : 'Crítico'
+    return { tone, label, score }
+  }, [ctr, kpis, relatedProjects])
+
+  // ─── CONTRATADO × REALIZADO ──────────────────────────────
+  const projectStats = useMemo(() => {
+    if (!ctr) return null
+    const planned = relatedProjects.reduce((s, p) => s + (p.budget || 0), 0)
+    const executed = relatedProjects.reduce((s, p) => s + ((p.budget || 0) * (p.progressPct || 0) / 100), 0)
+    const contratado = ctr.totalValue || 0
+    return { contratado, planned, executed }
+  }, [ctr, relatedProjects])
+
   if (isLoading || !id) return <Skeleton className="h-64" />
   if (error) return <Alert variant="destructive"><AlertDescription>{(error as Error).message}</AlertDescription></Alert>
   if (!ctr) return <Alert variant="destructive"><AlertDescription>Contrato não encontrado.</AlertDescription></Alert>
@@ -240,7 +315,27 @@ export function ContractDetailPage() {
         </Button>
       </header>
 
-      {/* Alerta de divergência: contrato vinculado mas valores não batem com ROI */}
+      {/* Alertas automáticos (vencimento, assinatura pendente, renovação) */}
+      {alerts.length > 0 && (
+        <div className="space-y-2">
+          {alerts.map((a, i) => {
+            const Icon = a.icon
+            const cls = a.tone === 'rose'
+              ? 'border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-300'
+              : a.tone === 'blue'
+              ? 'border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300'
+              : 'border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300'
+            return (
+              <div key={i} className={`rounded-md border px-3 py-2 text-sm flex items-center gap-2 ${cls}`}>
+                <Icon className="h-4 w-4 flex-shrink-0" />
+                <span>{a.text}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+            {/* Alerta de divergência: contrato vinculado mas valores não batem com ROI */}
       {isLockedFromRoi && roiTotalRevenue != null && roiCurrency && (
         ctr.totalValue !== roiTotalRevenue || (ctr.currency || '').toUpperCase() !== (roiCurrency || '').toUpperCase()
       ) && (
@@ -270,7 +365,16 @@ export function ContractDetailPage() {
       <Card className="p-6 space-y-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="text-xs text-muted-foreground font-mono mb-1">{ctr.contractNumber}</div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs text-muted-foreground font-mono">{ctr.contractNumber}</span>
+              <span className={`inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-wide rounded-full px-2 py-0.5 ${
+                health.tone === 'pos' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+                : health.tone === 'amber' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                : 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400'
+              }`}>
+                <Heart className="h-3 w-3" /> {health.label} · {health.score}
+              </span>
+            </div>
             <h1 className="text-2xl font-bold tracking-tight">{ctr.name}</h1>
             <p className="text-sm text-muted-foreground mt-1">
               {fmtShortDate(ctr.startDate)} {ctr.endDate ? `→ ${fmtShortDate(ctr.endDate)}` : ''}
@@ -388,6 +492,125 @@ export function ContractDetailPage() {
             )}
           </div>
         </div>
+      </Card>
+
+      {/* CONTRATADO × REALIZADO — só mostra quando há projetos derivados */}
+      {projectStats && relatedProjects.length > 0 && (
+        <Card className="p-6 space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold">Contratado × Realizado</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Comparação entre o valor contratado e o orçado/executado nos projetos derivados.
+            </p>
+          </div>
+          {/* Barras horizontais */}
+          <div className="space-y-3">
+            {[
+              { label: 'Contratado', value: projectStats.contratado, tone: 'bg-indigo-500' },
+              { label: 'Orçado em projetos', value: projectStats.planned, tone: 'bg-blue-500' },
+              { label: 'Executado', value: projectStats.executed, tone: 'bg-emerald-500' },
+            ].map((row) => {
+              const max = Math.max(projectStats.contratado, projectStats.planned, projectStats.executed, 1)
+              const pct = (row.value / max) * 100
+              return (
+                <div key={row.label} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{row.label}</span>
+                    <span className="font-semibold tabular-nums">{formatCurrency(row.value, ctr.currency)}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div className={`h-full ${row.tone} rounded-full`} style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          {/* Diferenças */}
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Orçado vs Contratado</div>
+              <div className={`text-sm font-semibold tabular-nums ${
+                projectStats.planned > projectStats.contratado ? 'text-rose-600' : 'text-emerald-600'
+              }`}>
+                {projectStats.contratado > 0
+                  ? `${((projectStats.planned / projectStats.contratado - 1) * 100).toFixed(1)}%`
+                  : '—'}
+                <span className="text-[10px] ml-1 text-muted-foreground">
+                  ({formatCurrency(projectStats.planned - projectStats.contratado, ctr.currency)})
+                </span>
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Execução</div>
+              <div className="text-sm font-semibold tabular-nums">
+                {projectStats.planned > 0
+                  ? `${((projectStats.executed / projectStats.planned) * 100).toFixed(1)}%`
+                  : '—'}
+                <span className="text-[10px] ml-1 text-muted-foreground">do orçado</span>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* TIMELINE DE EVENTOS */}
+      <Card className="p-6 space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold">Linha do tempo</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Eventos relevantes do contrato.</p>
+        </div>
+        <ol className="relative border-l border-border pl-6 space-y-4">
+          <li className="relative">
+            <span className="absolute -left-[27px] top-1 h-3 w-3 rounded-full bg-indigo-500 ring-4 ring-background" />
+            <div className="text-xs text-muted-foreground">{fmtShortDate(ctr.createdAt?.slice(0, 10) || null)}</div>
+            <div className="text-sm font-medium">Contrato criado</div>
+            <div className="text-xs text-muted-foreground">Número {ctr.contractNumber}</div>
+          </li>
+          {ctr.approvedRoiId && approvedRoi && (
+            <li className="relative">
+              <span className="absolute -left-[27px] top-1 h-3 w-3 rounded-full bg-emerald-500 ring-4 ring-background" />
+              <div className="text-xs text-muted-foreground">Vinculado</div>
+              <div className="text-sm font-medium">ROI aprovado vinculado</div>
+              <div className="text-xs text-muted-foreground">{approvedRoi.name} v{approvedRoi.version} · {formatCurrency(roiTotalRevenue || 0, roiCurrency || ctr.currency)}</div>
+            </li>
+          )}
+          {ctr.signedDate && (
+            <li className="relative">
+              <span className="absolute -left-[27px] top-1 h-3 w-3 rounded-full bg-blue-500 ring-4 ring-background" />
+              <div className="text-xs text-muted-foreground">{fmtShortDate(ctr.signedDate)}</div>
+              <div className="text-sm font-medium flex items-center gap-1"><FileSignature className="h-3.5 w-3.5" /> Contrato assinado</div>
+            </li>
+          )}
+          {ctr.startDate && (
+            <li className="relative">
+              <span className="absolute -left-[27px] top-1 h-3 w-3 rounded-full bg-blue-400 ring-4 ring-background" />
+              <div className="text-xs text-muted-foreground">{fmtShortDate(ctr.startDate)}</div>
+              <div className="text-sm font-medium">Início da vigência</div>
+            </li>
+          )}
+          {ctr.endDate && (
+            <li className="relative">
+              <span className={`absolute -left-[27px] top-1 h-3 w-3 rounded-full ring-4 ring-background ${
+                kpis?.remainingDays != null && kpis.remainingDays < 0 ? 'bg-rose-500'
+                : kpis?.remainingDays != null && kpis.remainingDays <= ctr.noticePeriodDays ? 'bg-amber-500'
+                : 'bg-muted-foreground/40'
+              }`} />
+              <div className="text-xs text-muted-foreground">{fmtShortDate(ctr.endDate)}</div>
+              <div className="text-sm font-medium">Encerramento previsto</div>
+              {ctr.renewalType === 'auto' && (
+                <div className="text-xs text-blue-600 dark:text-blue-400">Renovação automática</div>
+              )}
+            </li>
+          )}
+          {ctr.terminatedAt && (
+            <li className="relative">
+              <span className="absolute -left-[27px] top-1 h-3 w-3 rounded-full bg-rose-500 ring-4 ring-background" />
+              <div className="text-xs text-muted-foreground">{fmtShortDate(ctr.terminatedAt.slice(0, 10))}</div>
+              <div className="text-sm font-medium text-rose-700 dark:text-rose-400">Contrato cancelado</div>
+              {ctr.terminatedReason && <div className="text-xs text-muted-foreground italic">"{ctr.terminatedReason}"</div>}
+            </li>
+          )}
+        </ol>
       </Card>
 
       {/* DOCUMENTOS */}

@@ -137,6 +137,16 @@ export function ContractFormSheet({
     setEndDate(addMonthsIso(base, durationMonths))
   }, [isFromRoi, signedDate, startDate, durationMonths, endDateManual])
 
+  // UX: quando há ROI vinculado e usuário preenche Assinatura, default Início
+  // = signedDate se startDate ainda vazio. Reduz fricção (tipicamente vigência
+  // começa na assinatura).
+  useEffect(() => {
+    if (!isFromRoi) return
+    if (!signedDate) return
+    if (startDate) return
+    setStartDate(signedDate)
+  }, [isFromRoi, signedDate, startDate])
+
   const companies = (companiesQ.data || []).filter((c: any) => !c.deletedAt)
   const companyOptions = useMemo(
     () =>
