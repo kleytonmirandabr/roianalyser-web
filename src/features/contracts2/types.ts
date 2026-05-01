@@ -53,6 +53,7 @@ export type Contract = {
   tenantId: string
   opportunityId: string | null
   clientId: string
+  companyId: string | null
   responsibleId: string
   approvedRoiId: string | null
   contractNumber: string
@@ -83,6 +84,7 @@ export type CreateContractInput = {
   status?: ContractStatus
   opportunityId?: string | null
   clientId?: string
+  companyId?: string | null
   responsibleId?: string
   approvedRoiId?: string | null
   contractNumber?: string  // auto-gerado pelo backend se omitido (CT-YYYY-NNN)
@@ -102,6 +104,7 @@ export type UpdateContractInput = Partial<
   Pick<
     Contract,
     | 'name'
+    | 'companyId'
     | 'status'
     | 'clientId'
     | 'responsibleId'
@@ -122,6 +125,7 @@ export type ListContractsFilters = {
   status?: ContractStatus | ContractStatus[]
   opportunityId?: string
   clientId?: string
+  companyId?: string | null
   responsibleId?: string
   tenantId?: string
 }
