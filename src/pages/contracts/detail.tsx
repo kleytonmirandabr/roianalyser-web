@@ -121,6 +121,12 @@ export function ContractDetailPage() {
   const { data: relatedProjects = [] } = useProjects2(id ? { contractId: id } : {})
   const { data: approvedRoiResp } = useRoiAnalysis(ctr?.approvedRoiId || undefined)
   const approvedRoi = approvedRoiResp?.item
+  const approvedRoiMetrics = approvedRoiResp?.metrics
+  // Quando há ROI vinculado, moeda+valor vêm de lá (read-only). Valor de
+  // referência: receita total da análise aprovada.
+  const roiTotalRevenue = approvedRoiMetrics?.totalRevenue
+  const roiCurrency = approvedRoi?.currency
+  const isLockedFromRoi = !!ctr?.approvedRoiId && !!approvedRoi
   const update = useUpdateContract(id)
   const remove = useDeleteContract()
 
@@ -228,6 +234,32 @@ export function ContractDetailPage() {
           <Trash2 className="h-4 w-4 text-rose-600" /> Excluir
         </Button>
       </header>
+
+      {/* Alerta de divergência: contrato vinculado mas valores não batem com ROI */}
+      {isLockedFromRoi && roiTotalRevenue != null && roiCurrency && (
+        ctr.totalValue !== roiTotalRevenue || (ctr.currency || '').toUpperCase() !== (roiCurrency || '').toUpperCase()
+      ) && (
+        <div className="rounded-md border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-sm text-amber-900 dark:text-amber-200">Valores divergem do ROI aprovado</div>
+            <div className="text-xs text-amber-800 dark:text-amber-300 mt-1">
+              Contrato: <strong>{formatCurrency(ctr.totalValue, ctr.currency)}</strong> ({ctr.currency}) |
+              ROI v{approvedRoi?.version}: <strong>{formatCurrency(roiTotalRevenue, roiCurrency)}</strong> ({roiCurrency})
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={async () => {
+              try {
+                await update.mutateAsync({ totalValue: roiTotalRevenue, currency: roiCurrency })
+                toastSaved('Sincronizado com o ROI')
+              } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
+            }}
+            disabled={update.isPending}
+          >Sincronizar com o ROI</Button>
+        </div>
+      )}
 
       {/* HERO — nome + número + timeline + KPIs */}
       <Card className="p-6 space-y-5">
@@ -404,14 +436,45 @@ export function ContractDetailPage() {
                 <Input id="ctype" value={contractTypeKey} onChange={(e) => { setContractTypeKey(e.target.value); setDirty(true) }} />
               </div>
             </div>
+            {/* Mensagem informativa quando vinculado ao ROI */}
+            {isLockedFromRoi && (
+              <div className="rounded-md border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-xs text-blue-800 dark:text-blue-300">
+                Valor total e moeda vêm do <strong>ROI aprovado v{approvedRoi?.version}</strong>. Pra ajustar, edite a análise antes de aprovar uma nova versão.
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="value">Valor total</Label>
-                <Input id="value" type="number" step="0.01" value={totalValue} onChange={(e) => { setTotalValue(e.target.value); setDirty(true) }} />
+                <Label htmlFor="value" className="flex items-center gap-2">
+                  Valor total
+                  {isLockedFromRoi && (
+                    <span className="text-[10px] uppercase font-bold tracking-wide bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 px-1.5 py-0.5 rounded">Do ROI</span>
+                  )}
+                </Label>
+                <Input
+                  id="value"
+                  type="number"
+                  step="0.01"
+                  value={totalValue}
+                  onChange={(e) => { setTotalValue(e.target.value); setDirty(true) }}
+                  disabled={isLockedFromRoi}
+                  className={isLockedFromRoi ? 'opacity-60' : undefined}
+                />
               </div>
               <div>
-                <Label htmlFor="currency">{t('common.fields.currency')}</Label>
-                <Input id="currency" value={currency} onChange={(e) => { setCurrency(e.target.value.toUpperCase().slice(0, 3)); setDirty(true) }} maxLength={3} />
+                <Label htmlFor="currency" className="flex items-center gap-2">
+                  {t('common.fields.currency')}
+                  {isLockedFromRoi && (
+                    <span className="text-[10px] uppercase font-bold tracking-wide bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 px-1.5 py-0.5 rounded">Do ROI</span>
+                  )}
+                </Label>
+                <Input
+                  id="currency"
+                  value={currency}
+                  onChange={(e) => { setCurrency(e.target.value.toUpperCase().slice(0, 3)); setDirty(true) }}
+                  maxLength={3}
+                  disabled={isLockedFromRoi}
+                  className={isLockedFromRoi ? 'opacity-60' : undefined}
+                />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-4">
