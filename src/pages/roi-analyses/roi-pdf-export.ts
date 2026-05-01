@@ -8,7 +8,12 @@
  * Páginas: A4 portrait — capa, sumário executivo, lançamentos, tabela mensal.
  */
 import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
+import autoTableModule from 'jspdf-autotable'
+// Vite/esbuild interop: jspdf-autotable é CJS com module.exports.default,
+// então o default-import pode chegar como { default: fn } em vez da função.
+// Resolve isso em runtime sem assumir uma das formas.
+const autoTable = (autoTableModule as unknown as { default?: typeof autoTableModule }).default
+  ?? autoTableModule
 
 import {
   familyOf, suffixOf,
