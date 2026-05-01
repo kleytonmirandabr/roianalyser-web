@@ -34,6 +34,7 @@ const ADMIN_ITEMS: AdminItem[] = [
   { i18nKey: 'adminWorkflow',        to: '/admin/workflow-rules',  requiresLevel: 'master' },
   { i18nKey: 'adminBranding',        to: '/admin/branding',        requiresLevel: 'master' },
   { i18nKey: 'adminEmailLog',        to: '/admin/email-log',       requiresLevel: 'admin'  },
+  { i18nKey: 'audit',                to: '/audit',                 requiresLevel: 'admin'  },
 ]
 
 function canSee(required: AdminItem['requiresLevel'], role: 'master' | 'admin' | 'user'): boolean {

@@ -9,8 +9,6 @@ import { LoginPage } from '@/pages/login'
 import { MfaPage } from '@/pages/mfa'
 import { NotFoundPage } from '@/pages/not-found'
 import { OpportunitiesListPage } from '@/pages/opportunities/list'
-import { ReportsListPage } from '@/pages/reports/list'
-import { CatalogsIndexPage } from '@/pages/catalogs'
 import { ResetPasswordPage } from '@/pages/reset-password'
 
 // Code-splitting: rotas pesadas são lazy. Cada `lazy(() => import(...))`
@@ -78,21 +76,6 @@ const ProjectsFunnelPage = lazy(() =>
 )
 const ProjectsLostPage = lazy(() =>
   import('@/pages/projects/lost').then((m) => ({ default: m.ProjectsLostPage })),
-)
-const CatalogDetailPage = lazy(() =>
-  import('@/pages/catalogs/detail').then((m) => ({
-    default: m.CatalogDetailPage,
-  })),
-)
-const ReportDetailPage = lazy(() =>
-  import('@/pages/reports/detail').then((m) => ({
-    default: m.ReportDetailPage,
-  })),
-)
-const ScheduledReportsPage = lazy(() =>
-  import('@/pages/reports/scheduled').then((m) => ({
-    default: m.ScheduledReportsPage,
-  })),
 )
 const AuditLogPage = lazy(() =>
   import('@/pages/audit-log').then((m) => ({ default: m.AuditLogPage })),
@@ -488,12 +471,9 @@ export function AppRouter() {
           }
         />
 
-        {/* Catálogos */}
-        <Route path="/catalogs" element={<CatalogsIndexPage />} />
-        {/* Tela especial — IMPORTANTE: precisa vir ANTES da rota dinâmica
-            `/catalogs/:slug` pra ter prioridade no React Router. */}
+        {/* Form personalizado de contrato (era /catalogs/contract-form) */}
         <Route
-          path="/catalogs/contract-form"
+          path="/admin/contract-form"
           element={
             <RequireRole level="master">
               <Lazy>
@@ -686,34 +666,6 @@ export function AppRouter() {
             </RequireRole>
           }
         />
-        <Route
-          path="/catalogs/:slug"
-          element={
-            <Lazy>
-              <CatalogDetailPage />
-            </Lazy>
-          }
-        />
-
-        {/* Relatórios */}
-        <Route path="/reports" element={<ReportsListPage />} />
-        <Route
-          path="/reports/scheduled"
-          element={
-            <Lazy>
-              <ScheduledReportsPage />
-            </Lazy>
-          }
-        />
-        <Route
-          path="/reports/:id"
-          element={
-            <Lazy>
-              <ReportDetailPage />
-            </Lazy>
-          }
-        />
-
         {/* Auditoria */}
         <Route
           path="/audit"

@@ -272,7 +272,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     slug: 'catalogs',
     category: 'sistema',
     title: 'Catálogos',
-    path: '/catalogs',
+    path: '/',  // catalogs removido
     summary: 'Listas de apoio: empresas, contatos, status, tipos de contrato, etc.',
     sections: [
       {
@@ -317,7 +317,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     slug: 'reports',
     category: 'fluxo',
     title: 'Relatórios',
-    path: '/reports',
+    path: '/',  // reports removido
     summary: 'Relatórios pré-configurados e agendados.',
     sections: [
       {

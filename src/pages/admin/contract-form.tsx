@@ -17,10 +17,10 @@
  * de inconsistência.
  */
 
-import { ChevronLeft, Lock, Pencil, Plus, Save, Trash2 } from 'lucide-react'
+import {Lock, Pencil, Plus, Save, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, Navigate } from 'react-router-dom'
+import {Navigate } from 'react-router-dom'
 
 import {
   CUSTOM_FIELD_TYPES,
@@ -72,7 +72,7 @@ export function AdminContractFormPage() {
 
   // Master only — admin/user comum cai pra index dos Catálogos.
   if (user && !user.isMaster) {
-    return <Navigate to="/catalogs" replace />
+    return <Navigate to="/admin" replace />
   }
 
   const manifest = useCatalog('contractFormFields')
@@ -220,13 +220,6 @@ export function AdminContractFormPage() {
 
   return (
     <div className="w-full space-y-4">
-      <Link
-        to="/catalogs"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        {t('catalogs.title', { defaultValue: 'Catálogos' })}
-      </Link>
 
       {error && (
         <Alert variant="destructive">

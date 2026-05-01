@@ -6,8 +6,6 @@ import {
   FileText,
   LayoutDashboard,
   LineChart,
-  ScrollText,
-  Tags,
   Target,
   Upload,
 } from 'lucide-react'
@@ -111,20 +109,6 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Calculator,
   },
   {
-    i18nKey: 'catalogs',
-    to: '/catalogs',
-    icon: Tags,
-  },
-  {
-    i18nKey: 'reports',
-    to: '/reports',
-    icon: BarChart3,
-    children: [
-      { i18nKey: 'reportsList', to: '/reports' },
-      { i18nKey: 'reportsScheduled', to: '/reports/scheduled' },
-    ],
-  },
-  {
     /**
      * Forecast — Sprint 4. Cada revisão pertence a um Projeto; aqui
      * a sidebar atalha pro dashboard rolling 12m (esperado vs realizado,
@@ -134,11 +118,6 @@ export const NAV_ITEMS: NavItem[] = [
     i18nKey: 'rollingForecast',
     to: '/forecasts/dashboard',
     icon: LineChart,
-  },
-  {
-    i18nKey: 'audit',
-    to: '/audit',
-    icon: ScrollText,
   },
   {
     i18nKey: 'imports',
