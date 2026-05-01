@@ -40,6 +40,9 @@ interface ExportInput {
   tenantLogoDataUrl: string | null
 }
 
+// Após resolver SVG→PNG; passado internamente entre etapas do export.
+type ResolvedLogo = { data: string; fmt: 'PNG' | 'JPEG' } | null
+
 // ───────────────────────── Design tokens ─────────────────────────
 const C = {
   // Marca
@@ -88,6 +91,43 @@ function rect(doc: jsPDF, x: number, y: number, w: number, h: number, opts: {
   else doc.rect(x, y, w, h, style)
 }
 
+async function ensureRasterLogo(dataUrl: string | null): Promise<{ data: string; fmt: 'PNG' | 'JPEG' } | null> {
+  if (!dataUrl) return null
+  // Se já é PNG/JPEG, devolve como está.
+  if (dataUrl.startsWith('data:image/png')) return { data: dataUrl, fmt: 'PNG' }
+  if (dataUrl.startsWith('data:image/jpeg') || dataUrl.startsWith('data:image/jpg')) {
+    return { data: dataUrl, fmt: 'JPEG' }
+  }
+  // SVG (data:image/svg+xml;base64,...) — jsPDF não desenha SVG. Renderiza
+  // num <canvas> off-screen e exporta PNG.
+  if (!dataUrl.startsWith('data:image/svg')) return null
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      try {
+        const W = 320
+        const ratio = (img.naturalHeight || img.height) / (img.naturalWidth || img.width || W)
+        const H = Math.max(48, Math.round(W * (Number.isFinite(ratio) ? ratio : 0.4)))
+        const canvas = document.createElement('canvas')
+        canvas.width = W
+        canvas.height = H
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return resolve(null)
+        // Fundo branco (SVGs com transparência ficam horríveis em PDF).
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, W, H)
+        ctx.drawImage(img, 0, 0, W, H)
+        resolve({ data: canvas.toDataURL('image/png'), fmt: 'PNG' })
+      } catch {
+        resolve(null)
+      }
+    }
+    img.onerror = () => resolve(null)
+    img.src = dataUrl
+  })
+}
+
 function fmtIrr(irr: number | null): string {
   if (irr == null) return '—'
   if (irr > 1) return '>100% a.a.'
@@ -102,20 +142,15 @@ function fmtShortCurrency(v: number, currency: string): string {
 }
 
 // ───────────────────────── Header / Footer ─────────────────────────
-function drawHeader(doc: jsPDF, opts: ExportInput, pageNum: number, total: number) {
+function drawHeader(doc: jsPDF, opts: ExportInput, logo: ResolvedLogo, pageNum: number, total: number) {
   const w = PAGE.w
   // Logo + nome tenant
   let xCursor = M.left
-  if (opts.tenantLogoDataUrl) {
+  if (logo) {
     try {
-      const fmt = opts.tenantLogoDataUrl.startsWith('data:image/png') ? 'PNG'
-        : opts.tenantLogoDataUrl.startsWith('data:image/jpeg') ? 'JPEG'
-        : null
-      if (fmt) {
-        doc.addImage(opts.tenantLogoDataUrl, fmt, M.left, 8, 22, 8, undefined, 'FAST')
-        xCursor = M.left + 25
-      }
-    } catch { /* logo opcional */ }
+      doc.addImage(logo.data, logo.fmt, M.left, 8, 22, 8, undefined, 'FAST')
+      xCursor = M.left + 25
+    } catch { /* logo opcional, não bloquear export */ }
   }
   setFont(doc, 'bold', 9, C.ink)
   doc.text(opts.tenantName, xCursor, 13)
@@ -142,9 +177,21 @@ function drawFooter(doc: jsPDF) {
 }
 
 // ───────────────────────── Página 1 — Capa ─────────────────────────
-function drawCover(doc: jsPDF, opts: ExportInput) {
+function drawCover(doc: jsPDF, opts: ExportInput, logo: ResolvedLogo) {
   const { roi, metrics } = opts
   const cur = roi.currency
+
+  // Logo grande do tenant no topo (se houver)
+  if (logo) {
+    try {
+      doc.addImage(logo.data, logo.fmt, M.left, 14, 50, 18, undefined, 'FAST')
+    } catch { /* ignore */ }
+  }
+  // Nome do tenant (label corporativo) — alinhado à direita, mesma altura do logo
+  setFont(doc, 'bold', 11, C.muted)
+  doc.text(opts.tenantName.toUpperCase(), PAGE.w - M.right, 24, { align: 'right' })
+  setFont(doc, 'normal', 8, C.muted)
+  doc.text('Relatório de Análise de Retorno (ROI)', PAGE.w - M.right, 29, { align: 'right' })
 
   // Banner colorido topo (acento de marca)
   rect(doc, 0, 0, PAGE.w, 4, { fill: C.brand })
@@ -152,6 +199,9 @@ function drawCover(doc: jsPDF, opts: ExportInput) {
   // Título grande
   setFont(doc, 'bold', 28, C.ink)
   doc.text('Análise de Retorno', M.left, 50)
+  // Linha decorativa abaixo do título
+  doc.setDrawColor(...C.brand).setLineWidth(0.8)
+  doc.line(M.left, 53, M.left + 40, 53)
 
   // Subtítulo: nome do projeto
   setFont(doc, 'normal', 14, C.body)
@@ -548,9 +598,7 @@ function drawMonthlyMatrix(doc: jsPDF, opts: ExportInput) {
   const dur = roi.durationMonths || 12
   if (entries.length === 0) return
 
-  doc.addPage('a4', 'landscape')
-  // Reposicionar header pra landscape
-  const lw = 297, lh = 210  // mm
+  doc.addPage()  // mantém a4 portrait (mesma orientação)
   setFont(doc, 'bold', 16, C.ink)
   doc.text('Fluxo mensal por categoria', M.left, 30)
   setFont(doc, 'normal', 9, C.muted)
@@ -664,29 +712,32 @@ function drawMonthlyMatrix(doc: jsPDF, opts: ExportInput) {
       },
     ]],
     theme: 'plain',
-    styles: { fontSize: 7.5, cellPadding: 1.8, lineColor: C.hairline, lineWidth: 0.1 },
-    headStyles: { fillColor: C.surface, textColor: C.muted, fontStyle: 'bold', halign: 'center', fontSize: 7, lineWidth: 0.2 },
-    columnStyles: { 0: { halign: 'center', cellWidth: 16 } },
+    styles: { fontSize: 6.5, cellPadding: 1.2, lineColor: C.hairline, lineWidth: 0.1, overflow: 'linebreak' },
+    headStyles: { fillColor: C.surface, textColor: C.muted, fontStyle: 'bold', halign: 'center', fontSize: 6.5, lineWidth: 0.2, cellPadding: 1.2 },
+    columnStyles: { 0: { halign: 'center', cellWidth: 12, fontStyle: 'bold' } },
+    tableWidth: 'auto',
     margin: { left: M.left, right: M.right },
   })
-
-  void lw; void lh
 }
 
 // ───────────────────────── Função pública ─────────────────────────
 export async function exportRoiToPdf(input: ExportInput): Promise<void> {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
 
-  drawCover(doc, input)
+  // Resolve SVG→PNG uma vez. jsPDF não desenha SVG nativamente,
+  // e silenciosamente ignora addImage com SVG.
+  const logo = await ensureRasterLogo(input.tenantLogoDataUrl)
+
+  drawCover(doc, input, logo)
   drawChartsPage(doc, input)
   drawEntries(doc, input)
   drawMonthlyMatrix(doc, input)
 
-  // Header + footer em todas as páginas (exceto capa, que já tem banner próprio)
+  // Header + footer em todas as páginas (exceto capa, que já tem logo grande)
   const total = doc.getNumberOfPages()
   for (let i = 1; i <= total; i++) {
     doc.setPage(i)
-    if (i > 1) drawHeader(doc, input, i, total)
+    if (i > 1) drawHeader(doc, input, logo, i, total)
     drawFooter(doc)
   }
 
