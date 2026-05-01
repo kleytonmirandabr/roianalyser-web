@@ -147,6 +147,11 @@ const AdminTaskTemplatesPage = lazy(() =>
     default: m.AdminTaskTemplatesPage,
   })),
 )
+const ProjectTemplatesPage = lazy(() =>
+  import('@/pages/admin/project-templates').then((m) => ({
+    default: m.ProjectTemplatesPage,
+  })),
+)
 
 const AdminEmailLogPage = lazy(() =>
   import('@/pages/admin/email-log').then((m) => ({
@@ -507,6 +512,16 @@ export function AppRouter() {
             <RequireRole level="master">
               <Lazy>
                 <AdminTaskTemplatesPage />
+              </Lazy>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/project-templates"
+          element={
+            <RequireRole level="master">
+              <Lazy>
+                <ProjectTemplatesPage />
               </Lazy>
             </RequireRole>
           }

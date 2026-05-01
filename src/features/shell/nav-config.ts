@@ -159,6 +159,7 @@ export const NAV_ITEMS: NavItem[] = [
       { i18nKey: 'adminBillingUnits', to: '/admin/billing-units', requiresLevel: 'master' },
       { i18nKey: 'adminFinancialTypes', to: '/admin/financial-types', requiresLevel: 'master' },
       { i18nKey: 'adminTaskTemplates', to: '/admin/task-templates', requiresLevel: 'master' },
+      { i18nKey: 'adminProjectTemplates', to: '/admin/project-templates', requiresLevel: 'master' },
       { i18nKey: 'adminFormFields', to: '/admin/form-fields', requiresLevel: 'master' },
     ],
   },

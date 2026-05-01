@@ -10,7 +10,7 @@
  * progresso %. Owner/Editor podem mexer; Viewer só visualiza.
  */
 import {
-  CheckCircle2, ChevronDown, ChevronRight, Circle, FolderTree, Plus, Trash2, UserCircle2,
+  CheckCircle2, ChevronDown, ChevronRight, Circle, FolderTree, Plus, Settings2, Trash2, UserCircle2,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -28,6 +28,14 @@ import {
   useProjectMilestones,
   useUpdateMilestone,
 } from '@/features/projects2/hooks/use-project-milestones'
+import {
+  useColumnValues,
+  useProjectTaskColumns,
+  usePutColumnValue,
+} from '@/features/projects2/hooks/use-project-task-columns'
+import type { ProjectTaskColumn, TaskColumnValue } from '@/features/projects2/task-columns-types'
+import { ColumnsManager } from '@/features/projects2/components/ColumnsManager'
+import { ColumnCellEditor, ColumnCellReadonly } from '@/features/projects2/components/ColumnCellEditor'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Combobox } from '@/shared/ui/combobox'
@@ -165,6 +173,10 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
   const create = useCreateMilestone(projectId)
   const update = useUpdateMilestone(projectId)
   const remove = useDeleteMilestone(projectId)
+  const colsList = useProjectTaskColumns(projectId)
+  const customCols: ProjectTaskColumn[] = colsList.data || []
+  const putValue = usePutColumnValue(projectId)
+  const [colsModalOpen, setColsModalOpen] = useState(false)
   const appState = useAppState()
   const users: UserMini[] = ((appState.data?.users || []) as Array<{ id: string; name?: string; email?: string }>)
     .map(u => ({ id: String(u.id), name: u.name || u.email || `User #${u.id}`, email: u.email || '' }))
@@ -185,6 +197,24 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
     })
     return { rootGroups, rootTasks, tasksByParent, subtasksByParent }
   }, [items])
+
+  const allTaskIds = useMemo(() => items.map((i) => i.id), [items])
+  const valuesQuery = useColumnValues(projectId, allTaskIds)
+  const valuesByTaskCol = useMemo(() => {
+    const map: Record<string, Record<string, TaskColumnValue>> = {}
+    for (const v of valuesQuery.data || []) {
+      ;(map[v.taskId] = map[v.taskId] || {})[v.columnId] = v
+    }
+    return map
+  }, [valuesQuery.data])
+
+  function getValue(taskId: string, colId: string): any {
+    return valuesByTaskCol[taskId]?.[colId]?.value ?? null
+  }
+
+  function setValue(taskId: string, colId: string, value: any) {
+    putValue.mutate({ taskId, columnId: colId, value })
+  }
 
   const total = items.length
   const done = items.filter(i => i.status === 'done').length
@@ -330,6 +360,13 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
               </span>
             )}
           </div>
+          {customCols.map((c) => (
+            <div key={c.id} className="w-32 px-1">
+              {canEdit
+                ? <ColumnCellEditor column={c} value={getValue(t.id, c.id)} onChange={(v) => setValue(t.id, c.id, v)} />
+                : <ColumnCellReadonly column={c} value={getValue(t.id, c.id)} />}
+            </div>
+          ))}
           <ResponsibleAvatars ids={t.responsibleIds} users={users} />
           {canEdit && (
             <div className="flex items-center gap-0.5">
@@ -372,6 +409,14 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
         </div>
         {canEdit && (
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setColsModalOpen(true)}
+              title="Gerenciar colunas customizadas"
+            >
+              <Settings2 className="h-4 w-4" /> Colunas
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -464,6 +509,12 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
           })}
         </div>
       )}
+      <ColumnsManager
+        open={colsModalOpen}
+        onClose={() => setColsModalOpen(false)}
+        projectId={projectId}
+        canManage={canEdit}
+      />
     </Card>
   )
 }
