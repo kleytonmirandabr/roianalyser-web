@@ -444,6 +444,7 @@ export function TasksTableView({
   const COL_ALIGN: Record<string, 'left' | 'right' | 'center'> = {
     number: 'center', currency: 'right', percent: 'center',
     progress: 'center', date: 'center', checkbox: 'center', rating: 'center',
+    select: 'center', status: 'center',
   }
 
   // Colunas
@@ -501,9 +502,9 @@ export function TasksTableView({
     return (
       <div
         onClick={col.sortable ? () => toggleSort(col.key) : undefined}
-        className={`px-2 py-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground border-l flex items-center gap-1 select-none ${col.sortable ? 'cursor-pointer hover:bg-muted/50' : ''} ${col.align === 'center' ? 'justify-center' : ''}`}
+        className={`px-2 py-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground border-l flex items-center gap-1 select-none overflow-hidden ${col.sortable ? 'cursor-pointer hover:bg-muted/50' : ''} ${col.align === 'center' ? 'justify-center' : ''}`}
       >
-        <span className="whitespace-nowrap">{col.label}</span>
+        <span className="truncate min-w-0" title={col.label}>{col.label}</span>
         {col.sortable && <SortIcon sortKey={col.key} />}
         {customCol && canEdit && onRenameColumn && onDeleteColumn && (
           <ColumnHeaderMenu col={customCol} onRename={onRenameColumn} onDelete={onDeleteColumn} />
@@ -776,10 +777,10 @@ export function TasksTableView({
 
                 // status
                 cells.push(
-                  <div key="status" className="px-1 py-1 border-l flex items-center">
+                  <div key="status" className="px-1 py-1 border-l flex items-center justify-center">
                     <Combobox options={statusOptions} value={t.status}
                       onChange={v => canEdit && onUpdateTask(t.id, { status: v as MilestoneStatus, completedDate: v !== 'done' ? null : undefined })}
-                      disabled={!canEdit} />
+                      disabled={!canEdit} className="w-full" />
                   </div>
                 )
 
