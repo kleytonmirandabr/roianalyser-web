@@ -28,8 +28,10 @@ import {
 } from '@/features/projects2/hooks/use-project-milestones'
 import {
   useColumnValues,
+  useDeleteColumn,
   useProjectTaskColumns,
   usePutColumnValue,
+  useUpdateColumn,
 } from '@/features/projects2/hooks/use-project-task-columns'
 import type { ProjectTaskColumn, TaskColumnValue } from '@/features/projects2/task-columns-types'
 import { ColumnsManager } from '@/features/projects2/components/ColumnsManager'
@@ -62,6 +64,8 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
   const colsList = useProjectTaskColumns(projectId)
   const customCols: ProjectTaskColumn[] = colsList.data || []
   const putValue = usePutColumnValue(projectId)
+  const updateCol = useUpdateColumn(projectId)
+  const deleteCol = useDeleteColumn(projectId)
   const [colsModalOpen, setColsModalOpen] = useState(false)
   const [filters, setFilters] = useState<TasksFilters>({ q: '', status: '', personId: '', sort: 'order' })
   const appState = useAppState()
@@ -168,7 +172,7 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
 
   return (
     <Card className="p-0 overflow-hidden">
-      <div className="p-6 pb-3 flex items-center justify-between">
+      <div className="p-4 sm:p-6 pb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <FolderTree className="h-5 w-5 text-muted-foreground" />
@@ -179,21 +183,23 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
           </p>
         </div>
         {canEdit && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setColsModalOpen(true)}
               title="Gerenciar colunas customizadas"
             >
-              <Settings2 className="h-4 w-4" /> Colunas
+              <Settings2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Colunas</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => { setAdding({ kind: 'group', parentId: null }); setNewTitle(''); setNewDate('') }}
             >
-              <Plus className="h-4 w-4" /> Grupo
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Grupo</span>
             </Button>
             <Button
               size="sm"
@@ -272,8 +278,14 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
           onDeleteTask={handleDelete}
           onAddTaskInGroup={(groupId) => { setAdding({ kind: 'task', parentId: groupId }); setNewTitle(''); setNewDate('') }}
           onAddSubtaskInTask={(taskId) => { setAdding({ kind: 'subtask', parentId: taskId }); setNewTitle(''); setNewDate('') }}
+          onAddRootTask={() => { setAdding({ kind: 'task', parentId: null }); setNewTitle(''); setNewDate('') }}
           onPutColumnValue={setValue}
           onOpenColumnsManager={() => setColsModalOpen(true)}
+          onRenameColumn={(colId, label) => updateCol.mutateAsync({ id: colId, patch: { label } }).catch(err => toastError(`Erro: ${(err as Error).message}`))}
+          onDeleteColumn={async (colId) => {
+            const ok = await confirm({ title: 'Excluir coluna?', description: 'Os valores serão apagados.', confirmLabel: 'Excluir', destructive: true })
+            if (ok) deleteCol.mutateAsync(colId).catch(err => toastError(`Erro: ${(err as Error).message}`))
+          }}
           subtaskCount={subtaskCount}
         />
       ))}

@@ -110,7 +110,7 @@ export function MembersCard({ projectId, generalAccess, canManage }: Props) {
 
   return (
     <Card className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Shield className="h-5 w-5 text-muted-foreground" />
@@ -187,8 +187,8 @@ export function MembersCard({ projectId, generalAccess, canManage }: Props) {
             const u = userLabel(m.userId)
             const isOwner = m.role === 'owner'
             return (
-              <li key={m.id} className="rounded-md border p-3 flex items-center gap-3">
-                <div className={`h-9 w-9 rounded-full flex items-center justify-center font-semibold text-sm ${
+              <li key={m.id} className="rounded-md border p-3 flex flex-wrap items-center gap-3">
+                <div className={`h-9 w-9 shrink-0 rounded-full flex items-center justify-center font-semibold text-sm ${
                   isOwner ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400'
                   : 'bg-muted text-foreground'
                 }`}>
@@ -201,7 +201,7 @@ export function MembersCard({ projectId, generalAccess, canManage }: Props) {
                   </div>
                   {u.email && <div className="text-xs text-muted-foreground truncate">{u.email}</div>}
                 </div>
-                <div className="w-44">
+                <div className="w-full sm:w-44">
                   <Combobox
                     options={roleOptions}
                     value={m.role}
@@ -210,7 +210,7 @@ export function MembersCard({ projectId, generalAccess, canManage }: Props) {
                   />
                 </div>
                 {canManage && (
-                  <Button variant="ghost" size="icon" onClick={() => handleRemove(m)} title="Remover">
+                  <Button variant="ghost" size="icon" onClick={() => handleRemove(m)} title="Remover" className="shrink-0">
                     <Trash2 className="h-4 w-4 text-rose-600" />
                   </Button>
                 )}

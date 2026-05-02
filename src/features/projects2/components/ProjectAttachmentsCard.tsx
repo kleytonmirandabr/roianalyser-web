@@ -185,7 +185,7 @@ export function ProjectAttachmentsCard({ projectId }: { projectId: string | unde
       <div
         ref={dropRef}
         onClick={() => fileInputRef.current?.click()}
-        className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:bg-muted/30 transition-colors"
+        className="border-2 border-dashed border-border rounded-lg p-4 sm:p-6 text-center cursor-pointer hover:bg-muted/30 transition-colors"
       >
         <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
         <p className="text-sm font-medium">Arraste um arquivo aqui ou clique para escolher</p>
@@ -248,8 +248,8 @@ export function ProjectAttachmentsCard({ projectId }: { projectId: string | unde
             const Icon = iconFor(it.mime)
             return (
               <li key={it.id} className="rounded-md border bg-card hover:bg-muted/30 transition-colors">
-                <div className="p-3 flex items-center gap-3">
-                  <div className="rounded bg-muted/50 p-2">
+                <div className="p-3 flex flex-wrap sm:flex-nowrap items-center gap-3">
+                  <div className="rounded bg-muted/50 p-2 shrink-0">
                     <Icon className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -263,7 +263,7 @@ export function ProjectAttachmentsCard({ projectId }: { projectId: string | unde
                     </div>
                     {it.notes && <div className="text-xs text-muted-foreground mt-1 italic">{it.notes}</div>}
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 shrink-0">
                     <Button variant="ghost" size="icon" title="Visualizar" onClick={() => openPreview(it)}>
                       <Eye className="h-4 w-4" />
                     </Button>

@@ -307,7 +307,7 @@ export function Project2DetailPage() {
   }
 
   return (
-    <div className={`p-6 mx-auto ${tab === 'board' ? 'max-w-[1600px]' : 'max-w-7xl'} space-y-4`}>
+    <div className={`p-3 sm:p-6 mx-auto ${tab === 'board' ? 'max-w-[1600px]' : 'max-w-7xl'} space-y-4`}>
       <header className="flex items-center justify-between gap-3">
         <Button asChild variant="ghost" size="sm">
           <Link to="/projects">
@@ -332,13 +332,15 @@ export function Project2DetailPage() {
             key={key}
             type="button"
             onClick={() => setTab(key)}
-            className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-t-md border-b-2 -mb-px transition-colors ${
+            className={`shrink-0 inline-flex items-center gap-1.5 px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium rounded-t-md border-b-2 -mb-px transition-colors whitespace-nowrap ${
               tab === key
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40'
             }`}
           >
-            <Icon className="h-4 w-4" /> {label}
+            <Icon className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">{label}</span>
+            <span className="sm:hidden">{label.split(' ')[0]}</span>
           </button>
         ))}
       </nav>
@@ -365,9 +367,9 @@ export function Project2DetailPage() {
               {prj.actualEnd && <span> · Concluído {fmtShortDate(prj.actualEnd)}</span>}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Label className="text-xs text-muted-foreground">Mudar status:</Label>
-            <div className="w-48">
+          <div className="flex flex-wrap items-center gap-2">
+            <Label className="text-xs text-muted-foreground shrink-0">Mudar status:</Label>
+            <div className="w-full sm:w-48">
               <Combobox
                 value={status}
                 onChange={(v) => {
@@ -387,7 +389,7 @@ export function Project2DetailPage() {
 
         <StatusTimeline current={prj.status} />
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 pt-2 border-t">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4 pt-2 border-t">
           <KpiTile
             label="Orçamento"
             value={prj.budget != null ? formatCurrency(prj.budget, prj.currency) : '—'}
@@ -553,12 +555,12 @@ export function Project2DetailPage() {
           <ul className="space-y-2">
             {forecasts.map((f: any) => (
               <li key={f.id}>
-                <Link to={`/forecasts/${f.id}`} className="flex items-center justify-between rounded border p-3 hover:bg-muted/30">
-                  <div>
+                <Link to={`/forecasts/${f.id}`} className="flex flex-wrap items-start justify-between gap-2 rounded border p-3 hover:bg-muted/30">
+                  <div className="min-w-0">
                     <span className="font-medium">{f.name}</span>
                     {f.versionNumber && <span className="ml-2 text-xs text-muted-foreground">v{f.versionNumber}</span>}
                   </div>
-                  <span className="text-xs text-muted-foreground">{FORECAST_STATUS_LABELS[f.status as keyof typeof FORECAST_STATUS_LABELS] || f.status}</span>
+                  <span className="text-xs text-muted-foreground shrink-0">{FORECAST_STATUS_LABELS[f.status as keyof typeof FORECAST_STATUS_LABELS] || f.status}</span>
                 </Link>
               </li>
             ))}
@@ -582,8 +584,8 @@ export function Project2DetailPage() {
           {editorOpen ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
         </button>
         {editorOpen && (
-          <div className="p-6 pt-0 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="p-4 sm:p-6 pt-0 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="name">Nome</Label>
                 <Input id="name" value={name} onChange={(e) => { setName(e.target.value); setDirty(true) }} />
@@ -593,7 +595,7 @@ export function Project2DetailPage() {
                 <Input type="number" min="0" max="100" value={progressPct} onChange={(e) => { setProgressPct(e.target.value); setDirty(true) }} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>Orçamento</Label>
                 <Input type="number" step="0.01" value={budget} onChange={(e) => { setBudget(e.target.value); setDirty(true) }} />
@@ -603,7 +605,7 @@ export function Project2DetailPage() {
                 <Input value={currency} onChange={(e) => { setCurrency(e.target.value.toUpperCase().slice(0, 3)); setDirty(true) }} maxLength={3} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>Início planejado</Label>
                 <Input type="date" value={plannedStart} onChange={(e) => { setPlannedStart(e.target.value); setDirty(true) }} />
@@ -613,7 +615,7 @@ export function Project2DetailPage() {
                 <Input type="date" value={plannedEnd} onChange={(e) => { setPlannedEnd(e.target.value); setDirty(true) }} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>Início real</Label>
                 <Input type="date" value={actualStart} onChange={(e) => { setActualStart(e.target.value); setDirty(true) }} />
