@@ -23,6 +23,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { createPortal } from 'react-dom'
 
 import { cn } from '@/shared/lib/cn'
 
@@ -88,8 +89,10 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(
     const [filter, setFilter] = useState('')
     const [highlight, setHighlight] = useState(0)
     const containerRef = useRef<HTMLDivElement>(null)
+    const dropdownRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
     const listRef = useRef<HTMLUListElement>(null)
+    const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 })
 
     const selected = useMemo(
       () => options.find((o) => o.value === value) ?? null,
@@ -105,16 +108,30 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(
       })
     }, [options, filter])
 
-    // Click fora fecha
+    // Recalcula posição do dropdown (portal fixo) ao abrir e no scroll
+    useEffect(() => {
+      if (!open || !containerRef.current) return
+      const update = () => {
+        const rect = containerRef.current!.getBoundingClientRect()
+        setDropdownPos({ top: rect.bottom + 2, left: rect.left, width: rect.width })
+      }
+      update()
+      window.addEventListener('scroll', update, true)
+      window.addEventListener('resize', update)
+      return () => {
+        window.removeEventListener('scroll', update, true)
+        window.removeEventListener('resize', update)
+      }
+    }, [open])
+
+    // Click fora fecha (inclui o portal)
     useEffect(() => {
       if (!open) return
       const onClick = (e: MouseEvent) => {
-        if (
-          containerRef.current &&
-          !containerRef.current.contains(e.target as Node)
-        ) {
-          setOpen(false)
-        }
+        const target = e.target as Node
+        const insideContainer = containerRef.current?.contains(target)
+        const insideDropdown  = dropdownRef.current?.contains(target)
+        if (!insideContainer && !insideDropdown) setOpen(false)
       }
       document.addEventListener('mousedown', onClick)
       return () => document.removeEventListener('mousedown', onClick)
@@ -218,7 +235,7 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </button>
 
-        {open && (() => {
+        {open && createPortal((() => {
           // Helper local pra renderizar uma <li> de option. Usado tanto
           // pela lista flat quanto pelos sub-listas dentro de grupos.
           const renderOption = (opt: ComboboxOption, adjustedIndex: number) => {
@@ -257,7 +274,16 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(
           }
           return (
           <div
-            className="absolute left-0 top-full z-50 mt-1 max-h-72 overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-lg min-w-full w-max max-w-xs"
+            ref={dropdownRef}
+            style={{
+              position: 'fixed',
+              top: dropdownPos.top,
+              left: dropdownPos.left,
+              minWidth: dropdownPos.width,
+              maxWidth: 320,
+              zIndex: 9999,
+            }}
+            className="max-h-72 overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-lg"
             onKeyDown={handleKey}
           >
             <div className="flex items-center gap-2 border-b border-border bg-background px-3 py-2">
@@ -340,7 +366,7 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(
             </ul>
           </div>
           )
-        })()}
+        })(), document.body)}
       </div>
     )
   },

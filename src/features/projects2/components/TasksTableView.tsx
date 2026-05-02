@@ -494,8 +494,12 @@ export function TasksTableView({
   }
 
   // ── Inline create row ─────────────────────────────────────────────────────
-  function InlineCreateRow({ groupId }: { groupId: string | null }) {
+  // groupRow=true → só renderiza quando kind==='group' (seção "Novo grupo")
+  // groupRow=false (default) → só renderiza quando kind!=='group' (seção de tasks)
+  function InlineCreateRow({ groupId, groupRow = false }: { groupId: string | null; groupRow?: boolean }) {
     if (!inlineCreate || inlineCreate.groupId !== groupId) return null
+    if (groupRow && inlineCreate.kind !== 'group') return null
+    if (!groupRow && inlineCreate.kind === 'group') return null
     const label = inlineCreate.kind === 'group' ? 'grupo' : inlineCreate.kind === 'task' ? 'tarefa' : 'subtarefa'
     return (
       <div className="grid border-b bg-primary/3" style={{ gridTemplateColumns: gridTemplate }}>
@@ -583,7 +587,7 @@ export function TasksTableView({
                 elements.push(
                   <div key="add-group">
                     {/* Inline create for group shows here */}
-                    <InlineCreateRow groupId={null} />
+                    <InlineCreateRow groupId={null} groupRow={true} />
                     {(!inlineCreate || inlineCreate.kind !== 'group') && (
                       <div className="grid border-b" style={{ gridTemplateColumns: gridTemplate }}>
                         <div /><div /><div />
