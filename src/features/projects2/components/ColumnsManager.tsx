@@ -1,6 +1,6 @@
 /**
- * Modal de gerenciamento de Colunas Customizadas (Phase 2 P.4).
- * Lista colunas existentes + form pra criar/editar/remover.
+ * Modal de gerenciamento de Colunas Customizadas (Phase 2 P.4 → Sprint 3.8).
+ * Sprint 3.8: color picker por opção de select/status.
  */
 import { Plus, Settings2, Trash2 } from 'lucide-react'
 import { useState } from 'react'
@@ -26,6 +26,8 @@ interface Props {
   canManage: boolean
 }
 
+interface DraftOption { label: string; color: string }
+
 function makeKey(label: string): string {
   return label.toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -33,6 +35,11 @@ function makeKey(label: string): string {
     .replace(/^_+|_+$/g, '')
     .slice(0, 32) || `col_${Date.now().toString(36)}`
 }
+
+const DEFAULT_COLORS = [
+  '#6366f1', '#22c55e', '#f59e0b', '#ef4444',
+  '#3b82f6', '#a855f7', '#14b8a6', '#f97316',
+]
 
 export function ColumnsManager({ open, onClose, projectId, canManage }: Props) {
   const list = useProjectTaskColumns(projectId)
@@ -44,7 +51,13 @@ export function ColumnsManager({ open, onClose, projectId, canManage }: Props) {
   const [adding, setAdding] = useState(false)
   const [newLabel, setNewLabel] = useState('')
   const [newType, setNewType] = useState<ColumnType>('text')
-  const [newSelectOpts, setNewSelectOpts] = useState('')
+  // Sprint 3.8: opções estruturadas com cor
+  const [draftOpts, setDraftOpts] = useState<DraftOption[]>([])
+  const [optInput, setOptInput] = useState('')
+
+  // Coluna em edição de opções (para colunas já existentes)
+  const [editingColId, setEditingColId] = useState<string | null>(null)
+  const [editingOpts, setEditingOpts] = useState<DraftOption[]>([])
 
   if (!open) return null
 
@@ -53,13 +66,24 @@ export function ColumnsManager({ open, onClose, projectId, canManage }: Props) {
     label: COLUMN_TYPE_LABELS[t] || t,
   }))
 
+  function addDraftOpt() {
+    const labels = optInput.split(',').map(s => s.trim()).filter(Boolean)
+    const next = [...draftOpts]
+    labels.forEach((lbl, i) => {
+      next.push({ label: lbl, color: DEFAULT_COLORS[(next.length + i) % DEFAULT_COLORS.length] })
+    })
+    setDraftOpts(next)
+    setOptInput('')
+  }
+
   async function handleCreate() {
     if (!newLabel.trim()) return
-    const opts = (newType === 'select' || newType === 'status') && newSelectOpts.trim()
+    const opts = (newType === 'select' || newType === 'status') && draftOpts.length
       ? {
-          values: newSelectOpts.split(',').map(s => s.trim()).filter(Boolean).map(s => ({
-            value: makeKey(s),
-            label: s,
+          values: draftOpts.map(o => ({
+            value: makeKey(o.label),
+            label: o.label,
+            color: o.color,
           })),
         }
       : null
@@ -72,7 +96,7 @@ export function ColumnsManager({ open, onClose, projectId, canManage }: Props) {
         displayOrder: cols.length,
       })
       toastSaved('Coluna criada')
-      setAdding(false); setNewLabel(''); setNewType('text'); setNewSelectOpts('')
+      setAdding(false); setNewLabel(''); setNewType('text'); setDraftOpts([]); setOptInput('')
     } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
   }
 
@@ -98,10 +122,29 @@ export function ColumnsManager({ open, onClose, projectId, canManage }: Props) {
     } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
   }
 
+  async function handleSaveEditingOpts(c: ProjectTaskColumn) {
+    try {
+      await update.mutateAsync({
+        id: c.id,
+        patch: {
+          options: {
+            values: editingOpts.map(o => ({
+              value: makeKey(o.label),
+              label: o.label,
+              color: o.color,
+            })),
+          },
+        },
+      })
+      toastSaved('Opções salvas')
+      setEditingColId(null)
+    } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-background rounded-lg shadow-xl border w-full max-w-2xl max-h-[80vh] overflow-auto"
+        className="bg-background rounded-lg shadow-xl border w-full max-w-2xl max-h-[85vh] overflow-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-5 border-b flex items-center justify-between">
@@ -121,22 +164,97 @@ export function ColumnsManager({ open, onClose, projectId, canManage }: Props) {
           {cols.length === 0 ? (
             <p className="text-sm text-muted-foreground italic">Nenhuma coluna customizada ainda.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {cols.map(c => (
-                <li key={c.id} className="flex items-center gap-2 rounded border p-2">
-                  <Input
-                    defaultValue={c.label}
-                    onBlur={(e) => canManage && handleRename(c, e.target.value)}
-                    disabled={!canManage}
-                    className="flex-1"
-                  />
-                  <span className="text-xs text-muted-foreground w-32">
-                    {COLUMN_TYPE_LABELS[c.type] || c.type}
-                  </span>
-                  {canManage && (
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(c)}>
-                      <Trash2 className="h-4 w-4 text-rose-600" />
-                    </Button>
+                <li key={c.id} className="rounded border p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      defaultValue={c.label}
+                      onBlur={(e) => canManage && handleRename(c, e.target.value)}
+                      disabled={!canManage}
+                      className="flex-1"
+                    />
+                    <span className="text-xs text-muted-foreground w-28 shrink-0">
+                      {COLUMN_TYPE_LABELS[c.type] || c.type}
+                    </span>
+                    {canManage && (c.type === 'select' || c.type === 'status') && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (editingColId === c.id) {
+                            setEditingColId(null)
+                          } else {
+                            setEditingColId(c.id)
+                            setEditingOpts(
+                              (c.options?.values || []).map(v => ({
+                                label: v.label,
+                                color: v.color || DEFAULT_COLORS[0],
+                              })),
+                            )
+                          }
+                        }}
+                      >
+                        Opções
+                      </Button>
+                    )}
+                    {canManage && (
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(c)}>
+                        <Trash2 className="h-4 w-4 text-rose-600" />
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Editor de opções inline com color picker */}
+                  {editingColId === c.id && canManage && (
+                    <div className="rounded bg-muted/40 p-3 space-y-2 border border-border">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Opções e cores</p>
+                      <ul className="space-y-1.5">
+                        {editingOpts.map((o, idx) => (
+                          <li key={idx} className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={o.color}
+                              onChange={(e) => {
+                                const next = [...editingOpts]
+                                next[idx] = { ...next[idx], color: e.target.value }
+                                setEditingOpts(next)
+                              }}
+                              className="h-7 w-7 cursor-pointer rounded border border-input bg-transparent p-0.5"
+                              title="Cor da opção"
+                            />
+                            <Input
+                              value={o.label}
+                              onChange={(e) => {
+                                const next = [...editingOpts]
+                                next[idx] = { ...next[idx], label: e.target.value }
+                                setEditingOpts(next)
+                              }}
+                              className="flex-1 h-7 text-sm"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => setEditingOpts(editingOpts.filter((_, i) => i !== idx))}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingOpts([...editingOpts, { label: '', color: DEFAULT_COLORS[editingOpts.length % DEFAULT_COLORS.length] }])}
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Adicionar opção
+                      </Button>
+                      <div className="flex gap-2 justify-end">
+                        <Button variant="outline" size="sm" onClick={() => setEditingColId(null)}>Cancelar</Button>
+                        <Button size="sm" onClick={() => handleSaveEditingOpts(c)}>Salvar opções</Button>
+                      </div>
+                    </div>
                   )}
                 </li>
               ))}
@@ -158,21 +276,57 @@ export function ColumnsManager({ open, onClose, projectId, canManage }: Props) {
                 </div>
                 <div>
                   <Label>Tipo</Label>
-                  <Combobox options={typeOptions} value={newType} onChange={(v) => setNewType(v as ColumnType)} />
+                  <Combobox options={typeOptions} value={newType} onChange={(v) => { setNewType(v as ColumnType); setDraftOpts([]) }} />
                 </div>
               </div>
+
               {(newType === 'select' || newType === 'status') && (
-                <div>
-                  <Label>Opcoes (separadas por virgula)</Label>
-                  <Input
-                    value={newSelectOpts}
-                    onChange={(e) => setNewSelectOpts(e.target.value)}
-                    placeholder="Ex.: Alta, Media, Baixa"
-                  />
+                <div className="space-y-2">
+                  <Label>Opções</Label>
+                  {draftOpts.length > 0 && (
+                    <ul className="space-y-1">
+                      {draftOpts.map((o, idx) => (
+                        <li key={idx} className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={o.color}
+                            onChange={(e) => {
+                              const next = [...draftOpts]
+                              next[idx] = { ...next[idx], color: e.target.value }
+                              setDraftOpts(next)
+                            }}
+                            className="h-7 w-7 cursor-pointer rounded border border-input bg-transparent p-0.5"
+                          />
+                          <span className="flex-1 text-sm">{o.label}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => setDraftOpts(draftOpts.filter((_, i) => i !== idx))}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="flex gap-2">
+                    <Input
+                      value={optInput}
+                      onChange={(e) => setOptInput(e.target.value)}
+                      placeholder="Ex.: Alta, Media, Baixa"
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addDraftOpt())}
+                    />
+                    <Button variant="outline" size="sm" type="button" onClick={addDraftOpt}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Separe por vírgula ou adicione uma por vez. Clique na cor para alterar.</p>
                 </div>
               )}
+
               <div className="flex gap-2 justify-end pt-1">
-                <Button variant="outline" onClick={() => { setAdding(false); setNewLabel(''); setNewType('text'); setNewSelectOpts('') }}>
+                <Button variant="outline" onClick={() => { setAdding(false); setNewLabel(''); setNewType('text'); setDraftOpts([]); setOptInput('') }}>
                   Cancelar
                 </Button>
                 <Button onClick={handleCreate} disabled={!newLabel.trim() || create.isPending}>

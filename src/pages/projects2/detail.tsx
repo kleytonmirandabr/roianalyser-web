@@ -11,7 +11,7 @@
 
 import {
   AlertTriangle, ArrowLeft, BarChart3, Calendar, ChevronDown, ChevronUp, Clock,
-  ExternalLink, FileText, Heart, LayoutDashboard, ListTodo, Paperclip,
+  ExternalLink, FileText, GanttChart, Heart, LayoutDashboard, ListTodo, Paperclip,
   Plus, Trash2, Users2,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -33,6 +33,7 @@ import { useAppState } from '@/features/admin/hooks/use-app-state'
 import { ProjectAttachmentsCard } from '@/features/projects2/components/ProjectAttachmentsCard'
 import { ProjectTasksCard } from '@/features/projects2/components/ProjectTasksCard'
 import { MembersCard } from '@/features/projects2/components/MembersCard'
+import { GanttView } from '@/features/projects2/components/GanttView'
 import { useProjectMilestones } from '@/features/projects2/hooks/use-project-milestones'
 import { useProjectRole } from '@/features/projects2/hooks/use-project-role'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
@@ -118,12 +119,34 @@ function KpiTile({ label, value, hint, tone = 'neutral' }: {
   )
 }
 
+/** Tab Gantt — componente próprio para poder usar hooks no topo. */
+function GanttTab({ projectId }: { projectId: string }) {
+  const milestones = useProjectMilestones(projectId)
+  const ganttTasks = milestones.data || []
+  return (
+    <div className="rounded-lg border bg-card overflow-hidden mx-3 sm:mx-6 mb-6">
+      <div className="p-4 border-b flex items-center gap-2">
+        <GanttChart className="h-4 w-4 text-muted-foreground" />
+        <h2 className="text-sm font-semibold">Gantt — Linha do Tempo</h2>
+        <span className="text-xs text-muted-foreground ml-auto">
+          {ganttTasks.filter(t => t.plannedDate).length} tarefas com data
+        </span>
+      </div>
+      {milestones.isLoading ? (
+        <div className="px-6 py-10 text-sm text-muted-foreground">Carregando...</div>
+      ) : (
+        <GanttView tasks={ganttTasks} />
+      )}
+    </div>
+  )
+}
+
 export function Project2DetailPage() {
   const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const tab = (searchParams.get('tab') || 'overview') as 'overview' | 'board' | 'members' | 'docs' | 'forecasts'
+  const tab = (searchParams.get('tab') || 'overview') as 'overview' | 'board' | 'gantt' | 'members' | 'docs' | 'forecasts'
   function setTab(next: string) {
     const sp = new URLSearchParams(searchParams)
     if (next === 'overview') sp.delete('tab')
@@ -307,8 +330,8 @@ export function Project2DetailPage() {
   }
 
   return (
-    <div className={`mx-auto space-y-4 ${tab === 'board' ? 'max-w-[1600px]' : 'max-w-7xl p-3 sm:p-6'}`}>
-      <header className={`flex items-center justify-between gap-3 ${tab === 'board' ? 'px-3 sm:px-6 pt-3 sm:pt-6' : ''}`}>
+    <div className={`mx-auto space-y-4 ${(tab === 'board' || tab === 'gantt') ? 'max-w-[1600px]' : 'max-w-7xl p-3 sm:p-6'}`}>
+      <header className={`flex items-center justify-between gap-3 ${(tab === 'board' || tab === 'gantt') ? 'px-3 sm:px-6 pt-3 sm:pt-6' : ''}`}>
         <Button asChild variant="ghost" size="sm">
           <Link to="/projects">
             <ArrowLeft className="h-4 w-4" />Projetos
@@ -320,10 +343,11 @@ export function Project2DetailPage() {
       </header>
 
       {/* TABS */}
-      <nav className={`flex items-center gap-1 border-b overflow-x-auto sticky top-0 bg-background/95 backdrop-blur z-10 py-1 ${tab === 'board' ? 'px-3 sm:px-6' : '-mx-2 px-2'}`}>
+      <nav className={`flex items-center gap-1 border-b overflow-x-auto sticky top-0 bg-background/95 backdrop-blur z-10 py-1 ${(tab === 'board' || tab === 'gantt') ? 'px-3 sm:px-6' : '-mx-2 px-2'}`}>
         {[
           { key: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
           { key: 'board',    label: 'Cronograma', icon: ListTodo },
+          { key: 'gantt',    label: 'Gantt',       icon: GanttChart },
           { key: 'members',  label: 'Membros',    icon: Users2 },
           { key: 'docs',     label: 'Documentos', icon: Paperclip },
           { key: 'forecasts',label: 'Forecasts',  icon: BarChart3 },
@@ -526,6 +550,10 @@ export function Project2DetailPage() {
 
       {tab === 'board' && (
         <ProjectTasksCard projectId={id} canEdit={canEdit} />
+      )}
+
+      {tab === 'gantt' && id && (
+        <GanttTab projectId={id} />
       )}
 
       {tab === 'members' && (

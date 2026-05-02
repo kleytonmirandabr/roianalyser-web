@@ -1,13 +1,12 @@
 /**
  * Tarefas do projeto (Phase 1 P.2 — Monday-like).
  *
+ * Sprint 3.8: criação inline (sem modal externo), DnD, footer por grupo.
+ *
  * Hierarquia em 3 níveis:
  *   group (cabeçalho colorido)
  *     └ task (linha principal)
  *         └ subtask (linha indentada)
- *
- * Cada item: título, status (5 estados), datas, multi-responsáveis (avatares),
- * progresso %. Owner/Editor podem mexer; Viewer só visualiza.
  */
 import {
   CalendarDays, FolderTree, LayoutGrid, List, Plus, Settings2,
@@ -17,7 +16,6 @@ import { useMemo, useState } from 'react'
 import { useAppState } from '@/features/admin/hooks/use-app-state'
 import {
   type MilestoneKind,
- 
   type ProjectMilestone,
 } from '@/features/projects2/milestones-types'
 import {
@@ -42,8 +40,6 @@ import { TasksToolbar, type TasksFilters } from '@/features/projects2/components
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { confirm } from '@/shared/ui/confirm-dialog'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
 
 interface Props {
@@ -52,9 +48,6 @@ interface Props {
 }
 
 interface UserMini { id: string; name: string; email: string }
-
-
-
 
 export function ProjectTasksCard({ projectId, canEdit }: Props) {
   const list = useProjectMilestones(projectId)
@@ -74,6 +67,9 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
 
   const items = list.data || []
 
+  // Sprint 3.8: createRequest dispara inline create na tabela
+  const [createRequest, setCreateRequest] = useState<{ kind: MilestoneKind } | null>(null)
+
   // Sprint 3.3: filtros + sort
   const filteredItems = useMemo(() => {
     let arr = items.slice()
@@ -91,7 +87,7 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
     return arr
   }, [items, filters])
 
-  // Conta subtarefas por task (root e por grupo)
+  // Conta subtarefas por task
   const subtaskCount = useMemo(() => {
     const map: Record<string, number> = {}
     for (const it of items) {
@@ -101,7 +97,6 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
     }
     return map
   }, [items])
-
 
   const allTaskIds = useMemo(() => items.map((i) => i.id), [items])
   const valuesQuery = useColumnValues(projectId, allTaskIds)
@@ -113,7 +108,6 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
     return map
   }, [valuesQuery.data])
 
-
   function setValue(taskId: string, colId: string, value: any) {
     putValue.mutate({ taskId, columnId: colId, value })
   }
@@ -121,12 +115,9 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
   const total = items.length
   const done = items.filter(i => i.status === 'done').length
 
-  const [adding, setAdding] = useState<{ kind: MilestoneKind; parentId: string | null } | null>(null)
-  const [newTitle, setNewTitle] = useState('')
-  const [newDate, setNewDate] = useState('')
-
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [view, setView] = useState<'list' | 'kanban' | 'calendar'>('list')
+
   function toggleCollapse(id: string) {
     setCollapsed(prev => {
       const next = new Set(prev)
@@ -135,23 +126,25 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
     })
   }
 
-  async function handleAdd() {
-    if (!projectId || !newTitle.trim() || !adding) return
+  /** Sprint 3.8: inline create — chamado pela TasksTableView */
+  async function handleCreateTask(kind: MilestoneKind, parentId: string | null, title: string) {
+    if (!projectId) return
     try {
-      await create.mutateAsync({
-        title: newTitle.trim(),
-        plannedDate: newDate || null,
-        status: 'planning',
-        kind: adding.kind,
-        parentId: adding.parentId,
-      })
-      toastSaved(`${adding.kind === 'group' ? 'Grupo' : adding.kind === 'task' ? 'Tarefa' : 'Subtarefa'} criada`)
-      setNewTitle(''); setNewDate(''); setAdding(null)
+      await create.mutateAsync({ title, kind, parentId, status: 'planning', plannedDate: null })
+      toastSaved(`${kind === 'group' ? 'Grupo' : kind === 'task' ? 'Tarefa' : 'Subtarefa'} criada`)
     } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
   }
 
-
-
+  /** Sprint 3.8: reordena tasks de um grupo via DnD */
+  async function handleReorderGroup(_groupId: string | null, orderedIds: string[]) {
+    try {
+      await Promise.all(
+        orderedIds.map((id, idx) =>
+          update.mutateAsync({ id, patch: { displayOrder: idx } }),
+        ),
+      )
+    } catch (err) { toastError(`Erro ao reordenar: ${(err as Error).message}`) }
+  }
 
   async function handleDelete(m: ProjectMilestone) {
     const label = m.kind === 'group' ? 'grupo' : m.kind === 'task' ? 'tarefa' : 'subtarefa'
@@ -167,8 +160,6 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
       toastDeleted(`${label.charAt(0).toUpperCase()}${label.slice(1)} removida`)
     } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
   }
-
-
 
   return (
     <Card className="p-0 overflow-hidden">
@@ -196,46 +187,20 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => { setAdding({ kind: 'group', parentId: null }); setNewTitle(''); setNewDate('') }}
+              onClick={() => setCreateRequest({ kind: 'group' })}
             >
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Grupo</span>
             </Button>
             <Button
               size="sm"
-              onClick={() => { setAdding({ kind: 'task', parentId: null }); setNewTitle(''); setNewDate('') }}
+              onClick={() => setCreateRequest({ kind: 'task' })}
             >
               <Plus className="h-4 w-4" /> Tarefa
             </Button>
           </div>
         )}
       </div>
-
-      {adding && canEdit && (
-        <div className="mx-6 mb-3 rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
-          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            Nov{adding.kind === 'group' ? 'o grupo' : adding.kind === 'task' ? 'a tarefa' : 'a subtarefa'}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="md:col-span-2">
-              <Label>Título</Label>
-              <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Ex.: Kickoff" autoFocus />
-            </div>
-            {adding.kind !== 'group' && (
-              <div>
-                <Label>Prazo</Label>
-                <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} />
-              </div>
-            )}
-          </div>
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={() => setAdding(null)}>Cancelar</Button>
-            <Button onClick={handleAdd} disabled={!newTitle.trim() || create.isPending}>
-              {create.isPending ? 'Criando...' : 'Criar'}
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Tabs de visualizacao */}
       <div className="px-6 pb-2 flex items-center gap-1 border-b">
@@ -276,9 +241,10 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
           onToggleCollapse={toggleCollapse}
           onUpdateTask={(id, patch) => update.mutateAsync({ id, patch }).catch(err => toastError(`Erro: ${(err as Error).message}`))}
           onDeleteTask={handleDelete}
-          onAddTaskInGroup={(groupId) => { setAdding({ kind: 'task', parentId: groupId }); setNewTitle(''); setNewDate('') }}
-          onAddSubtaskInTask={(taskId) => { setAdding({ kind: 'subtask', parentId: taskId }); setNewTitle(''); setNewDate('') }}
-          onAddRootTask={() => { setAdding({ kind: 'task', parentId: null }); setNewTitle(''); setNewDate('') }}
+          onCreateTask={handleCreateTask}
+          onReorderGroup={handleReorderGroup}
+          createRequest={createRequest}
+          onCreateRequestConsumed={() => setCreateRequest(null)}
           onPutColumnValue={setValue}
           onOpenColumnsManager={() => setColsModalOpen(true)}
           onRenameColumn={(colId, label) => updateCol.mutateAsync({ id: colId, patch: { label } }).catch(err => toastError(`Erro: ${(err as Error).message}`))}
