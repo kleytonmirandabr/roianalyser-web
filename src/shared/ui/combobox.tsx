@@ -244,10 +244,10 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(
                   )}
                 />
                 {opt.icon}
-                <span className="flex min-w-0 flex-col">
-                  <span className="truncate">{opt.label}</span>
+                <span className="flex flex-col">
+                  <span className="whitespace-nowrap">{opt.label}</span>
                   {opt.hint && (
-                    <span className="truncate text-xs text-muted-foreground">
+                    <span className="whitespace-nowrap text-xs text-muted-foreground">
                       {opt.hint}
                     </span>
                   )}
