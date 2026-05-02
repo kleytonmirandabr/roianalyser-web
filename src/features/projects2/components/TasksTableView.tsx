@@ -381,15 +381,15 @@ export function TasksTableView({
       { key: 'expand', label: '', width: '28px' },
       { key: 'check', label: '', width: '32px' },
       { key: 'title', label: 'Tarefa', width: 'minmax(260px, 1fr)', sortable: true },
-      { key: 'plannedDate', label: 'Prazo', width: '96px', sortable: true },
-      { key: 'status', label: 'Status', width: '140px', sortable: true },
-      { key: 'responsible', label: 'Responsável', width: '144px' },
+      { key: 'plannedDate', label: 'Prazo', width: '110px', sortable: true },
+      { key: 'status', label: 'Status', width: '150px', sortable: true },
+      { key: 'responsible', label: 'Responsável', width: '150px' },
       { key: 'progress', label: '%', width: '80px', sortable: true, align: 'center' },
     ]
     customCols.forEach((c) => {
       base.push({ key: `col_${c.id}`, label: c.label, width: '160px', sortable: true, colId: c.id })
     })
-    base.push({ key: 'updatedAt', label: 'Atualizado', width: '100px', sortable: true })
+    base.push({ key: 'updatedAt', label: 'Atualizado', width: '130px', sortable: true })
     base.push({ key: 'addCol', label: '', width: '36px' })
     base.push({ key: 'rowActions', label: '', width: '52px' })
     return base
@@ -435,7 +435,7 @@ export function TasksTableView({
         className={`px-2 py-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground border-l flex items-center gap-1 select-none ${col.sortable ? 'cursor-pointer hover:bg-muted/50' : ''} ${col.align === 'center' ? 'justify-center' : ''}`}
         title={col.sortable && !customCol ? 'Ordenar' : ''}
       >
-        <span className="truncate">{col.label}</span>
+        <span className="whitespace-nowrap">{col.label}</span>
         {col.sortable && <SortIcon sortKey={col.key} />}
         {customCol && canEdit && onRenameColumn && onDeleteColumn && (
           <ColumnHeaderMenu col={customCol} onRename={onRenameColumn} onDelete={onDeleteColumn} />

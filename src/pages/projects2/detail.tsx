@@ -307,8 +307,8 @@ export function Project2DetailPage() {
   }
 
   return (
-    <div className={`p-3 sm:p-6 mx-auto ${tab === 'board' ? 'max-w-[1600px]' : 'max-w-7xl'} space-y-4`}>
-      <header className="flex items-center justify-between gap-3">
+    <div className={`mx-auto space-y-4 ${tab === 'board' ? 'max-w-[1600px]' : 'max-w-7xl p-3 sm:p-6'}`}>
+      <header className={`flex items-center justify-between gap-3 ${tab === 'board' ? 'px-3 sm:px-6 pt-3 sm:pt-6' : ''}`}>
         <Button asChild variant="ghost" size="sm">
           <Link to="/projects">
             <ArrowLeft className="h-4 w-4" />Projetos
@@ -320,7 +320,7 @@ export function Project2DetailPage() {
       </header>
 
       {/* TABS */}
-      <nav className="flex items-center gap-1 border-b -mx-2 px-2 overflow-x-auto sticky top-0 bg-background/95 backdrop-blur z-10 py-1">
+      <nav className={`flex items-center gap-1 border-b overflow-x-auto sticky top-0 bg-background/95 backdrop-blur z-10 py-1 ${tab === 'board' ? 'px-3 sm:px-6' : '-mx-2 px-2'}`}>
         {[
           { key: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
           { key: 'board',    label: 'Cronograma', icon: ListTodo },

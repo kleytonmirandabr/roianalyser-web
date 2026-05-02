@@ -257,7 +257,7 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(
           }
           return (
           <div
-            className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-lg"
+            className="absolute left-0 top-full z-50 mt-1 max-h-72 overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-lg min-w-full w-max max-w-xs"
             onKeyDown={handleKey}
           >
             <div className="flex items-center gap-2 border-b border-border bg-background px-3 py-2">

@@ -27,7 +27,7 @@ export function AppShell() {
         <Sidebar />
         <div className="flex flex-1 flex-col min-w-0">
           <Header />
-          <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 min-w-0">
+          <main className="flex-1 overflow-y-auto p-6 min-w-0">
             <Outlet />
           </main>
           <VersionBadge />
