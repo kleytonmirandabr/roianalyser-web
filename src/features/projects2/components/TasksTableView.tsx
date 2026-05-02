@@ -435,19 +435,38 @@ export function TasksTableView({
     return map
   }, [tree])
 
+  // Largura e alinhamento por tipo de coluna custom (também usado no render das células)
+  const COL_WIDTH: Record<string, string> = {
+    text: '160px', long_text: '200px', number: '100px', currency: '130px',
+    percent: '90px', progress: '90px', date: '130px', date_range: '260px',
+    checkbox: '70px', rating: '110px', select: '150px', status: '150px', link: '180px',
+  }
+  const COL_ALIGN: Record<string, 'left' | 'right' | 'center'> = {
+    number: 'center', currency: 'right', percent: 'center',
+    progress: 'center', date: 'center', checkbox: 'center', rating: 'center',
+  }
+
   // Colunas
   const columns: Column[] = useMemo(() => {
+
     const base: Column[] = [
       { key: 'drag',        label: '', width: '28px' },
       { key: 'expand',      label: '', width: '28px' },
       { key: 'check',       label: '', width: '32px' },
       { key: 'title',       label: 'Tarefa',      width: 'minmax(260px, 1fr)', sortable: true },
-      { key: 'plannedDate', label: 'Prazo',        width: '110px', sortable: true },
+      { key: 'plannedDate', label: 'Prazo',        width: '130px', sortable: true, align: 'center' },
       { key: 'status',      label: 'Status',       width: '150px', sortable: true },
       { key: 'responsible', label: 'Responsável',  width: '150px' },
       { key: 'progress',    label: '%',            width: '80px',  sortable: true, align: 'center' },
     ]
-    customCols.forEach(c => base.push({ key: `col_${c.id}`, label: c.label, width: '160px', sortable: true, colId: c.id }))
+    customCols.forEach(c => base.push({
+      key: `col_${c.id}`,
+      label: c.label,
+      width: COL_WIDTH[c.type] || '160px',
+      sortable: true,
+      colId: c.id,
+      align: COL_ALIGN[c.type],
+    }))
     base.push({ key: 'updatedAt', label: 'Atualizado', width: '130px', sortable: true })
     base.push({ key: 'addCol',    label: '',            width: '36px' })
     base.push({ key: 'rowActions',label: '',            width: '52px' })
@@ -744,11 +763,11 @@ export function TasksTableView({
 
                 // plannedDate
                 cells.push(
-                  <div key="plannedDate" className="px-2 py-1 border-l flex items-center">
+                  <div key="plannedDate" className="px-1 py-1 border-l flex items-center justify-center">
                     {canEdit ? (
                       <input type="date" value={t.plannedDate || ''}
                         onChange={e => onUpdateTask(t.id, { plannedDate: e.target.value || null })}
-                        className="w-full h-7 px-1.5 text-xs rounded border-0 bg-transparent hover:bg-muted/40 focus:bg-background focus:border focus:outline-none" />
+                        className="w-full h-7 px-1 text-xs rounded border-0 bg-transparent hover:bg-muted/40 focus:bg-background focus:border focus:outline-none text-center" />
                     ) : (
                       <span className="text-xs text-muted-foreground tabular-nums">{fmtDate(t.plannedDate)}</span>
                     )}
@@ -788,8 +807,10 @@ export function TasksTableView({
                 // custom cols
                 customCols.forEach((c, ci) => {
                   const value = valuesByTaskCol[t.id]?.[c.id]?.value ?? null
+                  const colAlign = COL_ALIGN[c.type]
+                  const alignCls = colAlign === 'center' ? 'justify-center' : colAlign === 'right' ? 'justify-end' : ''
                   cells.push(
-                    <div key={`col_${c.id}`} className="px-1.5 py-1 border-l flex items-center overflow-hidden">
+                    <div key={`col_${c.id}`} className={`px-1.5 py-1 border-l flex items-center overflow-hidden ${alignCls}`}>
                       {canEdit
                         ? <ColumnCellEditor column={c} value={value} onChange={v => onPutColumnValue(t.id, c.id, v)} />
                         : (c.type === 'select' || c.type === 'status')
