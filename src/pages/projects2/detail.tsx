@@ -111,10 +111,10 @@ function KpiTile({ label, value, hint, tone = 'neutral' }: {
     : tone === 'warn' ? 'text-amber-700 dark:text-amber-400'
     : 'text-foreground'
   return (
-    <div className="rounded-md border bg-card p-3">
+    <div className="rounded-md border bg-card p-2.5">
       <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">{label}</div>
-      <div className={`mt-1 text-xl font-bold tabular-nums ${toneCls}`}>{value}</div>
-      {hint && <div className="text-[11px] text-muted-foreground mt-0.5">{hint}</div>}
+      <div className={`mt-0.5 text-base font-bold tabular-nums ${toneCls}`}>{value}</div>
+      {hint && <div className="text-[10px] text-muted-foreground mt-0.5">{hint}</div>}
     </div>
   )
 }
@@ -332,53 +332,64 @@ export function Project2DetailPage() {
     } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
   }
 
-  const isWideTab = tab === 'list' || tab === 'kanban' || tab === 'calendar' || tab === 'gantt'
-
   return (
-    <div className={`mx-auto space-y-0 ${isWideTab ? 'max-w-[1600px]' : 'max-w-7xl p-3 sm:p-6 space-y-4'}`}>
-      <header className={`flex items-center justify-between gap-3 ${isWideTab ? 'px-3 sm:px-6 pt-3 sm:pt-4 pb-1' : ''}`}>
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/projects">
-            <ArrowLeft className="h-4 w-4" />Projetos
-          </Link>
-        </Button>
-        <Button variant="ghost" size="sm" onClick={handleDelete} disabled={remove.isPending}>
-          <Trash2 className="h-4 w-4 text-rose-600" /> Excluir
-        </Button>
-      </header>
+    <div className="min-h-screen">
+      {/* ── BARRA ÚNICA STICKY: back + nome + tabs + delete ── */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b">
+        <div className="px-3 sm:px-5 flex items-center gap-2 h-11 min-w-0">
+          <Button asChild variant="ghost" size="sm" className="h-7 px-2 -ml-2 shrink-0">
+            <Link to="/projects">
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline text-xs">Projetos</span>
+            </Link>
+          </Button>
+          <span className="text-sm font-semibold truncate max-w-[130px] sm:max-w-[200px] shrink-0">{prj.name}</span>
+          <span className={`hidden md:inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide rounded-full px-1.5 py-0.5 shrink-0 ${
+            health.tone === 'pos'
+              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+              : health.tone === 'amber'
+              ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+              : 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400'
+          }`}>
+            <Heart className="h-2.5 w-2.5" />{health.label}
+          </span>
+          <nav className="flex items-center overflow-x-auto flex-1 mx-1">
+            {[
+              { key: 'overview',  label: 'Visão Geral',  icon: LayoutDashboard },
+              { key: 'list',      label: 'Lista',        icon: ListTodo },
+              { key: 'kanban',    label: 'Kanban',       icon: LayoutGrid },
+              { key: 'calendar',  label: 'Calendário',   icon: CalendarDays },
+              { key: 'gantt',     label: 'Gantt',        icon: GanttChart },
+              { key: 'members',   label: 'Membros',      icon: Users2 },
+              { key: 'docs',      label: 'Documentos',   icon: Paperclip },
+              { key: 'forecasts', label: 'Forecasts',    icon: BarChart3 },
+            ].map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setTab(key)}
+                className={`shrink-0 inline-flex items-center gap-1 px-2 sm:px-2.5 py-2.5 text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+                  tab === key
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">{label}</span>
+              </button>
+            ))}
+          </nav>
+          <Button variant="ghost" size="sm" onClick={handleDelete} disabled={remove.isPending}
+            className="h-7 w-7 p-0 shrink-0" title="Excluir projeto">
+            <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+          </Button>
+        </div>
+      </div>
 
-      {/* TABS */}
-      <nav className={`flex items-center gap-0.5 border-b overflow-x-auto sticky top-0 bg-background/95 backdrop-blur z-10 py-0 ${isWideTab ? 'px-3 sm:px-6' : '-mx-2 px-2'}`}>
-        {[
-          { key: 'overview',  label: 'Visão Geral',  icon: LayoutDashboard },
-          { key: 'list',      label: 'Lista',        icon: ListTodo },
-          { key: 'kanban',    label: 'Kanban',       icon: LayoutGrid },
-          { key: 'calendar',  label: 'Calendário',   icon: CalendarDays },
-          { key: 'gantt',     label: 'Gantt',        icon: GanttChart },
-          { key: 'members',   label: 'Membros',      icon: Users2 },
-          { key: 'docs',      label: 'Documentos',   icon: Paperclip },
-          { key: 'forecasts', label: 'Forecasts',    icon: BarChart3 },
-        ].map(({ key, label, icon: Icon }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setTab(key)}
-            className={`shrink-0 inline-flex items-center gap-1.5 px-2 sm:px-3 py-2.5 text-xs sm:text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
-              tab === key
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30'
-            }`}
-          >
-            <Icon className="h-3.5 w-3.5 shrink-0" />
-            <span className="hidden sm:inline">{label}</span>
-            <span className="sm:hidden">{label.split(' ')[0]}</span>
-          </button>
-        ))}
-      </nav>
-
-      {tab === 'overview' && <>
+      {tab === 'overview' && (
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 space-y-4">
       {/* HERO */}
-      <Card className="p-6 space-y-5">
+      <Card className="p-4 space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -446,8 +457,8 @@ export function Project2DetailPage() {
       </Card>
 
       {/* ORIGEM */}
-      <Card className="p-6 space-y-3">
-        <h2 className="text-lg font-semibold">Origem</h2>
+      <Card className="p-4 space-y-3">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Origem</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="rounded-md border p-3">
             <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Contrato</div>
@@ -505,9 +516,9 @@ export function Project2DetailPage() {
 
       {/* PLANEJADO × REALIZADO */}
       {planVsReal && planVsReal.budget > 0 && (
-        <Card className="p-6 space-y-4">
+        <Card className="p-4 space-y-3">
           <div>
-            <h2 className="text-lg font-semibold">Planejado × Realizado</h2>
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Planejado × Realizado</h2>
             <p className="text-xs text-muted-foreground mt-0.5">
               Comparação entre orçamento e custo executado (proxy = orçamento × % executado).
             </p>
@@ -553,7 +564,8 @@ export function Project2DetailPage() {
 
       {/* CUSTOM FIELDS (parte do overview) */}
       <CustomFieldsCard scope="project" entityType="project" entityId={id} />
-      </>}
+      </div>
+      )}
 
       {(tab === 'list' || tab === 'kanban' || tab === 'calendar') && (
         <ProjectTasksCard projectId={id} canEdit={canEdit} view={tab} />
@@ -564,20 +576,24 @@ export function Project2DetailPage() {
       )}
 
       {tab === 'members' && (
-        <MembersCard projectId={id} generalAccess={prj.generalAccess} canManage={canManage} />
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5">
+          <MembersCard projectId={id} generalAccess={prj.generalAccess} canManage={canManage} />
+        </div>
       )}
 
       {tab === 'docs' && (
-        <ProjectAttachmentsCard projectId={id} />
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5">
+          <ProjectAttachmentsCard projectId={id} />
+        </div>
       )}
 
       {tab === 'forecasts' && (
       <>
       {/* FORECASTS */}
-      <Card className="p-6 space-y-3">
+      <Card className="p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Forecasts ({forecasts.length})</h2>
+            <h2 className="text-base font-semibold">Forecasts ({forecasts.length})</h2>
             <p className="text-xs text-muted-foreground mt-0.5">Revisões de previsão associadas a este projeto.</p>
           </div>
           <Button size="sm" onClick={handleCreateForecast} disabled={createForecast.isPending}>
@@ -604,7 +620,8 @@ export function Project2DetailPage() {
       </Card>
       </>)}
 
-      {tab === 'overview' && <>
+      {tab === 'overview' && (
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-8 space-y-4">
       {/* EDITOR */}
       <Card className="p-0 overflow-hidden">
         <button
@@ -695,7 +712,9 @@ export function Project2DetailPage() {
           </div>
         )}
       </Card>
-      </>}
+      </div>
+      )}
+
     </div>
   )
 }
