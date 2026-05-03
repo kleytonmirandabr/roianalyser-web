@@ -8,9 +8,7 @@
  *     └ task (linha principal)
  *         └ subtask (linha indentada)
  */
-import {
-  CalendarDays, FolderTree, LayoutGrid, List, Plus, Settings2,
-} from 'lucide-react'
+import { Plus, Settings2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { useAppState } from '@/features/admin/hooks/use-app-state'
@@ -39,18 +37,18 @@ import { TasksCalendarView } from '@/features/projects2/components/TasksCalendar
 import { TasksTableView } from '@/features/projects2/components/TasksTableView'
 import { TasksToolbar, type TasksFilters } from '@/features/projects2/components/TasksToolbar'
 import { Button } from '@/shared/ui/button'
-import { Card } from '@/shared/ui/card'
 import { confirm } from '@/shared/ui/confirm-dialog'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
 
 interface Props {
   projectId: string | undefined
   canEdit: boolean
+  view: 'list' | 'kanban' | 'calendar'
 }
 
 interface UserMini { id: string; name: string; email: string }
 
-export function ProjectTasksCard({ projectId, canEdit }: Props) {
+export function ProjectTasksCard({ projectId, canEdit, view }: Props) {
   const list = useProjectMilestones(projectId)
   const create = useCreateMilestone(projectId)
   const update = useUpdateMilestone(projectId)
@@ -120,7 +118,6 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
   const done = items.filter(i => i.status === 'done').length
 
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
-  const [view, setView] = useState<'list' | 'kanban' | 'calendar'>('list')
 
   function toggleCollapse(id: string) {
     setCollapsed(prev => {
@@ -166,63 +163,42 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
   }
 
   return (
-    <Card className="p-0 overflow-hidden">
-      <div className="p-4 sm:p-6 pb-3 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <FolderTree className="h-5 w-5 text-muted-foreground" />
-            Tarefas
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {done}/{total} concluídas · grupos, tarefas e subtarefas
-          </p>
-        </div>
+    <div>
+      {/* Slim action bar — sem Card, sem h2 pesado */}
+      <div className="px-3 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2 border-b bg-background/95">
+        <span className="text-xs text-muted-foreground">
+          {done}/{total} concluídas · grupos, tarefas e subtarefas
+        </span>
         {canEdit && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setColsModalOpen(true)}
               title="Gerenciar colunas customizadas"
+              className="h-7 text-xs"
             >
-              <Settings2 className="h-4 w-4" />
+              <Settings2 className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Colunas</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCreateRequest({ kind: 'group' })}
+              className="h-7 text-xs"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Grupo</span>
             </Button>
             <Button
               size="sm"
               onClick={() => setCreateRequest({ kind: 'task' })}
+              className="h-7 text-xs"
             >
-              <Plus className="h-4 w-4" /> Tarefa
+              <Plus className="h-3.5 w-3.5" /> Tarefa
             </Button>
           </div>
         )}
-      </div>
-
-      {/* Tabs de visualizacao */}
-      <div className="px-6 pb-2 flex items-center gap-1 border-b">
-        <button
-          type="button"
-          onClick={() => setView('list')}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-t-md ${view === 'list' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-        ><List className="h-3.5 w-3.5" /> Lista</button>
-        <button
-          type="button"
-          onClick={() => setView('kanban')}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-t-md ${view === 'kanban' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-        ><LayoutGrid className="h-3.5 w-3.5" /> Kanban</button>
-        <button
-          type="button"
-          onClick={() => setView('calendar')}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-t-md ${view === 'calendar' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-        ><CalendarDays className="h-3.5 w-3.5" /> Calendario</button>
       </div>
 
       {view === 'list' && (
@@ -266,6 +242,6 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
         projectId={projectId}
         canManage={canEdit}
       />
-    </Card>
+    </div>
   )
 }

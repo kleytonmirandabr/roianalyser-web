@@ -10,8 +10,8 @@
  */
 
 import {
-  AlertTriangle, ArrowLeft, BarChart3, Calendar, ChevronDown, ChevronUp, Clock,
-  ExternalLink, FileText, GanttChart, Heart, LayoutDashboard, ListTodo, Paperclip,
+  AlertTriangle, ArrowLeft, BarChart3, Calendar, CalendarDays, ChevronDown, ChevronUp, Clock,
+  ExternalLink, FileText, GanttChart, Heart, LayoutDashboard, LayoutGrid, ListTodo, Paperclip,
   Plus, Trash2, Users2,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -124,7 +124,7 @@ function GanttTab({ projectId }: { projectId: string }) {
   const milestones = useProjectMilestones(projectId)
   const ganttTasks = milestones.data || []
   return (
-    <div className="rounded-lg border bg-card overflow-hidden mx-3 sm:mx-6 mb-6">
+    <div className="rounded-lg border bg-card overflow-hidden mx-3 sm:mx-6 mt-4 mb-6">
       <div className="p-4 border-b flex items-center gap-2">
         <GanttChart className="h-4 w-4 text-muted-foreground" />
         <h2 className="text-sm font-semibold">Gantt — Linha do Tempo</h2>
@@ -146,7 +146,10 @@ export function Project2DetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const tab = (searchParams.get('tab') || 'overview') as 'overview' | 'board' | 'gantt' | 'members' | 'docs' | 'forecasts'
+  const rawTab = searchParams.get('tab') || 'overview'
+  // 'board' é alias legado → 'list'
+  const tab = (rawTab === 'board' ? 'list' : rawTab) as
+    'overview' | 'list' | 'kanban' | 'calendar' | 'gantt' | 'members' | 'docs' | 'forecasts'
   function setTab(next: string) {
     const sp = new URLSearchParams(searchParams)
     if (next === 'overview') sp.delete('tab')
@@ -329,9 +332,11 @@ export function Project2DetailPage() {
     } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
   }
 
+  const isWideTab = tab === 'list' || tab === 'kanban' || tab === 'calendar' || tab === 'gantt'
+
   return (
-    <div className={`mx-auto space-y-4 ${(tab === 'board' || tab === 'gantt') ? 'max-w-[1600px]' : 'max-w-7xl p-3 sm:p-6'}`}>
-      <header className={`flex items-center justify-between gap-3 ${(tab === 'board' || tab === 'gantt') ? 'px-3 sm:px-6 pt-3 sm:pt-6' : ''}`}>
+    <div className={`mx-auto space-y-0 ${isWideTab ? 'max-w-[1600px]' : 'max-w-7xl p-3 sm:p-6 space-y-4'}`}>
+      <header className={`flex items-center justify-between gap-3 ${isWideTab ? 'px-3 sm:px-6 pt-3 sm:pt-4 pb-1' : ''}`}>
         <Button asChild variant="ghost" size="sm">
           <Link to="/projects">
             <ArrowLeft className="h-4 w-4" />Projetos
@@ -343,26 +348,28 @@ export function Project2DetailPage() {
       </header>
 
       {/* TABS */}
-      <nav className={`flex items-center gap-1 border-b overflow-x-auto sticky top-0 bg-background/95 backdrop-blur z-10 py-1 ${(tab === 'board' || tab === 'gantt') ? 'px-3 sm:px-6' : '-mx-2 px-2'}`}>
+      <nav className={`flex items-center gap-0.5 border-b overflow-x-auto sticky top-0 bg-background/95 backdrop-blur z-10 py-0 ${isWideTab ? 'px-3 sm:px-6' : '-mx-2 px-2'}`}>
         {[
-          { key: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
-          { key: 'board',    label: 'Cronograma', icon: ListTodo },
-          { key: 'gantt',    label: 'Gantt',       icon: GanttChart },
-          { key: 'members',  label: 'Membros',    icon: Users2 },
-          { key: 'docs',     label: 'Documentos', icon: Paperclip },
-          { key: 'forecasts',label: 'Forecasts',  icon: BarChart3 },
+          { key: 'overview',  label: 'Visão Geral',  icon: LayoutDashboard },
+          { key: 'list',      label: 'Lista',        icon: ListTodo },
+          { key: 'kanban',    label: 'Kanban',       icon: LayoutGrid },
+          { key: 'calendar',  label: 'Calendário',   icon: CalendarDays },
+          { key: 'gantt',     label: 'Gantt',        icon: GanttChart },
+          { key: 'members',   label: 'Membros',      icon: Users2 },
+          { key: 'docs',      label: 'Documentos',   icon: Paperclip },
+          { key: 'forecasts', label: 'Forecasts',    icon: BarChart3 },
         ].map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             type="button"
             onClick={() => setTab(key)}
-            className={`shrink-0 inline-flex items-center gap-1.5 px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium rounded-t-md border-b-2 -mb-px transition-colors whitespace-nowrap ${
+            className={`shrink-0 inline-flex items-center gap-1.5 px-2 sm:px-3 py-2.5 text-xs sm:text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
               tab === key
                 ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30'
             }`}
           >
-            <Icon className="h-4 w-4 shrink-0" />
+            <Icon className="h-3.5 w-3.5 shrink-0" />
             <span className="hidden sm:inline">{label}</span>
             <span className="sm:hidden">{label.split(' ')[0]}</span>
           </button>
@@ -548,8 +555,8 @@ export function Project2DetailPage() {
       <CustomFieldsCard scope="project" entityType="project" entityId={id} />
       </>}
 
-      {tab === 'board' && (
-        <ProjectTasksCard projectId={id} canEdit={canEdit} />
+      {(tab === 'list' || tab === 'kanban' || tab === 'calendar') && (
+        <ProjectTasksCard projectId={id} canEdit={canEdit} view={tab} />
       )}
 
       {tab === 'gantt' && id && (
