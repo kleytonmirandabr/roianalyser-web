@@ -10,7 +10,7 @@
  */
 
 import {
-  AlertTriangle, ArrowLeft, Calendar, CalendarDays, ChevronDown, ChevronUp, Clock,
+  AlertTriangle, ArrowLeft, Calendar, CalendarDays, ClipboardList, ChevronDown, ChevronUp, Clock,
   ExternalLink, FileText, GanttChart, Heart, LayoutDashboard, LayoutGrid, ListTodo, Paperclip, Trash2, Users2,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -30,6 +30,7 @@ import { ProjectAttachmentsCard } from '@/features/projects2/components/ProjectA
 import { ProjectTasksCard } from '@/features/projects2/components/ProjectTasksCard'
 import { MembersCard } from '@/features/projects2/components/MembersCard'
 import { GanttView } from '@/features/projects2/components/GanttView'
+import { FormBuilderTab } from '@/features/projects2/components/FormBuilderTab'
 import { useProjectMilestones } from '@/features/projects2/hooks/use-project-milestones'
 import { useProjectRole } from '@/features/projects2/hooks/use-project-role'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
@@ -145,7 +146,7 @@ export function Project2DetailPage() {
   const rawTab = searchParams.get('tab') || 'overview'
   // 'board' é alias legado → 'list'
   const tab = (rawTab === 'board' ? 'list' : rawTab) as
-    'overview' | 'list' | 'kanban' | 'calendar' | 'gantt' | 'members' | 'docs'
+    'overview' | 'list' | 'kanban' | 'calendar' | 'gantt' | 'members' | 'docs' | 'forms'
   function setTab(next: string) {
     const sp = new URLSearchParams(searchParams)
     if (next === 'overview') sp.delete('tab')
@@ -345,6 +346,7 @@ export function Project2DetailPage() {
               { key: 'gantt',     label: 'Gantt',        icon: GanttChart },
               { key: 'members',   label: 'Membros',      icon: Users2 },
               { key: 'docs',      label: 'Documentos',   icon: Paperclip },
+              { key: 'forms',     label: 'Formulários',  icon: ClipboardList },
                 ].map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
@@ -567,6 +569,10 @@ export function Project2DetailPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5">
           <ProjectAttachmentsCard projectId={id} />
         </div>
+      )}
+
+      {tab === 'forms' && id && (
+        <FormBuilderTab projectId={id} canManage={canManage} />
       )}
 
       {tab === 'overview' && (

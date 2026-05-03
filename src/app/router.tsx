@@ -46,6 +46,9 @@ const NewProject2Page = lazy(() =>
 const Project2DetailPage = lazy(() =>
   import('@/pages/projects2/detail').then((m) => ({ default: m.Project2DetailPage })),
 )
+const ProjectFormPage = lazy(() =>
+  import('@/pages/public/ProjectFormPage').then((m) => ({ default: m.ProjectFormPage })),
+)
 const Projects2DashboardPage = lazy(() =>
   import('@/pages/projects2/dashboard').then((m) => ({ default: m.Projects2DashboardPage })),
 )
@@ -286,6 +289,7 @@ export function AppRouter() {
       <Route path="/mfa" element={<MfaPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/f/:token" element={<Lazy><ProjectFormPage /></Lazy>} />
 
       {/* Privadas — todas envolvidas pelo AppShell (sidebar + header + guard) */}
       <Route element={<AppShell />}>
