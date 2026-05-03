@@ -1,7 +1,13 @@
 /**
- * Tabela tipo Excel — componente principal (Phase 3 Sprint 3.6 → 3.9).
- * Lógica extraída para módulos em TasksTable/:
- *   types.ts · helpers.ts · ColumnActionsMenu · MultiPeoplePicker · SelectPill · SortableRow
+ * Tabela tipo Excel — componente principal (Phase 3 Sprint 3.6 → 4.1).
+ *
+ * Sprint 4.1 — novas features:
+ *   - Busca global no toolbar (filtra pelo título em tempo real)
+ *   - Seleção múltipla + ações em lote (alterar status / excluir)
+ *   - Exportar CSV (com filtros e colunas visíveis aplicados)
+ *   - Freeze da coluna "Tarefa" (sticky left no scroll horizontal)
+ *   - Barra de progresso visual na coluna %
+ *   - Persistência de filtros/sort/colunas ocultas no localStorage
  */
 import {
   DndContext, DragOverlay, PointerSensor,
@@ -10,8 +16,10 @@ import {
 } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
 import {
-  ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, ChevronDown, ChevronRight,
-  Circle, Eye, Filter, GripVertical, Plus, Trash2, UserCircle2, X,
+  ArrowDown, ArrowUp, ArrowUpDown,
+  CheckCircle2, ChevronDown, ChevronRight,
+  Circle, Download, Eye, Filter, GripVertical,
+  Plus, Search, Trash2, UserCircle2, X,
 } from 'lucide-react'
 import {
   useEffect, useMemo, useRef, useState, type ReactNode,
@@ -24,16 +32,16 @@ import {
 import { Combobox } from '@/shared/ui/combobox'
 import { ColumnCellEditor, ColumnCellReadonly } from '@/features/projects2/components/ColumnCellEditor'
 
-import { ColumnActionsMenu }   from './ColumnActionsMenu'
-import { MultiPeoplePicker }   from './MultiPeoplePicker'
-import { SelectPill }          from './SelectPill'
-import { SortableRow }         from './SortableRow'
+import { ColumnActionsMenu }  from './ColumnActionsMenu'
+import { MultiPeoplePicker }  from './MultiPeoplePicker'
+import { SelectPill }         from './SelectPill'
+import { SortableRow }        from './SortableRow'
 import {
   COL_ALIGN, COL_WIDTH, NON_HIDEABLE,
   fmtDate, initials, isFilterActive, matchColFilter, relativeTime,
 } from './helpers'
 import type {
-  ColFilter, Column, InlineCreate, Row, TableSort, TasksTableViewProps,
+  ColFilter, Column, FlatRow, InlineCreate, Row, TableSort, TasksTableViewProps,
 } from './types'
 
 export function TasksTableView({
@@ -60,8 +68,39 @@ export function TasksTableView({
   const [activeId, setActiveId] = useState<string | null>(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
-  const [colFilters, setColFilters] = useState<Record<string, ColFilter>>({})
-  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
+  const [colFilters, setColFilters]   = useState<Record<string, ColFilter>>({})
+  const [hiddenCols, setHiddenCols]   = useState<Set<string>>(new Set())
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // ── LocalStorage persistence ───────────────────────────────────────────────
+  const storageKey = useMemo(() => {
+    const match = typeof window !== 'undefined'
+      ? window.location.pathname.match(/\/projects\/(\w+)/)
+      : null
+    return match ? `tasktable_${match[1]}` : null
+  }, [])
+
+  useEffect(() => {
+    if (!storageKey) return
+    try {
+      const saved = localStorage.getItem(storageKey)
+      if (!saved) return
+      const { colFilters: cf, hiddenCols: hc, sort: s } = JSON.parse(saved)
+      if (cf && typeof cf === 'object') setColFilters(cf)
+      if (Array.isArray(hc)) setHiddenCols(new Set(hc))
+      if (s) setSort(s)
+    } catch { /* ignore corrupt data */ }
+  }, [storageKey])
+
+  useEffect(() => {
+    if (!storageKey) return
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({
+        colFilters, hiddenCols: [...hiddenCols], sort,
+      }))
+    } catch { /* ignore quota errors */ }
+  }, [colFilters, hiddenCols, sort, storageKey])
 
   // ── Effects ────────────────────────────────────────────────────────────────
   useEffect(() => { if (editingTitleId) titleInputRef.current?.focus() }, [editingTitleId])
@@ -109,6 +148,51 @@ export function TasksTableView({
       return null
     })
   }
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+  function bulkDelete() {
+    selectedIds.forEach(id => {
+      const task = items.find(i => i.id === id)
+      if (task) onDeleteTask(task)
+    })
+    setSelectedIds(new Set())
+  }
+  function bulkChangeStatus(status: MilestoneStatus) {
+    selectedIds.forEach(id => onUpdateTask(id, { status }))
+    setSelectedIds(new Set())
+  }
+
+  // ── Export CSV ─────────────────────────────────────────────────────────────
+  function exportCSV() {
+    const dataCols = visibleColumns.filter(
+      c => !['select', 'drag', 'expand', 'check', 'addCol', 'rowActions'].includes(c.key)
+    )
+    const header = dataCols.map(c => `"${c.label || c.key}"`).join(',')
+    const rows = flatRows
+      .filter((r): r is FlatRow => r._type === 'task' && r.level > 0)
+      .map(({ task: t }) => dataCols.map(c => {
+        let v = ''
+        if      (c.key === 'title')       v = t.title
+        else if (c.key === 'plannedDate') v = t.plannedDate || ''
+        else if (c.key === 'status')      v = MILESTONE_STATUS_LABELS[t.status]
+        else if (c.key === 'responsible') v = t.responsibleIds.map(id => users.find(u => u.id === id)?.name || id).join('; ')
+        else if (c.key === 'progress')    v = String(t.progressPct ?? 0)
+        else if (c.key === 'updatedAt')   v = t.updatedAt || ''
+        else if (c.colId)                 v = String(valuesByTaskCol[t.id]?.[c.colId]?.value ?? '')
+        return `"${v.replace(/"/g, '""')}"`
+      }).join(','))
+    const csv = '﻿' + [header, ...rows].join('\n')
+    const a   = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })),
+      download: 'cronograma.csv',
+    })
+    a.click(); URL.revokeObjectURL(a.href)
+  }
 
   // ── Tree ───────────────────────────────────────────────────────────────────
   const tree = useMemo(() => {
@@ -128,23 +212,28 @@ export function TasksTableView({
     if (!sort) return out
     out.sort((a, b) => {
       let av: any = '', bv: any = ''
-      if      (sort.key === 'title')        { av = a.title;                  bv = b.title }
-      else if (sort.key === 'plannedDate')  { av = a.plannedDate || '￿'; bv = b.plannedDate || '￿' }
-      else if (sort.key === 'status')       { av = a.status;                 bv = b.status }
-      else if (sort.key === 'progress')     { av = a.progressPct ?? 0;       bv = b.progressPct ?? 0 }
-      else if (sort.key === 'updatedAt')    { av = a.updatedAt;              bv = b.updatedAt }
+      if      (sort.key === 'title')       { av = a.title;             bv = b.title }
+      else if (sort.key === 'plannedDate') { av = a.plannedDate || '￿'; bv = b.plannedDate || '￿' }
+      else if (sort.key === 'status')      { av = a.status;             bv = b.status }
+      else if (sort.key === 'progress')    { av = a.progressPct ?? 0;   bv = b.progressPct ?? 0 }
+      else if (sort.key === 'updatedAt')   { av = a.updatedAt;          bv = b.updatedAt }
       else if (sort.key.startsWith('col_')) {
         const id = sort.key.slice(4)
         av = valuesByTaskCol[a.id]?.[id]?.value ?? ''
         bv = valuesByTaskCol[b.id]?.[id]?.value ?? ''
       }
-      const cmp = typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av).localeCompare(String(bv), 'pt-BR')
+      const cmp = typeof av === 'number' && typeof bv === 'number'
+        ? av - bv
+        : String(av).localeCompare(String(bv), 'pt-BR')
       return sort.dir === 'asc' ? cmp : -cmp
     })
     return out
   }
 
   function taskMatchesFilters(t: ProjectMilestone): boolean {
+    // Busca global
+    if (searchQuery.trim() && !t.title.toLowerCase().includes(searchQuery.toLowerCase())) return false
+    // Filtros de coluna
     for (const [key, f] of Object.entries(colFilters)) {
       if (!isFilterActive(f)) continue
       let match = true
@@ -161,8 +250,8 @@ export function TasksTableView({
   }
 
   const hasActiveFilters = useMemo(
-    () => Object.values(colFilters).some(f => isFilterActive(f)),
-    [colFilters]
+    () => Object.values(colFilters).some(f => isFilterActive(f)) || searchQuery.trim() !== '',
+    [colFilters, searchQuery]
   )
 
   // ── Flat rows ──────────────────────────────────────────────────────────────
@@ -204,7 +293,7 @@ export function TasksTableView({
 
     if (canEdit) out.push({ _type: 'add-group' })
     return out
-  }, [tree, collapsed, sort, canEdit, colFilters, valuesByTaskCol])
+  }, [tree, collapsed, sort, canEdit, colFilters, valuesByTaskCol, searchQuery])
 
   const idsByGroup = useMemo(() => {
     const map: Record<string, string[]> = { __root__: [] }
@@ -213,18 +302,28 @@ export function TasksTableView({
     return map
   }, [tree])
 
+  // IDs selecionáveis (tasks + subtasks, excluindo grupos)
+  const selectableIds = useMemo(
+    () => flatRows.filter((r): r is FlatRow => r._type === 'task' && r.level > 0).map(r => r.task.id),
+    [flatRows]
+  )
+  const allSelected  = selectableIds.length > 0 && selectableIds.every(id => selectedIds.has(id))
+  const someSelected = !allSelected && selectableIds.some(id => selectedIds.has(id))
+
   // ── Columns + grid ─────────────────────────────────────────────────────────
   const columns: Column[] = useMemo(() => {
-    const base: Column[] = [
-      { key: 'drag',        label: '',           width: '28px' },
-      { key: 'expand',      label: '',           width: '28px' },
-      { key: 'check',       label: '',           width: '32px' },
-      { key: 'title',       label: 'Tarefa',     width: 'minmax(260px, 1fr)', sortable: true },
-      { key: 'plannedDate', label: 'Prazo',      width: '130px', sortable: true, align: 'center' },
-      { key: 'status',      label: 'Status',     width: '150px', sortable: true },
-      { key: 'responsible', label: 'Responsável',width: '150px' },
-      { key: 'progress',    label: '%',          width: '80px',  sortable: true, align: 'center' },
-    ]
+    const base: Column[] = []
+    if (canEdit) base.push({ key: 'select', label: '', width: '32px' })
+    base.push(
+      { key: 'drag',        label: '',            width: '28px' },
+      { key: 'expand',      label: '',            width: '28px' },
+      { key: 'check',       label: '',            width: '32px' },
+      { key: 'title',       label: 'Tarefa',      width: 'minmax(260px, 1fr)', sortable: true },
+      { key: 'plannedDate', label: 'Prazo',        width: '130px', sortable: true, align: 'center' },
+      { key: 'status',      label: 'Status',       width: '150px', sortable: true },
+      { key: 'responsible', label: 'Responsável',  width: '150px' },
+      { key: 'progress',    label: '%',            width: '100px', sortable: true, align: 'center' },
+    )
     customCols.forEach(c => base.push({
       key: `col_${c.id}`, label: c.label,
       width: COL_WIDTH[c.type] || '160px',
@@ -234,11 +333,25 @@ export function TasksTableView({
     base.push({ key: 'addCol',     label: '',           width: '36px' })
     base.push({ key: 'rowActions', label: '',           width: '52px' })
     return base
-  }, [customCols])
+  }, [customCols, canEdit])
 
   const visibleColumns = useMemo(() => columns.filter(c => !hiddenCols.has(c.key)), [columns, hiddenCols])
   const gridTemplate   = visibleColumns.map(c => c.width).join(' ')
   const vcLen          = visibleColumns.length
+
+  // Índice (1-based) da coluna Tarefa — usado nos spans e no sticky
+  const titleColIdx = visibleColumns.findIndex(c => c.key === 'title') + 1
+
+  // Offset left para o sticky da coluna Tarefa
+  const titleStickyLeft = useMemo(() => {
+    let total = 0
+    for (const c of visibleColumns) {
+      if (c.key === 'title') break
+      const w = parseInt(c.width)
+      if (!isNaN(w)) total += w
+    }
+    return total
+  }, [visibleColumns])
 
   // ── Helpers de render ──────────────────────────────────────────────────────
   const statusOptions = (Object.entries(MILESTONE_STATUS_LABELS) as Array<[MilestoneStatus, string]>)
@@ -251,6 +364,19 @@ export function TasksTableView({
       : <ArrowDown className="h-3 w-3 text-primary ml-0.5 shrink-0" />
   }
 
+  // ─── Barra de progresso visual ────────────────────────────────────────────
+  function ProgressBar({ pct }: { pct: number }) {
+    const color = pct >= 100 ? '#22c55e' : pct >= 50 ? '#3b82f6' : '#f59e0b'
+    return (
+      <div className="flex items-center gap-1.5 w-full">
+        <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden min-w-0">
+          <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, backgroundColor: color }} />
+        </div>
+        <span className="text-[10px] tabular-nums shrink-0 w-7 text-right">{pct}%</span>
+      </div>
+    )
+  }
+
   function HeaderCell({ col }: { col: Column }) {
     if (col.key === 'addCol') return (
       <button type="button" onClick={onOpenColumnsManager}
@@ -260,6 +386,19 @@ export function TasksTableView({
     if (['drag', 'expand', 'check', 'rowActions'].includes(col.key))
       return <div className="border-l first:border-l-0" />
 
+    if (col.key === 'select') return (
+      <div className="border-l first:border-l-0 flex items-center justify-center">
+        <input
+          type="checkbox"
+          checked={allSelected}
+          ref={el => { if (el) el.indeterminate = someSelected }}
+          onChange={e => setSelectedIds(e.target.checked ? new Set(selectableIds) : new Set())}
+          className="h-3.5 w-3.5 cursor-pointer"
+        />
+      </div>
+    )
+
+    const isTitle   = col.key === 'title'
     const customCol = col.colId ? customCols.find(c => c.id === col.colId) : undefined
     const colFilter = colFilters[col.key]
     const isFiltered = colFilter ? isFilterActive(colFilter) : false
@@ -267,7 +406,8 @@ export function TasksTableView({
     return (
       <div
         onClick={col.sortable ? () => toggleSort(col.key) : undefined}
-        className={`px-2 py-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground border-l flex items-center gap-1 select-none overflow-hidden ${col.sortable ? 'cursor-pointer hover:bg-muted/50' : ''} ${col.align === 'center' ? 'justify-center' : ''}`}
+        style={isTitle ? { position: 'sticky', left: titleStickyLeft, zIndex: 11 } : undefined}
+        className={`px-2 py-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground border-l flex items-center gap-1 select-none overflow-hidden bg-muted/40 ${col.sortable ? 'cursor-pointer hover:bg-muted/60' : ''} ${col.align === 'center' ? 'justify-center' : ''}`}
       >
         {isFiltered && <Filter className="h-3 w-3 text-primary shrink-0" />}
         <span className="truncate min-w-0" title={col.label}>{col.label}</span>
@@ -299,8 +439,9 @@ export function TasksTableView({
     const label = inlineCreate.kind === 'group' ? 'grupo' : inlineCreate.kind === 'task' ? 'tarefa' : 'subtarefa'
     return (
       <div className="grid border-b bg-primary/3" style={{ gridTemplateColumns: gridTemplate }}>
+        {canEdit && <div />}
         <div /><div /><div />
-        <div className="px-2 py-1.5 flex items-center gap-2" style={{ gridColumn: `4 / ${vcLen - 1}` }}>
+        <div className="px-2 py-1.5 flex items-center gap-2" style={{ gridColumn: `${titleColIdx} / ${vcLen - 1}` }}>
           <input ref={inlineInputRef} value={inlineTitle} onChange={e => setInlineTitle(e.target.value)}
             onKeyDown={e => {
               if (e.key === 'Enter')  commitInlineCreate(true)
@@ -339,17 +480,77 @@ export function TasksTableView({
 
   const activeTask = activeId ? items.find(i => i.id === activeId) : null
 
+  // ── Contagem de tarefas visíveis (para o toolbar) ──────────────────────────
+  const visibleTaskCount = flatRows.filter(r => r._type === 'task' && (r as FlatRow).level > 0).length
+  const totalTaskCount   = items.filter(i => i.kind !== 'group').length
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter}
       onDragStart={e => setActiveId(String(e.active.id))}
       onDragEnd={handleDragEnd} onDragCancel={() => setActiveId(null)}>
       <>
-        {/* Barra de filtros/colunas ocultas */}
+        {/* ── Toolbar: busca + exportar ── */}
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-background">
+          <div className="relative flex-1 max-w-xs">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <input
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Buscar tarefas..."
+              className="w-full h-8 pl-8 pr-3 text-xs rounded-md border bg-background outline-none focus:ring-1 focus:ring-ring"
+            />
+            {searchQuery && (
+              <button type="button" onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+          {hasActiveFilters && visibleTaskCount !== totalTaskCount && (
+            <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+              {visibleTaskCount} de {totalTaskCount} tarefas
+            </span>
+          )}
+          <button type="button" onClick={exportCSV} title="Exportar CSV"
+            className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border rounded-md px-2.5 h-8 transition-colors hover:bg-muted/50">
+            <Download className="h-3.5 w-3.5" /> CSV
+          </button>
+        </div>
+
+        {/* ── Bulk actions bar ── */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center gap-3 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/20 border-b text-xs">
+            <span className="font-semibold text-blue-700 dark:text-blue-300">
+              {selectedIds.size} {selectedIds.size === 1 ? 'selecionada' : 'selecionadas'}
+            </span>
+            <span className="text-muted-foreground">Alterar status:</span>
+            <div className="flex items-center gap-1">
+              {statusOptions.map(s => (
+                <button key={s.value} type="button"
+                  onClick={() => bulkChangeStatus(s.value as MilestoneStatus)}
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-semibold transition-opacity hover:opacity-80 ${MILESTONE_STATUS_COLORS[s.value as MilestoneStatus]}`}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+            <button type="button" onClick={bulkDelete}
+              className="flex items-center gap-1 text-rose-600 hover:underline ml-2">
+              <Trash2 className="h-3 w-3" /> Excluir
+            </button>
+            <button type="button" onClick={() => setSelectedIds(new Set())}
+              className="ml-auto flex items-center gap-1 text-muted-foreground hover:text-foreground">
+              <X className="h-3 w-3" /> Desmarcar
+            </button>
+          </div>
+        )}
+
+        {/* ── Filtros ativos / colunas ocultas ── */}
         {(hasActiveFilters || hiddenCols.size > 0) && (
           <div className="flex items-center gap-3 px-3 py-1.5 bg-primary/5 border-b text-xs text-muted-foreground">
-            {hasActiveFilters && (
-              <button type="button" onClick={() => setColFilters({})}
+            {(Object.values(colFilters).some(f => isFilterActive(f)) || searchQuery.trim()) && (
+              <button type="button"
+                onClick={() => { setColFilters({}); setSearchQuery('') }}
                 className="flex items-center gap-1.5 text-primary hover:underline">
                 <X className="h-3 w-3" /> Limpar filtros
               </button>
@@ -374,7 +575,9 @@ export function TasksTableView({
             {/* Rows */}
             {flatRows.length === 0 ? (
               <div className="px-4 py-8 text-sm text-muted-foreground italic text-center">
-                {hasActiveFilters ? 'Nenhuma tarefa corresponde aos filtros.' : `Nenhuma tarefa.${canEdit ? ' Use os botões acima.' : ''}`}
+                {hasActiveFilters
+                  ? 'Nenhuma tarefa corresponde aos filtros.'
+                  : `Nenhuma tarefa.${canEdit ? ' Use os botões acima.' : ''}`}
               </div>
             ) : (() => {
               const elements: ReactNode[] = []
@@ -388,8 +591,8 @@ export function TasksTableView({
                       <InlineCreateRow groupId={null} groupRow={true} />
                       {(!inlineCreate || inlineCreate.kind !== 'group') && (
                         <div className="grid border-b" style={{ gridTemplateColumns: gridTemplate }}>
-                          <div /><div /><div />
-                          <div className="px-2 py-1.5" style={{ gridColumn: `4 / ${vcLen + 1}` }}>
+                          {canEdit && <div />}<div /><div /><div />
+                          <div className="px-2 py-1.5" style={{ gridColumn: `${titleColIdx} / ${vcLen + 1}` }}>
                             <button type="button" onClick={() => openInlineCreate('group', null, null)}
                               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors py-0.5">
                               <Plus className="h-3.5 w-3.5" /><span className="font-medium">Novo grupo</span>
@@ -404,8 +607,8 @@ export function TasksTableView({
                 if (r._type === 'footer') {
                   elements.push(
                     <div key={`footer_${r.groupId}`} className="grid border-b bg-muted/10" style={{ gridTemplateColumns: gridTemplate }}>
-                      <div /><div /><div />
-                      <div className="px-2 py-1 text-[11px] text-muted-foreground flex items-center gap-3" style={{ gridColumn: `4 / ${vcLen + 1}` }}>
+                      {canEdit && <div />}<div /><div /><div />
+                      <div className="px-2 py-1 text-[11px] text-muted-foreground flex items-center gap-3" style={{ gridColumn: `${titleColIdx} / ${vcLen + 1}` }}>
                         <span className={`font-semibold ${r.done === r.total && r.total > 0 ? 'text-emerald-600' : ''}`}>{r.done}/{r.total} concluídas</span>
                         <span>·</span><span>{r.avgPct}% médio</span>
                         {r.done === r.total && r.total > 0 && <span className="text-emerald-600 font-semibold">✓ Grupo completo</span>}
@@ -421,8 +624,8 @@ export function TasksTableView({
                       <InlineCreateRow groupId={gid} />
                       {(!inlineCreate || inlineCreate.groupId !== gid) && (
                         <div className="grid border-b" style={{ gridTemplateColumns: gridTemplate }}>
-                          <div /><div /><div />
-                          <div className="px-2 py-1" style={{ gridColumn: `4 / ${vcLen + 1}` }}>
+                          {canEdit && <div />}<div /><div /><div />
+                          <div className="px-2 py-1" style={{ gridColumn: `${titleColIdx} / ${vcLen + 1}` }}>
                             <button type="button" onClick={() => openInlineCreate('task', gid, gid)}
                               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors w-full py-0.5">
                               <Plus className="h-3.5 w-3.5" /><span>Adicionar tarefa</span>
@@ -440,12 +643,13 @@ export function TasksTableView({
                   const childCount = (tree.tasksByParent[t.id] || []).length
                   elements.push(
                     <div key={t.id} className="grid bg-primary/5 border-b font-semibold" style={{ gridTemplateColumns: gridTemplate }}>
+                      {canEdit && <div />}
                       <div />
                       <button onClick={() => onToggleCollapse(t.id)} className="flex items-center justify-center text-muted-foreground hover:text-foreground">
                         {collapsed.has(t.id) ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                       </button>
                       <div />
-                      <div className="px-2 py-1.5 text-sm flex items-center gap-2 overflow-hidden" style={{ gridColumn: `4 / ${vcLen + 1}` }}>
+                      <div className="px-2 py-1.5 text-sm flex items-center gap-2 overflow-hidden" style={{ gridColumn: `${titleColIdx} / ${vcLen + 1}` }}>
                         <span className="truncate">{t.title}</span>
                         <span className="text-[10px] tabular-nums text-muted-foreground font-normal">{childCount} tarefa{childCount !== 1 ? 's' : ''}</span>
                         <span className={`text-[10px] uppercase font-semibold rounded px-1.5 py-0.5 ${MILESTONE_STATUS_COLORS[t.status]}`}>{MILESTONE_STATUS_LABELS[t.status]}</span>
@@ -461,13 +665,25 @@ export function TasksTableView({
                 }
 
                 // Task / subtask row
-                const isSubtask       = level === 2
-                const hasChildren     = !isSubtask && (tree.subtasksByParent[t.id]?.length || 0) > 0
-                const isEditingTitle  = editingTitleId === t.id
-                const isDraggable     = canEdit && !isSubtask && !sort
+                const isSubtask      = level === 2
+                const hasChildren    = !isSubtask && (tree.subtasksByParent[t.id]?.length || 0) > 0
+                const isEditingTitle = editingTitleId === t.id
+                const isDraggable    = canEdit && !isSubtask && !sort
+                const isSelected     = selectedIds.has(t.id)
 
                 const rowContent = (drag: ReactNode) => {
                   const cellMap: Record<string, ReactNode> = {}
+
+                  if (canEdit) {
+                    cellMap['select'] = (
+                      <div key="select" className="border-l first:border-l-0 flex items-center justify-center">
+                        <input type="checkbox" checked={isSelected}
+                          onChange={() => toggleSelect(t.id)}
+                          onClick={e => e.stopPropagation()}
+                          className="h-3.5 w-3.5 cursor-pointer" />
+                      </div>
+                    )
+                  }
 
                   cellMap['drag']   = <div key="drag" className="border-l first:border-l-0">{drag}</div>
                   cellMap['expand'] = (
@@ -490,7 +706,9 @@ export function TasksTableView({
                     </button>
                   )
                   cellMap['title'] = (
-                    <div key="title" className="px-2 py-1.5 text-sm flex items-center gap-1.5 border-l overflow-hidden">
+                    <div key="title"
+                      style={{ position: 'sticky', left: titleStickyLeft, zIndex: 5 }}
+                      className={`px-2 py-1.5 text-sm flex items-center gap-1.5 border-l overflow-hidden ${isSelected ? 'bg-blue-50 dark:bg-blue-950/20' : isSubtask ? 'bg-muted/10' : 'bg-background'}`}>
                       {isSubtask && <span className="ml-3 text-muted-foreground text-xs shrink-0">↳</span>}
                       {isEditingTitle ? (
                         <input ref={titleInputRef} value={titleDraft} onChange={e => setTitleDraft(e.target.value)}
@@ -532,13 +750,14 @@ export function TasksTableView({
                     </div>
                   )
                   cellMap['progress'] = (
-                    <div key="progress" className="px-1 py-1 border-l flex items-center justify-center">
-                      {canEdit
-                        ? <input type="number" min={0} max={100} value={t.progressPct ?? ''}
-                            onChange={e => onUpdateTask(t.id, { progressPct: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })}
-                            className="w-14 h-7 px-1 text-xs rounded border bg-background tabular-nums text-center" />
-                        : <span className="text-xs tabular-nums">{t.progressPct ?? 0}%</span>
-                      }
+                    <div key="progress" className="px-2 py-1 border-l flex items-center">
+                      {canEdit ? (
+                        <input type="number" min={0} max={100} value={t.progressPct ?? ''}
+                          onChange={e => onUpdateTask(t.id, { progressPct: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })}
+                          className="w-14 h-7 px-1 text-xs rounded border bg-background tabular-nums text-center" />
+                      ) : (
+                        <ProgressBar pct={t.progressPct ?? 0} />
+                      )}
                     </div>
                   )
                   customCols.forEach(c => {
@@ -562,8 +781,7 @@ export function TasksTableView({
                         ? <div className="h-5 w-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[9px] font-semibold shrink-0">
                             {initials(users.find(u => u.id === t.responsibleIds[0])?.name || '?')}
                           </div>
-                        : <UserCircle2 className="h-4 w-4 text-muted-foreground/40 shrink-0" />
-                      }
+                        : <UserCircle2 className="h-4 w-4 text-muted-foreground/40 shrink-0" />}
                       <span className="truncate">{relativeTime(t.updatedAt)}</span>
                     </div>
                   )
@@ -586,7 +804,8 @@ export function TasksTableView({
                   )
 
                   return (
-                    <div className={`grid border-b hover:bg-muted/20 transition-colors ${isSubtask ? 'bg-muted/10' : ''}`}
+                    <div
+                      className={`grid border-b transition-colors ${isSelected ? 'bg-blue-50 dark:bg-blue-950/20' : isSubtask ? 'bg-muted/10 hover:bg-muted/20' : 'hover:bg-muted/20'}`}
                       style={{ gridTemplateColumns: gridTemplate }}>
                       {visibleColumns.map(c => cellMap[c.key])}
                     </div>
@@ -594,9 +813,7 @@ export function TasksTableView({
                 }
 
                 if (isDraggable) {
-                  elements.push(
-                    <SortableRow key={t.id} id={t.id}>{drag => rowContent(drag)}</SortableRow>
-                  )
+                  elements.push(<SortableRow key={t.id} id={t.id}>{drag => rowContent(drag)}</SortableRow>)
                 } else {
                   elements.push(<div key={t.id}>{rowContent(<div />)}</div>)
                 }
