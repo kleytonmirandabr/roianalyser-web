@@ -10,17 +10,13 @@
  */
 
 import {
-  AlertTriangle, ArrowLeft, BarChart3, Calendar, CalendarDays, ChevronDown, ChevronUp, Clock,
-  ExternalLink, FileText, GanttChart, Heart, LayoutDashboard, LayoutGrid, ListTodo, Paperclip,
-  Plus, Trash2, Users2,
+  AlertTriangle, ArrowLeft, Calendar, CalendarDays, ChevronDown, ChevronUp, Clock,
+  ExternalLink, FileText, GanttChart, Heart, LayoutDashboard, LayoutGrid, ListTodo, Paperclip, Trash2, Users2,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
-import { useCreateForecast } from '@/features/forecasts/hooks/use-create-forecast'
-import { useForecastsByProject } from '@/features/forecasts/hooks/use-forecasts'
-import { FORECAST_STATUS_LABELS } from '@/features/forecasts/types'
 import { useDeleteProject2 } from '@/features/projects2/hooks/use-delete-project'
 import { useProject2 } from '@/features/projects2/hooks/use-project'
 import { useUpdateProject2 } from '@/features/projects2/hooks/use-update-project'
@@ -149,7 +145,7 @@ export function Project2DetailPage() {
   const rawTab = searchParams.get('tab') || 'overview'
   // 'board' é alias legado → 'list'
   const tab = (rawTab === 'board' ? 'list' : rawTab) as
-    'overview' | 'list' | 'kanban' | 'calendar' | 'gantt' | 'members' | 'docs' | 'forecasts'
+    'overview' | 'list' | 'kanban' | 'calendar' | 'gantt' | 'members' | 'docs'
   function setTab(next: string) {
     const sp = new URLSearchParams(searchParams)
     if (next === 'overview') sp.delete('tab')
@@ -157,10 +153,8 @@ export function Project2DetailPage() {
     setSearchParams(sp, { replace: true })
   }
   const { data: prj, isLoading, error } = useProject2(id)
-  const { data: forecasts = [] } = useForecastsByProject(id)
   const update = useUpdateProject2(id)
   const remove = useDeleteProject2()
-  const createForecast = useCreateForecast()
   const { canEdit, canManage } = useProjectRole(prj)
 
   const { data: contract } = useContract(prj?.contractId || undefined)
@@ -320,17 +314,6 @@ export function Project2DetailPage() {
     } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
   }
 
-  async function handleCreateForecast() {
-    if (!prj) return
-    try {
-      const created = await createForecast.mutateAsync({
-        projectId: prj.id,
-        name: `Revisão ${(forecasts.length || 0) + 1}`,
-      })
-      toastSaved('Revisão criada')
-      navigate(`/forecasts/${created.id}`)
-    } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
-  }
 
   return (
     <div className="min-h-screen">
@@ -362,8 +345,7 @@ export function Project2DetailPage() {
               { key: 'gantt',     label: 'Gantt',        icon: GanttChart },
               { key: 'members',   label: 'Membros',      icon: Users2 },
               { key: 'docs',      label: 'Documentos',   icon: Paperclip },
-              { key: 'forecasts', label: 'Forecasts',    icon: BarChart3 },
-            ].map(({ key, label, icon: Icon }) => (
+                ].map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
                 type="button"
@@ -387,7 +369,7 @@ export function Project2DetailPage() {
       </div>
 
       {tab === 'overview' && (
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 space-y-4">
+      <div className="max-w-[1600px] mx-auto px-6 py-4 space-y-4">
       {/* HERO */}
       <Card className="p-4 space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -576,52 +558,19 @@ export function Project2DetailPage() {
       )}
 
       {tab === 'members' && (
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5">
           <MembersCard projectId={id} generalAccess={prj.generalAccess} canManage={canManage} />
         </div>
       )}
 
       {tab === 'docs' && (
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5">
           <ProjectAttachmentsCard projectId={id} />
         </div>
       )}
 
-      {tab === 'forecasts' && (
-      <>
-      {/* FORECASTS */}
-      <Card className="p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-semibold">Forecasts ({forecasts.length})</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Revisões de previsão associadas a este projeto.</p>
-          </div>
-          <Button size="sm" onClick={handleCreateForecast} disabled={createForecast.isPending}>
-            <Plus className="h-4 w-4" />Nova revisão
-          </Button>
-        </div>
-        {forecasts.length === 0 ? (
-          <p className="text-sm text-muted-foreground italic">Nenhuma revisão criada.</p>
-        ) : (
-          <ul className="space-y-2">
-            {forecasts.map((f: any) => (
-              <li key={f.id}>
-                <Link to={`/forecasts/${f.id}`} className="flex flex-wrap items-start justify-between gap-2 rounded border p-3 hover:bg-muted/30">
-                  <div className="min-w-0">
-                    <span className="font-medium">{f.name}</span>
-                    {f.versionNumber && <span className="ml-2 text-xs text-muted-foreground">v{f.versionNumber}</span>}
-                  </div>
-                  <span className="text-xs text-muted-foreground shrink-0">{FORECAST_STATUS_LABELS[f.status as keyof typeof FORECAST_STATUS_LABELS] || f.status}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
-      </>)}
-
       {tab === 'overview' && (
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-8 space-y-4">
+      <div className="max-w-[1600px] mx-auto px-6 pb-8 space-y-4">
       {/* EDITOR */}
       <Card className="p-0 overflow-hidden">
         <button

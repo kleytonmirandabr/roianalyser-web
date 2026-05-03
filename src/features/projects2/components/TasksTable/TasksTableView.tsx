@@ -29,13 +29,12 @@ import {
   MILESTONE_STATUS_COLORS, MILESTONE_STATUS_LABELS,
   type MilestoneKind, type MilestoneStatus, type ProjectMilestone,
 } from '@/features/projects2/milestones-types'
-import { Combobox } from '@/shared/ui/combobox'
 import { ColumnCellEditor, ColumnCellReadonly } from '@/features/projects2/components/ColumnCellEditor'
 
 import { ColumnActionsMenu }  from './ColumnActionsMenu'
 import { TaskCommentPanel }   from '../TaskCommentPanel'
 import { MultiPeoplePicker }  from './MultiPeoplePicker'
-import { SelectPill }         from './SelectPill'
+import { SelectPill, SelectPillEditor } from './SelectPill'
 import { SortableRow }        from './SortableRow'
 import {
   COL_ALIGN, COL_WIDTH, NON_HIDEABLE,
@@ -44,6 +43,50 @@ import {
 import type {
   ColFilter, Column, FlatRow, InlineCreate, Row, TableSort, TasksTableViewProps,
 } from './types'
+
+
+/** Pill colorida para status nativo — clique abre mini-dropdown. */
+function StatusPillPicker({ value, canEdit, options, onChange }: {
+  value: MilestoneStatus
+  canEdit: boolean
+  options: { value: string; label: string }[]
+  onChange: (v: MilestoneStatus) => void
+}) {
+  const [open, setOpen] = useState(false)
+  if (!canEdit) {
+    return (
+      <span className={`text-[10px] uppercase font-semibold rounded px-1.5 py-0.5 ${MILESTONE_STATUS_COLORS[value]}`}>
+        {MILESTONE_STATUS_LABELS[value]}
+      </span>
+    )
+  }
+  return (
+    <div className="relative inline-flex">
+      <button type="button" onClick={() => setOpen(v => !v)}
+        className="hover:opacity-80 transition-opacity focus:outline-none">
+        <span className={`text-[10px] uppercase font-semibold rounded px-1.5 py-0.5 cursor-pointer ${MILESTONE_STATUS_COLORS[value]}`}>
+          {MILESTONE_STATUS_LABELS[value]}
+        </span>
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute top-full left-0 z-50 mt-1 bg-popover border rounded-md shadow-lg py-1 min-w-[140px]">
+            {options.map(s => (
+              <button key={s.value} type="button"
+                onClick={() => { onChange(s.value as MilestoneStatus); setOpen(false) }}
+                className="w-full text-left px-3 py-1.5 hover:bg-muted/50 flex items-center gap-2">
+                <span className={`text-[10px] uppercase font-semibold rounded px-1.5 py-0.5 ${MILESTONE_STATUS_COLORS[s.value as MilestoneStatus]}`}>
+                  {s.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 
 export function TasksTableView({
   items, customCols, valuesByTaskCol, users, canEdit,
@@ -790,9 +833,12 @@ export function TasksTableView({
                   )
                   cellMap['status'] = (
                     <div key="status" className="px-1 py-1 border-l flex items-center justify-center">
-                      <Combobox options={statusOptions} value={t.status}
-                        onChange={v => canEdit && onUpdateTask(t.id, { status: v as MilestoneStatus, completedDate: v !== 'done' ? null : undefined })}
-                        disabled={!canEdit} className="w-full" />
+                      <StatusPillPicker
+                        value={t.status}
+                        canEdit={canEdit}
+                        options={statusOptions}
+                        onChange={v => onUpdateTask(t.id, { status: v, completedDate: v !== 'done' ? null : undefined })}
+                      />
                     </div>
                   )
                   cellMap['responsible'] = (
@@ -837,10 +883,12 @@ export function TasksTableView({
                     const alignCls = COL_ALIGN[c.type] === 'center' ? 'justify-center' : COL_ALIGN[c.type] === 'right' ? 'justify-end' : ''
                     cellMap[`col_${c.id}`] = (
                       <div key={`col_${c.id}`} className={`px-1.5 py-1 border-l flex items-center overflow-hidden ${alignCls}`}>
-                        {canEdit
-                          ? <ColumnCellEditor column={c} value={val} onChange={v => onPutColumnValue(t.id, c.id, v)} />
-                          : (c.type === 'select' || c.type === 'status')
-                            ? <SelectPill column={c} value={val} />
+                        {(c.type === 'select' || c.type === 'status')
+                          ? (canEdit
+                              ? <SelectPillEditor column={c} value={val} onChange={v => onPutColumnValue(t.id, c.id, v)} />
+                              : <SelectPill column={c} value={val} />)
+                          : canEdit
+                            ? <ColumnCellEditor column={c} value={val} onChange={v => onPutColumnValue(t.id, c.id, v)} />
                             : <ColumnCellReadonly column={c} value={val} />
                         }
                       </div>
