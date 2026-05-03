@@ -14,6 +14,7 @@ import {
 import { useMemo, useState } from 'react'
 
 import { useAppState } from '@/features/admin/hooks/use-app-state'
+import { useProjectMembers } from '@/features/projects2/hooks/use-project-members'
 import {
   type MilestoneKind,
   type ProjectMilestone,
@@ -62,7 +63,10 @@ export function ProjectTasksCard({ projectId, canEdit }: Props) {
   const [colsModalOpen, setColsModalOpen] = useState(false)
   const [filters, setFilters] = useState<TasksFilters>({ q: '', status: '', personId: '', sort: 'order' })
   const appState = useAppState()
+  const membersQuery = useProjectMembers(projectId)
+  const memberUserIds = new Set((membersQuery.data || []).map(m => String(m.userId)))
   const users: UserMini[] = ((appState.data?.users || []) as Array<{ id: string; name?: string; email?: string }>)
+    .filter(u => memberUserIds.has(String(u.id)))
     .map(u => ({ id: String(u.id), name: u.name || u.email || `User #${u.id}`, email: u.email || '' }))
 
   const items = list.data || []
