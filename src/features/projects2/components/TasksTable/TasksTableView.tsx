@@ -19,7 +19,7 @@ import {
   ArrowDown, ArrowUp, ArrowUpDown,
   CheckCircle2, ChevronDown, ChevronRight,
   Circle, Download, Eye, Filter, GripVertical,
-  Plus, Trash2, UserCircle2, X,
+  MessageSquare, Plus, Trash2, UserCircle2, X,
 } from 'lucide-react'
 import {
   useEffect, useMemo, useRef, useState, type ReactNode,
@@ -33,6 +33,7 @@ import { Combobox } from '@/shared/ui/combobox'
 import { ColumnCellEditor, ColumnCellReadonly } from '@/features/projects2/components/ColumnCellEditor'
 
 import { ColumnActionsMenu }  from './ColumnActionsMenu'
+import { TaskCommentPanel }   from '../TaskCommentPanel'
 import { MultiPeoplePicker }  from './MultiPeoplePicker'
 import { SelectPill }         from './SelectPill'
 import { SortableRow }        from './SortableRow'
@@ -86,6 +87,8 @@ export function TasksTableView({
   const [editingProgressId, setEditingProgressId] = useState<string | null>(null)
   const [progressDraft, setProgressDraft]         = useState('')
   const progressInputRef = useRef<HTMLInputElement>(null)
+
+  const [commentTaskId, setCommentTaskId] = useState<string | null>(null)
 
   // ── LocalStorage persistence ───────────────────────────────────────────────
   const storageKey = useMemo(() => {
@@ -767,6 +770,12 @@ export function TasksTableView({
                       {!isSubtask && !!subtaskCount[t.id] && (
                         <span className="text-[10px] tabular-nums px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-semibold shrink-0">{subtaskCount[t.id]}</span>
                       )}
+                      <button type="button"
+                        onClick={e => { e.stopPropagation(); setCommentTaskId(t.id) }}
+                        title="Comentários"
+                        className="ml-auto shrink-0 p-0.5 rounded text-muted-foreground/40 hover:text-primary hover:bg-muted/60 transition-colors opacity-0 group-hover/row:opacity-100">
+                        <MessageSquare className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   )
                   cellMap['plannedDate'] = (
@@ -868,7 +877,7 @@ export function TasksTableView({
 
                   return (
                     <div
-                      className={`grid border-b transition-colors ${isSelected ? 'bg-blue-50 dark:bg-blue-950/20' : isSubtask ? 'bg-muted/10 hover:bg-muted/20' : 'hover:bg-muted/20'}`}
+                      className={`grid border-b transition-colors group/row ${isSelected ? 'bg-blue-50 dark:bg-blue-950/20' : isSubtask ? 'bg-muted/10 hover:bg-muted/20' : 'hover:bg-muted/20'}`}
                       style={{ gridTemplateColumns: gridTemplate }}>
                       {visibleColumns.map(c => cellMap[c.key])}
                     </div>
@@ -886,6 +895,18 @@ export function TasksTableView({
           </div>
         </div>
       </>
+
+      {/* ── Comment Panel ── */}
+      {commentTaskId && (() => {
+        const ct = items.find(i => i.id === commentTaskId)
+        return ct ? (
+          <TaskCommentPanel
+            task={ct}
+            canEdit={canEdit}
+            onClose={() => setCommentTaskId(null)}
+          />
+        ) : null
+      })()}
 
       <DragOverlay>
         {activeTask && (
