@@ -19,7 +19,7 @@ import {
   ArrowDown, ArrowUp, ArrowUpDown,
   CheckCircle2, ChevronDown, ChevronRight,
   Circle, Download, Eye, Filter, GripVertical,
-  Plus, Search, Trash2, UserCircle2, X,
+  Plus, Trash2, UserCircle2, X,
 } from 'lucide-react'
 import {
   useEffect, useMemo, useRef, useState, type ReactNode,
@@ -71,7 +71,6 @@ export function TasksTableView({
   const [colFilters, setColFilters]   = useState<Record<string, ColFilter>>({})
   const [hiddenCols, setHiddenCols]   = useState<Set<string>>(new Set())
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [searchQuery, setSearchQuery] = useState('')
 
   const [editingProgressId, setEditingProgressId] = useState<string | null>(null)
   const [progressDraft, setProgressDraft]         = useState('')
@@ -235,8 +234,6 @@ export function TasksTableView({
   }
 
   function taskMatchesFilters(t: ProjectMilestone): boolean {
-    // Busca global
-    if (searchQuery.trim() && !t.title.toLowerCase().includes(searchQuery.toLowerCase())) return false
     // Filtros de coluna
     for (const [key, f] of Object.entries(colFilters)) {
       if (!isFilterActive(f)) continue
@@ -254,8 +251,8 @@ export function TasksTableView({
   }
 
   const hasActiveFilters = useMemo(
-    () => Object.values(colFilters).some(f => isFilterActive(f)) || searchQuery.trim() !== '',
-    [colFilters, searchQuery]
+    () => Object.values(colFilters).some(f => isFilterActive(f)),
+    [colFilters]
   )
 
   // ── Flat rows ──────────────────────────────────────────────────────────────
@@ -297,7 +294,7 @@ export function TasksTableView({
 
     if (canEdit) out.push({ _type: 'add-group' })
     return out
-  }, [tree, collapsed, sort, canEdit, colFilters, valuesByTaskCol, searchQuery])
+  }, [tree, collapsed, sort, canEdit, colFilters, valuesByTaskCol])
 
   const idsByGroup = useMemo(() => {
     const map: Record<string, string[]> = { __root__: [] }
@@ -436,7 +433,8 @@ export function TasksTableView({
     )
   }
 
-  function InlineCreateRow({ groupId, groupRow = false }: { groupId: string | null; groupRow?: boolean }) {
+  // ⚠️ Função render (não componente) para evitar unmount/remount a cada re-render
+  function renderInlineCreateRow(groupId: string | null, groupRow = false) {
     if (!inlineCreate || inlineCreate.groupId !== groupId) return null
     if (groupRow  && inlineCreate.kind !== 'group') return null
     if (!groupRow && inlineCreate.kind === 'group') return null
@@ -494,23 +492,8 @@ export function TasksTableView({
       onDragStart={e => setActiveId(String(e.active.id))}
       onDragEnd={handleDragEnd} onDragCancel={() => setActiveId(null)}>
       <>
-        {/* ── Toolbar: busca + exportar ── */}
+        {/* ── Toolbar: contador + exportar ── */}
         <div className="flex items-center gap-2 px-3 py-2 border-b bg-background">
-          <div className="relative flex-1 max-w-xs">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-            <input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Buscar tarefas..."
-              className="w-full h-8 pl-8 pr-3 text-xs rounded-md border bg-background outline-none focus:ring-1 focus:ring-ring"
-            />
-            {searchQuery && (
-              <button type="button" onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                <X className="h-3 w-3" />
-              </button>
-            )}
-          </div>
           {hasActiveFilters && visibleTaskCount !== totalTaskCount && (
             <span className="text-[11px] text-muted-foreground whitespace-nowrap">
               {visibleTaskCount} de {totalTaskCount} tarefas
@@ -552,9 +535,9 @@ export function TasksTableView({
         {/* ── Filtros ativos / colunas ocultas ── */}
         {(hasActiveFilters || hiddenCols.size > 0) && (
           <div className="flex items-center gap-3 px-3 py-1.5 bg-primary/5 border-b text-xs text-muted-foreground">
-            {(Object.values(colFilters).some(f => isFilterActive(f)) || searchQuery.trim()) && (
+            {Object.values(colFilters).some(f => isFilterActive(f)) && (
               <button type="button"
-                onClick={() => { setColFilters({}); setSearchQuery('') }}
+                onClick={() => { setColFilters({}) }}
                 className="flex items-center gap-1.5 text-primary hover:underline">
                 <X className="h-3 w-3" /> Limpar filtros
               </button>
@@ -592,7 +575,7 @@ export function TasksTableView({
                 if (r._type === 'add-group') {
                   elements.push(
                     <div key="add-group">
-                      <InlineCreateRow groupId={null} groupRow={true} />
+                      {renderInlineCreateRow(null, true)}
                       {(!inlineCreate || inlineCreate.kind !== 'group') && (
                         <div className="grid border-b" style={{ gridTemplateColumns: gridTemplate }}>
                           {canEdit && <div />}<div /><div /><div />
@@ -625,7 +608,7 @@ export function TasksTableView({
                   const gid = r.groupId
                   elements.push(
                     <div key={`add_${gid ?? 'root'}_${ri}`}>
-                      <InlineCreateRow groupId={gid} />
+                      {renderInlineCreateRow(gid)}
                       {(!inlineCreate || inlineCreate.groupId !== gid) && (
                         <div className="grid border-b" style={{ gridTemplateColumns: gridTemplate }}>
                           {canEdit && <div />}<div /><div /><div />
