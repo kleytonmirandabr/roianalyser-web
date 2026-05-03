@@ -73,6 +73,10 @@ export function TasksTableView({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
 
+  const [editingProgressId, setEditingProgressId] = useState<string | null>(null)
+  const [progressDraft, setProgressDraft]         = useState('')
+  const progressInputRef = useRef<HTMLInputElement>(null)
+
   // ── LocalStorage persistence ───────────────────────────────────────────────
   const storageKey = useMemo(() => {
     const match = typeof window !== 'undefined'
@@ -750,10 +754,30 @@ export function TasksTableView({
                     </div>
                   )
                   cellMap['progress'] = (
-                    <div key="progress" className="px-2 py-1 border-l flex items-center">
-                      {canEdit ? (
-                        <input type="number" min={0} max={100} value={t.progressPct ?? ''}
-                          onChange={e => onUpdateTask(t.id, { progressPct: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })}
+                    <div key="progress" className="px-2 py-1 border-l flex items-center"
+                      onClick={() => {
+                        if (!canEdit) return
+                        setEditingProgressId(t.id)
+                        setProgressDraft(String(t.progressPct ?? 0))
+                        setTimeout(() => progressInputRef.current?.select(), 0)
+                      }}>
+                      {canEdit && editingProgressId === t.id ? (
+                        <input
+                          ref={progressInputRef}
+                          type="number" min={0} max={100}
+                          value={progressDraft}
+                          onChange={e => setProgressDraft(e.target.value)}
+                          onBlur={() => {
+                            const v = Math.max(0, Math.min(100, Number(progressDraft) || 0))
+                            onUpdateTask(t.id, { progressPct: v })
+                            setEditingProgressId(null)
+                          }}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') { e.currentTarget.blur() }
+                            if (e.key === 'Escape') { setEditingProgressId(null) }
+                          }}
+                          onClick={e => e.stopPropagation()}
+                          autoFocus
                           className="w-14 h-7 px-1 text-xs rounded border bg-background tabular-nums text-center" />
                       ) : (
                         <ProgressBar pct={t.progressPct ?? 0} />
