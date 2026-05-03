@@ -72,6 +72,17 @@ export function TasksTableView({
   const [hiddenCols, setHiddenCols]   = useState<Set<string>>(new Set())
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
+  // ── Column ordering ────────────────────────────────────────────────────────
+  const [colOrder, setColOrder]     = useState<string[]>([])
+  const [dragColKey, setDragColKey] = useState<string | null>(null)
+  const [overColKey, setOverColKey] = useState<string | null>(null)
+
+  /** Colunas fixas que não participam do reorder */
+  const REORDER_PINNED = useMemo(
+    () => new Set(['select', 'drag', 'expand', 'check', 'title', 'addCol', 'rowActions']),
+    []
+  )
+
   const [editingProgressId, setEditingProgressId] = useState<string | null>(null)
   const [progressDraft, setProgressDraft]         = useState('')
   const progressInputRef = useRef<HTMLInputElement>(null)
@@ -89,10 +100,11 @@ export function TasksTableView({
     try {
       const saved = localStorage.getItem(storageKey)
       if (!saved) return
-      const { colFilters: cf, hiddenCols: hc, sort: s } = JSON.parse(saved)
+      const { colFilters: cf, hiddenCols: hc, sort: s, colOrder: co } = JSON.parse(saved)
       if (cf && typeof cf === 'object') setColFilters(cf)
       if (Array.isArray(hc)) setHiddenCols(new Set(hc))
       if (s) setSort(s)
+      if (Array.isArray(co)) setColOrder(co)
     } catch { /* ignore corrupt data */ }
   }, [storageKey])
 
@@ -100,10 +112,10 @@ export function TasksTableView({
     if (!storageKey) return
     try {
       localStorage.setItem(storageKey, JSON.stringify({
-        colFilters, hiddenCols: [...hiddenCols], sort,
+        colFilters, hiddenCols: [...hiddenCols], sort, colOrder,
       }))
     } catch { /* ignore quota errors */ }
-  }, [colFilters, hiddenCols, sort, storageKey])
+  }, [colFilters, hiddenCols, sort, colOrder, storageKey])
 
   // ── Effects ────────────────────────────────────────────────────────────────
   useEffect(() => { if (editingTitleId) titleInputRef.current?.focus() }, [editingTitleId])
@@ -158,6 +170,23 @@ export function TasksTableView({
       return next
     })
   }
+  function handleColDrop(fromKey: string, toKey: string) {
+    if (fromKey === toKey || REORDER_PINNED.has(fromKey) || REORDER_PINNED.has(toKey)) return
+    setColOrder(prev => {
+      const reorderable = visibleColumns.filter(c => !REORDER_PINNED.has(c.key)).map(c => c.key)
+      const base = prev.length
+        ? [...prev.filter(k => reorderable.includes(k)), ...reorderable.filter(k => !prev.includes(k))]
+        : reorderable
+      const from = base.indexOf(fromKey)
+      const to   = base.indexOf(toKey)
+      if (from < 0 || to < 0) return prev
+      const next = [...base]
+      next.splice(from, 1)
+      next.splice(to, 0, fromKey)
+      return next
+    })
+  }
+
   function bulkDelete() {
     selectedIds.forEach(id => {
       const task = items.find(i => i.id === id)
@@ -336,7 +365,19 @@ export function TasksTableView({
     return base
   }, [customCols, canEdit])
 
-  const visibleColumns = useMemo(() => columns.filter(c => !hiddenCols.has(c.key)), [columns, hiddenCols])
+  const visibleColumns = useMemo(() => {
+    const visible = columns.filter(c => !hiddenCols.has(c.key))
+    if (colOrder.length === 0) return visible
+
+    const pinnedLeft  = visible.filter(c => ['select','drag','expand','check','title'].includes(c.key))
+    const reorderable = visible.filter(c => !REORDER_PINNED.has(c.key))
+    const pinnedRight = visible.filter(c => ['addCol','rowActions'].includes(c.key))
+
+    const ordered   = colOrder.filter(k => reorderable.some(c => c.key === k)).map(k => reorderable.find(c => c.key === k)!)
+    const remaining = reorderable.filter(c => !colOrder.includes(c.key))
+
+    return [...pinnedLeft, ...ordered, ...remaining, ...pinnedRight]
+  }, [columns, hiddenCols, colOrder, REORDER_PINNED])
   const gridTemplate   = visibleColumns.map(c => c.width).join(' ')
   const vcLen          = visibleColumns.length
 
@@ -404,12 +445,27 @@ export function TasksTableView({
     const colFilter = colFilters[col.key]
     const isFiltered = colFilter ? isFilterActive(colFilter) : false
 
+    const isDraggable = !REORDER_PINNED.has(col.key)
+    const isDropTarget = overColKey === col.key && dragColKey !== col.key && isDraggable
+
     return (
       <div
         onClick={col.sortable ? () => toggleSort(col.key) : undefined}
-        style={isTitle ? { position: 'sticky', left: titleStickyLeft, zIndex: 11 } : undefined}
-        className={`px-2 py-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground border-l flex items-center gap-1 select-none overflow-hidden bg-muted/40 ${col.sortable ? 'cursor-pointer hover:bg-muted/60' : ''} ${col.align === 'center' ? 'justify-center' : ''}`}
+        style={{
+          ...(isTitle ? { position: 'sticky', left: titleStickyLeft, zIndex: 11 } : {}),
+          ...(isDropTarget ? { borderLeft: '2px solid hsl(var(--primary))' } : {}),
+        }}
+        className={`px-2 py-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground border-l flex items-center gap-1 select-none overflow-hidden bg-muted/40 ${col.sortable ? 'cursor-pointer hover:bg-muted/60' : ''} ${col.align === 'center' ? 'justify-center' : ''} ${dragColKey === col.key ? 'opacity-40' : ''}`}
+        draggable={isDraggable}
+        onDragStart={isDraggable ? (e) => { e.dataTransfer.effectAllowed = 'move'; setDragColKey(col.key) } : undefined}
+        onDragOver={isDraggable ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setOverColKey(col.key) } : undefined}
+        onDrop={isDraggable ? (e) => { e.preventDefault(); if (dragColKey) handleColDrop(dragColKey, col.key); setDragColKey(null); setOverColKey(null) } : undefined}
+        onDragEnd={() => { setDragColKey(null); setOverColKey(null) }}
+        onDragLeave={() => { if (overColKey === col.key) setOverColKey(null) }}
       >
+        {isDraggable && (
+          <GripVertical className="h-3 w-3 shrink-0 text-muted-foreground/40 hover:text-muted-foreground cursor-grab" />
+        )}
         {isFiltered && <Filter className="h-3 w-3 text-primary shrink-0" />}
         <span className="truncate min-w-0" title={col.label}>{col.label}</span>
         {col.sortable && <SortIcon sortKey={col.key} />}
