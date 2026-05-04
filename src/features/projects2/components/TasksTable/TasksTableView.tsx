@@ -430,16 +430,10 @@ export function TasksTableView({
   // Índice (1-based) da coluna Tarefa — usado nos spans e no sticky
   const titleColIdx = visibleColumns.findIndex(c => c.key === 'title') + 1
 
-  // Offset left para o sticky da coluna Tarefa
-  const titleStickyLeft = useMemo(() => {
-    let total = 0
-    for (const c of visibleColumns) {
-      if (c.key === 'title') break
-      const w = parseInt(c.width)
-      if (!isNaN(w)) total += w
-    }
-    return total
-  }, [visibleColumns])
+  // Coluna Tarefa sempre cola na borda esquerda (left:0).
+  // As colunas utilitárias antes dela rolam para fora normalmente
+  // antes de o sticky entrar em ação — sem gap flutuante.
+  const titleStickyLeft = 0
 
   // ── Helpers de render ──────────────────────────────────────────────────────
   const statusOptions = (Object.entries(MILESTONE_STATUS_LABELS) as Array<[MilestoneStatus, string]>)
@@ -501,7 +495,7 @@ export function TasksTableView({
           ...(isTitle ? { position: 'sticky', left: titleStickyLeft, zIndex: 11 } : {}),
           ...(isDropTarget ? { borderLeft: '2px solid hsl(var(--primary))' } : {}),
         }}
-        className={`px-2 py-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground border-l flex items-center gap-1 select-none overflow-hidden bg-muted/40 ${col.sortable ? 'cursor-pointer hover:bg-muted/60' : ''} ${col.align === 'center' ? 'justify-center' : ''} ${dragColKey === col.key ? 'opacity-40' : ''}`}
+        className={`px-2 py-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground border-l flex items-center gap-1 select-none overflow-hidden ${isTitle ? 'bg-muted' : 'bg-muted/40'} ${col.sortable ? 'cursor-pointer hover:bg-muted/60' : ''} ${col.align === 'center' ? 'justify-center' : ''} ${dragColKey === col.key ? 'opacity-40' : ''}`}
         draggable={isDraggable}
         onDragStart={isDraggable ? (e) => { e.dataTransfer.effectAllowed = 'move'; setDragColKey(col.key) } : undefined}
         onDragOver={isDraggable ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setOverColKey(col.key) } : undefined}
@@ -738,7 +732,7 @@ export function TasksTableView({
                         {collapsed.has(t.id) ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                       </button>
                       <div />
-                      <div className="px-2 py-1.5 text-sm flex items-center gap-2 overflow-hidden" style={{ gridColumn: `${titleColIdx} / ${vcLen + 1}` }}>
+                      <div className="px-2 py-1.5 text-sm flex items-center gap-2 overflow-hidden bg-primary/5" style={{ position: 'sticky', left: 0, zIndex: 5, gridColumn: `${titleColIdx} / ${vcLen + 1}` }}>
                         <span className="truncate">{t.title}</span>
                         <span className="text-[10px] tabular-nums text-muted-foreground font-normal">{childCount} tarefa{childCount !== 1 ? 's' : ''}</span>
                         <span className={`text-[10px] uppercase font-semibold rounded px-1.5 py-0.5 ${MILESTONE_STATUS_COLORS[t.status]}`}>{MILESTONE_STATUS_LABELS[t.status]}</span>
@@ -796,8 +790,8 @@ export function TasksTableView({
                   )
                   cellMap['title'] = (
                     <div key="title"
-                      style={{ position: 'sticky', left: titleStickyLeft, zIndex: 5 }}
-                      className={`px-2 py-1.5 text-sm flex items-center gap-1.5 border-l overflow-hidden ${isSelected ? 'bg-blue-50 dark:bg-blue-950/20' : isSubtask ? 'bg-muted/10' : 'bg-background'}`}>
+                      style={{ position: 'sticky', left: 0, zIndex: 5 }}
+                      className={`px-2 py-1.5 text-sm flex items-center gap-1.5 border-l overflow-hidden ${isSelected ? 'bg-blue-50 dark:bg-blue-950/20' : 'bg-background'}`}>
                       {isSubtask && <span className="ml-3 text-muted-foreground text-xs shrink-0">↳</span>}
                       {isEditingTitle ? (
                         <input ref={titleInputRef} value={titleDraft} onChange={e => setTitleDraft(e.target.value)}
