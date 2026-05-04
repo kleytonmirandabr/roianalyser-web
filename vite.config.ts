@@ -1,6 +1,8 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { fileURLToPath, URL } from 'node:url'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -19,6 +21,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: basePath,
+    define: {
+      __APP_VERSION__: JSON.stringify(
+        JSON.parse(readFileSync(resolve(__dirname, 'version.json'), 'utf8')).version
+      ),
+    },
     plugins: [react()],
     resolve: {
       alias: {
