@@ -343,7 +343,6 @@ export function TasksTableView({
           out.push({ _type: 'task', task: s, level: 2 })
         })
     })
-    if (canEdit) out.push({ _type: 'add', groupId: null })
 
     sortArr(tree.rootGroups).forEach(g => {
       out.push({ _type: 'task', task: g, level: 0 })
@@ -368,6 +367,7 @@ export function TasksTableView({
     })
 
     if (canEdit) out.push({ _type: 'add-group' })
+    if (canEdit) out.push({ _type: 'add', groupId: null })
     return out
   }, [tree, collapsed, sort, canEdit, colFilters, valuesByTaskCol])
 
