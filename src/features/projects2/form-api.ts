@@ -23,9 +23,21 @@ export const projectFormsApi = {
     api.delete<void>(`${base(projectId)}/${encodeURIComponent(formId)}`),
 
   submissions: (projectId: string, formId: string) =>
-    api.get<{ submissions: FormSubmission[]; total: number }>(
+    api.get<{ submissions: Record<string, any>[]; total: number }>(
       `${base(projectId)}/${encodeURIComponent(formId)}/submissions`
-    ).then(r => r.submissions),
+    ).then(r =>
+      r.submissions.map((s): FormSubmission => ({
+        id:             String(s.id),
+        formId:         String(s.form_id    ?? s.formId    ?? ''),
+        taskId:         s.task_id    != null ? String(s.task_id)    : (s.taskId    ?? null),
+        taskTitle:      s.task_title ?? s.taskTitle    ?? null,
+        taskStatus:     s.task_status ?? s.taskStatus  ?? null,
+        submittedBy:    s.submitted_by     ?? s.submittedBy    ?? null,
+        submittedByName: s.submitted_by_name ?? s.submittedByName ?? null,
+        ipAddress:      s.ip_address  ?? s.ipAddress   ?? null,
+        submittedAt:    s.submitted_at ?? s.submittedAt ?? new Date().toISOString(),
+      }))
+    ),
 }
 
 // Public endpoints — no auth required

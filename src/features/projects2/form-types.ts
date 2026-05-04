@@ -71,8 +71,10 @@ export interface FormSubmission {
   id: string
   formId: string
   taskId: string | null
+  taskTitle?: string | null
+  taskStatus?: string | null
   submittedBy: string | null
+  submittedByName?: string | null
   ipAddress: string | null
   submittedAt: string
-  taskTitle?: string | null
 }
