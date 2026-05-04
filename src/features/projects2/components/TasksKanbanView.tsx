@@ -26,7 +26,7 @@ interface Props {
   canEdit: boolean
 }
 
-const COLS: MilestoneStatus[] = ['planning', 'in_progress', 'waiting', 'done', 'cancelled']
+const COLS: MilestoneStatus[] = ['planning', 'in_progress', 'waiting', 'stuck', 'done', 'cancelled']
 
 function fmtDate(iso: string | null): string {
   if (!iso) return ''
@@ -75,9 +75,9 @@ export function TasksKanbanView({ tasks, projectId, canEdit }: Props) {
   const onlyTasks = useMemo(() => tasks.filter(t => t.kind === 'task'), [tasks])
   const byStatus = useMemo(() => {
     const map: Record<MilestoneStatus, ProjectMilestone[]> = {
-      planning: [], in_progress: [], waiting: [], done: [], cancelled: [],
+      planning: [], in_progress: [], waiting: [], done: [], stuck: [], cancelled: [],
     }
-    for (const t of onlyTasks) map[t.status].push(t)
+    for (const t of onlyTasks) { if (map[t.status]) map[t.status].push(t) }
     return map
   }, [onlyTasks])
 

@@ -7,12 +7,13 @@
  * status expandido.
  */
 
-export type MilestoneStatus = 'planning' | 'in_progress' | 'waiting' | 'done' | 'cancelled'
+export type MilestoneStatus = 'planning' | 'in_progress' | 'waiting' | 'done' | 'stuck' | 'cancelled'
 
 export const MILESTONE_STATUS_LABELS: Record<MilestoneStatus, string> = {
   planning: 'Planejando',
   in_progress: 'Em andamento',
   waiting: 'Aguardando',
+  stuck: 'Travado',
   done: 'Concluído',
   cancelled: 'Cancelado',
 }
@@ -21,6 +22,7 @@ export const MILESTONE_STATUS_COLORS: Record<MilestoneStatus, string> = {
   planning: 'bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300',
   in_progress: 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
   waiting: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+  stuck: 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300',
   done: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
   cancelled: 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
 }
