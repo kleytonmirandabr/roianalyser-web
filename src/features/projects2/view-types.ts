@@ -5,7 +5,7 @@ export type ViewType = 'list' | 'kanban' | 'calendar' | 'gantt' | 'forms' | 'mem
 export const FIXED_VIEW_TYPES: ViewType[] = ['list', 'forms', 'members', 'docs']
 
 /** Views configuráveis pelo usuário via wizard. */
-export const CONFIGURABLE_VIEW_TYPES: ViewType[] = ['kanban', 'calendar', 'gantt']
+export const CONFIGURABLE_VIEW_TYPES: ViewType[] = ['kanban', 'calendar', 'gantt', 'dashboard']
 
 export interface ProjectView {
   id: string

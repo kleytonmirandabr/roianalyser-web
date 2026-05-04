@@ -31,6 +31,7 @@ import { ProjectTasksCard } from '@/features/projects2/components/ProjectTasksCa
 import { MembersCard } from '@/features/projects2/components/MembersCard'
 import { GanttView } from '@/features/projects2/components/GanttView'
 import { FormBuilderTab } from '@/features/projects2/components/FormBuilderTab'
+import { DashboardPage } from './DashboardPage'
 import { useProjectMilestones } from '@/features/projects2/hooks/use-project-milestones'
 import { useProjectRole } from '@/features/projects2/hooks/use-project-role'
 import { toastDeleted, toastError, toastSaved } from '@/shared/lib/toasts'
@@ -149,7 +150,7 @@ export function Project2DetailPage() {
   const rawTab = searchParams.get('tab') || 'overview'
   // 'board' é alias legado → 'list'
   const tab = (rawTab === 'board' ? 'list' : rawTab) as
-    'overview' | 'list' | 'kanban' | 'calendar' | 'gantt' | 'members' | 'docs' | 'forms'
+    'overview' | 'list' | 'kanban' | 'calendar' | 'gantt' | 'members' | 'docs' | 'forms' | 'dashboard'
   function setTab(next: string) {
     const sp = new URLSearchParams(searchParams)
     if (next === 'overview') sp.delete('tab')
@@ -586,6 +587,10 @@ export function Project2DetailPage() {
 
       {tab === 'forms' && id && (
         <FormBuilderTab projectId={id} canManage={canManage} />
+      )}
+
+      {tab === 'dashboard' && id && (
+        <DashboardPage projectId={id} />
       )}
 
       {tab === 'overview' && (
