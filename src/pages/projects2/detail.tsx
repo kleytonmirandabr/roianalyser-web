@@ -11,7 +11,7 @@
 
 import {
   AlertTriangle, ArrowLeft, BarChart3, Calendar, CalendarDays, ClipboardList, ChevronDown, ChevronUp, Clock,
-  ExternalLink, FileText, GanttChart, Heart, LayoutDashboard, LayoutGrid, ListTodo, Paperclip, Plus, Trash2, Users2,
+  ExternalLink, FileText, GanttChart, Heart, LayoutDashboard, LayoutGrid, ListTodo, Paperclip, Plus, Trash2, Users2, X,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -44,9 +44,9 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { CustomFieldsCard } from '@/features/form-fields/components/custom-fields-card'
-import { useProjectViews, useCreateView, useUpdateView } from '@/features/projects2/hooks/use-project-views'
+import { useProjectViews, useCreateView, useUpdateView, useDeleteView } from '@/features/projects2/hooks/use-project-views'
 import { ViewWizard } from '@/features/projects2/components/ViewWizard'
-import { VIEW_TYPE_META, type ViewType } from '@/features/projects2/view-types'
+import { VIEW_TYPE_META, CONFIGURABLE_VIEW_TYPES, type ViewType } from '@/features/projects2/view-types'
 import { formatCurrency } from '@/shared/lib/format'
 
 // Status terminais cancelled fica off-path; paused também; planning→execution→done é o caminho feliz
@@ -164,6 +164,7 @@ export function Project2DetailPage() {
   const { data: projectViews = [] } = useProjectViews(id)
   const createView = useCreateView(id)
   const updateView = useUpdateView(id)
+  const deleteView = useDeleteView(id)
   const [showWizard, setShowWizard] = useState(false)
 
   const { data: contract } = useContract(prj?.contractId || undefined)
@@ -308,6 +309,20 @@ export function Project2DetailPage() {
     } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
   }
 
+  async function handleDeleteView(viewId: string, viewType: string, viewName: string) {
+    const ok = await confirm({
+      title: `Remover view "${viewName}"`,
+      description: 'A view será removida do workspace. Os dados não serão excluídos.',
+      confirmLabel: 'Remover',
+      destructive: true,
+    })
+    if (!ok) return
+    try {
+      await deleteView.mutateAsync(viewId)
+      if (tab === viewType) setTab('overview')
+    } catch (err) { toastError(`Erro: ${(err as Error).message}`) }
+  }
+
   async function handleDelete() {
     const ok = await confirm({
       title: 'Excluir projeto',
@@ -362,12 +377,25 @@ export function Project2DetailPage() {
                 ListTodo, LayoutGrid, CalendarDays, GanttChart, ClipboardList, Users2, Paperclip, BarChart3, LayoutDashboard,
               }
               const Icon = ICON_LOOKUP[meta.icon] ?? ListTodo
+              const isConfigurable = CONFIGURABLE_VIEW_TYPES.includes(view.type as ViewType)
               return (
-                <button key={view.id} type="button" onClick={() => setTab(view.type)}
-                  className={`group shrink-0 inline-flex items-center gap-1 px-2 sm:px-2.5 py-2.5 text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${tab === view.type ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30'}`}>
-                  <Icon className="h-3.5 w-3.5 shrink-0" />
-                  <span className="hidden sm:inline">{view.name}</span>
-                </button>
+                <div key={view.id} className="relative group/tab flex items-center shrink-0">
+                  <button type="button" onClick={() => setTab(view.type)}
+                    className={`shrink-0 inline-flex items-center gap-1 px-2 sm:px-2.5 py-2.5 text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${tab === view.type ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30'} ${isConfigurable ? 'pr-1 sm:pr-1' : ''}`}>
+                    <Icon className="h-3.5 w-3.5 shrink-0" />
+                    <span className="hidden sm:inline">{view.name}</span>
+                  </button>
+                  {isConfigurable && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleDeleteView(view.id, view.type, view.name) }}
+                      className="opacity-0 group-hover/tab:opacity-100 transition-opacity shrink-0 h-3.5 w-3.5 rounded-full flex items-center justify-center text-muted-foreground hover:text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-950/40 mr-1 -mb-px"
+                      title={`Remover view ${view.name}`}
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  )}
+                </div>
               )
             })}
             {/* Botão adicionar view */}

@@ -2,10 +2,10 @@
 export type ViewType = 'list' | 'kanban' | 'calendar' | 'gantt' | 'forms' | 'members' | 'docs' | 'dashboard'
 
 /** Views fixas — sempre existem, não podem ser removidas. */
-export const FIXED_VIEW_TYPES: ViewType[] = ['list', 'forms', 'members', 'docs']
+export const FIXED_VIEW_TYPES: ViewType[] = ['list', 'members', 'docs']
 
 /** Views configuráveis pelo usuário via wizard. */
-export const CONFIGURABLE_VIEW_TYPES: ViewType[] = ['kanban', 'calendar', 'gantt', 'dashboard']
+export const CONFIGURABLE_VIEW_TYPES: ViewType[] = ['kanban', 'calendar', 'gantt', 'forms', 'dashboard']
 
 export interface ProjectView {
   id: string
@@ -80,7 +80,7 @@ export const VIEW_TYPE_META: Record<ViewType, ViewTypeMeta> = {
   forms: {
     type: 'forms', label: 'Formulários', icon: 'ClipboardList',
     description: 'Builder de formulários públicos vinculados ao projeto.',
-    configurable: false, wizardSteps: 0,
+    configurable: true, wizardSteps: 0,
   },
   members: {
     type: 'members', label: 'Membros', icon: 'Users2',
