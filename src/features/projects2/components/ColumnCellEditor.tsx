@@ -157,7 +157,7 @@ export function ColumnCellEditor({ column, value, onChange, disabled }: Props) {
               key={i}
               type="button"
               disabled={disabled}
-              onClick={() => commit(i === n ? 0 : i)}
+              onClick={(e) => { e.stopPropagation(); commit(i === n ? 0 : i) }}
               className="text-amber-500 hover:scale-110 transition-transform disabled:cursor-not-allowed"
               title={`${i} de 5`}
             >

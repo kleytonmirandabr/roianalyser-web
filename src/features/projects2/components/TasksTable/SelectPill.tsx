@@ -45,7 +45,7 @@ export function SelectPillEditor({ column, value, onChange }: {
     <div className="relative inline-flex">
       <button
         type="button"
-        onClick={() => setOpen(v => !v)}
+        onClick={(e) => { e.stopPropagation(); setOpen(v => !v) }}
         className="hover:opacity-80 transition-opacity focus:outline-none"
       >
         {sel ? (() => {

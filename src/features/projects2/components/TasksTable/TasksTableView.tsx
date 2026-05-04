@@ -875,8 +875,10 @@ export function TasksTableView({
                   customCols.forEach(c => {
                     const val = valuesByTaskCol[t.id]?.[c.id]?.value ?? null
                     const alignCls = COL_ALIGN[c.type] === 'center' ? 'justify-center' : COL_ALIGN[c.type] === 'right' ? 'justify-end' : ''
+                    // select/status usam dropdown absoluto — sem overflow-hidden pra não clipar o menu
+                    const needsOverflow = c.type !== 'select' && c.type !== 'status'
                     cellMap[`col_${c.id}`] = (
-                      <div key={`col_${c.id}`} className={`px-1.5 py-1 border-l flex items-center overflow-hidden ${alignCls}`}>
+                      <div key={`col_${c.id}`} className={`px-1.5 py-1 border-l flex items-center ${needsOverflow ? 'overflow-hidden' : 'overflow-visible'} ${alignCls}`}>
                         {(c.type === 'select' || c.type === 'status')
                           ? (canEdit
                               ? <SelectPillEditor column={c} value={val} onChange={v => onPutColumnValue(t.id, c.id, v)} />
