@@ -10,8 +10,8 @@
  */
 
 import {
-  AlertTriangle, ArrowLeft, Calendar, CalendarDays, ClipboardList, ChevronDown, ChevronUp, Clock,
-  ExternalLink, FileText, GanttChart, Heart, LayoutDashboard, LayoutGrid, ListTodo, Paperclip, Trash2, Users2,
+  AlertTriangle, ArrowLeft, BarChart3, Calendar, CalendarDays, ClipboardList, ChevronDown, ChevronUp, Clock,
+  ExternalLink, FileText, GanttChart, Heart, LayoutDashboard, LayoutGrid, ListTodo, Paperclip, Plus, Trash2, Users2,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -43,6 +43,9 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { CustomFieldsCard } from '@/features/form-fields/components/custom-fields-card'
+import { useProjectViews, useCreateView, useUpdateView } from '@/features/projects2/hooks/use-project-views'
+import { ViewWizard } from '@/features/projects2/components/ViewWizard'
+import { VIEW_TYPE_META, type ViewType } from '@/features/projects2/view-types'
 import { formatCurrency } from '@/shared/lib/format'
 
 // Status terminais cancelled fica off-path; paused também; planning→execution→done é o caminho feliz
@@ -157,6 +160,10 @@ export function Project2DetailPage() {
   const update = useUpdateProject2(id)
   const remove = useDeleteProject2()
   const { canEdit, canManage } = useProjectRole(prj)
+  const { data: projectViews = [] } = useProjectViews(id)
+  const createView = useCreateView(id)
+  const updateView = useUpdateView(id)
+  const [showWizard, setShowWizard] = useState(false)
 
   const { data: contract } = useContract(prj?.contractId || undefined)
   const { data: companies = [] } = useCompanies()
@@ -338,30 +345,36 @@ export function Project2DetailPage() {
             <Heart className="h-2.5 w-2.5" />{health.label}
           </span>
           <nav className="flex items-center overflow-x-auto flex-1 mx-1">
-            {[
-              { key: 'overview',  label: 'Visão Geral',  icon: LayoutDashboard },
-              { key: 'list',      label: 'Lista',        icon: ListTodo },
-              { key: 'kanban',    label: 'Kanban',       icon: LayoutGrid },
-              { key: 'calendar',  label: 'Calendário',   icon: CalendarDays },
-              { key: 'gantt',     label: 'Gantt',        icon: GanttChart },
-              { key: 'members',   label: 'Membros',      icon: Users2 },
-              { key: 'docs',      label: 'Documentos',   icon: Paperclip },
-              { key: 'forms',     label: 'Formulários',  icon: ClipboardList },
-                ].map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setTab(key)}
-                className={`shrink-0 inline-flex items-center gap-1 px-2 sm:px-2.5 py-2.5 text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
-                  tab === key
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30'
-                }`}
-              >
+            {/* Tab fixa: Visão Geral */}
+            {[{ key: 'overview', label: 'Visão Geral', Icon: LayoutDashboard }].map(({ key, label, Icon }) => (
+              <button key={key} type="button" onClick={() => setTab(key)}
+                className={`shrink-0 inline-flex items-center gap-1 px-2 sm:px-2.5 py-2.5 text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${tab === key ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30'}`}>
                 <Icon className="h-3.5 w-3.5 shrink-0" />
                 <span className="hidden sm:inline">{label}</span>
               </button>
             ))}
+            {/* Tabs dinâmicas do banco */}
+            {projectViews.filter(v => v.enabled).sort((a, b) => a.position - b.position).map((view) => {
+              const meta = VIEW_TYPE_META[view.type as ViewType]
+              if (!meta) return null
+              const ICON_LOOKUP: Record<string, React.ComponentType<{className?: string}>> = {
+                ListTodo, LayoutGrid, CalendarDays, GanttChart, ClipboardList, Users2, Paperclip, BarChart3, LayoutDashboard,
+              }
+              const Icon = ICON_LOOKUP[meta.icon] ?? ListTodo
+              return (
+                <button key={view.id} type="button" onClick={() => setTab(view.type)}
+                  className={`group shrink-0 inline-flex items-center gap-1 px-2 sm:px-2.5 py-2.5 text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${tab === view.type ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30'}`}>
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  <span className="hidden sm:inline">{view.name}</span>
+                </button>
+              )
+            })}
+            {/* Botão adicionar view */}
+            <button type="button" onClick={() => setShowWizard(true)}
+              title="Adicionar view"
+              className="shrink-0 inline-flex items-center gap-1 px-2 py-2.5 text-xs font-medium border-b-2 border-transparent text-muted-foreground hover:text-primary hover:bg-muted/30 -mb-px transition-colors">
+              <Plus className="h-3.5 w-3.5" />
+            </button>
           </nav>
           <Button variant="ghost" size="sm" onClick={handleDelete} disabled={remove.isPending}
             className="h-7 w-7 p-0 shrink-0" title="Excluir projeto">
@@ -670,6 +683,24 @@ export function Project2DetailPage() {
       </div>
       )}
 
+    {/* ViewWizard modal */}
+      {showWizard && (
+        <ViewWizard
+          onClose={() => setShowWizard(false)}
+          onDone={async (type, name, config) => {
+            try {
+              const existing = projectViews.find(v => v.type === type)
+              if (existing) {
+                await updateView.mutateAsync({ viewId: existing.id, name, config, enabled: true })
+              } else {
+                await createView.mutateAsync({ type, name, config })
+              }
+              setShowWizard(false)
+              setTab(type)
+            } catch (_err) { }
+          }}
+        />
+      )}
     </div>
   )
 }
